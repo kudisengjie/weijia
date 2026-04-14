@@ -1,0 +1,24 @@
+# LLMS.txt for 炜佳老师 GEO优化官网
+
+# 网站信息
+Site: https://www.weijia-geo.com
+Owner: 吕炜佳
+Contact: YiJie-AI (微信)
+
+# 爬取规则
+Crawl-delay: 10
+
+# 内容使用政策
+Usage: 允许用于教育和研究目的的内容引用，但需注明来源。
+
+# 禁止使用
+Prohibited: 禁止将网站内容用于商业目的或训练竞争模型。
+
+# 重要页面
+Important-pages:
+- https://www.weijia-geo.com/contact.html
+- https://www.weijia-geo.com/about.html
+- https://www.weijia-geo.com/cooperation.html
+
+# 内容更新频率
+Update-frequency: 每周更新
