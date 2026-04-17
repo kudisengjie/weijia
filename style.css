@@ -12,15 +12,22 @@ body {
     background-color: #f8f9fa;
 }
 
-/* 天空蓝背景 */
+/* 最初的背景颜色 */
 body {
-    background-image: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+    background-image: 
+        /* 科技感渐变 */
+        radial-gradient(circle at 10% 20%, rgba(174, 214, 255, 0.15) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(174, 214, 255, 0.15) 0%, transparent 20%),
+        radial-gradient(circle at 50% 50%, rgba(174, 214, 255, 0.1) 0%, transparent 30%),
+        /* 基础渐变 */
+        linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
     background-attachment: fixed;
+    background-blend-mode: overlay;
 }
 
 /* 英雄区背景 */
 .hero {
-    background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #e3f2fd 100%);
 }
 
 /* 颜色变量 */
@@ -168,8 +175,8 @@ body {
 }
 
 .hero h1 {
-    font-size: 3.5rem;
-    margin-bottom: 20px;
+    font-size: 4rem;
+    margin-bottom: 25px;
     color: var(--text-dark);
     font-weight: bold;
     line-height: 1.2;
@@ -193,8 +200,8 @@ body {
 }
 
 .hero p {
-    font-size: 1.2rem;
-    margin-bottom: 40px;
+    font-size: 1.4rem;
+    margin-bottom: 45px;
     color: var(--text-light);
     line-height: 1.6;
 }
@@ -286,7 +293,7 @@ body {
 
 .section h2 {
     text-align: center;
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     margin-bottom: 50px;
     color: #333;
     position: relative;
@@ -385,7 +392,7 @@ body {
 }
 
 .service-card h3 {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     margin-bottom: 15px;
     color: var(--text-dark);
     display: flex;
@@ -402,6 +409,7 @@ body {
     color: var(--text-light);
     line-height: 1.6;
     margin-bottom: 20px;
+    font-size: 1.1rem;
 }
 
 .service-card .service-icon {
@@ -445,7 +453,7 @@ body {
 }
 
 .case-card h3 {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     margin-bottom: 15px;
     color: var(--text-dark);
     display: flex;
@@ -462,6 +470,7 @@ body {
     color: var(--text-light);
     line-height: 1.6;
     margin-bottom: 20px;
+    font-size: 1.1rem;
 }
 
 .case-card .case-tag {
@@ -482,7 +491,7 @@ body {
 }
 
 .cooperation-mode h3 {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     margin-bottom: 30px;
     color: var(--text-dark);
     display: flex;
@@ -745,7 +754,7 @@ body {
 }
 
 .blog-post h3 {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     margin-bottom: 15px;
     color: var(--text-dark);
     display: flex;
@@ -762,6 +771,7 @@ body {
     color: var(--text-light);
     line-height: 1.6;
     margin-bottom: 20px;
+    font-size: 1.1rem;
 }
 
 .blog-post .blog-date {
@@ -793,7 +803,7 @@ body {
 }
 
 .faq-item h3 {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     margin-bottom: 10px;
     color: var(--text-dark);
     display: flex;
@@ -809,6 +819,7 @@ body {
 .faq-item p {
     color: var(--text-light);
     line-height: 1.6;
+    font-size: 1.1rem;
 }
 
 /* 资源下载 */
