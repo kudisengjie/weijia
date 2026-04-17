@@ -12,22 +12,22 @@ body {
     background-color: #f8f9fa;
 }
 
-/* 最初的背景颜色 */
+/* 浅浅绿色背景 */
 body {
     background-image: 
         /* 科技感渐变 */
-        radial-gradient(circle at 10% 20%, rgba(174, 214, 255, 0.15) 0%, transparent 20%),
-        radial-gradient(circle at 90% 80%, rgba(174, 214, 255, 0.15) 0%, transparent 20%),
-        radial-gradient(circle at 50% 50%, rgba(174, 214, 255, 0.1) 0%, transparent 30%),
+        radial-gradient(circle at 10% 20%, rgba(200, 230, 201, 0.15) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(200, 230, 201, 0.15) 0%, transparent 20%),
+        radial-gradient(circle at 50% 50%, rgba(200, 230, 201, 0.1) 0%, transparent 30%),
         /* 基础渐变 */
-        linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+        linear-gradient(135deg, #ffffff 0%, #f1f8e9 100%);
     background-attachment: fixed;
     background-blend-mode: overlay;
 }
 
 /* 英雄区背景 */
 .hero {
-    background: linear-gradient(135deg, #ffffff 0%, #e3f2fd 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #e8f5e9 100%);
 }
 
 /* 颜色变量 */
@@ -90,9 +90,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
+    padding: 12px 20px;
     width: 100%;
     max-width: 1400px;
+    height: 60px;
 }
 
 .logo {
