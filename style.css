@@ -10,9 +10,6 @@ body {
     line-height: 1.6;
     color: #333;
     background-color: #f1f8e9;
-}
-
-body {
     background-image:
         radial-gradient(circle at 10% 20%, rgba(165, 214, 167, 0.15) 0%, transparent 20%),
         radial-gradient(circle at 90% 80%, rgba(165, 214, 167, 0.15) 0%, transparent 20%),
@@ -20,7 +17,6 @@ body {
         linear-gradient(135deg, #ffffff 0%, #f1f8e9 100%);
     background-attachment: fixed;
     background-blend-mode: overlay;
-    background-color: #f1f8e9;
 }
 
 :root {
