@@ -96,25 +96,6 @@ body {
     height: 60px;
 }
 
-/* 首页导航栏偏小 */
-.navbar-small .container {
-    height: 50px;
-    padding: 8px 20px;
-}
-
-.navbar-small .logo {
-    font-size: 1.2rem;
-}
-
-.navbar-small .logo::before {
-    font-size: 1.3rem;
-}
-
-.navbar-small .nav-links a {
-    padding: 5px 8px;
-    font-size: 0.9rem;
-}
-
 .logo {
     font-size: 1.3rem;
     font-weight: bold;
@@ -183,8 +164,8 @@ body {
     width: 100%;
     height: 100%;
     background-image: 
-        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 30%),
-        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.2) 0%, transparent 30%);
+        radial-gradient(circle at 20% 30%, rgba(200, 230, 201, 0.2) 0%, transparent 30%),
+        radial-gradient(circle at 80% 70%, rgba(200, 230, 201, 0.2) 0%, transparent 30%);
 }
 
 .hero-content {
@@ -195,12 +176,15 @@ body {
 }
 
 .hero h1 {
-    font-size: 4rem;
+    font-size: 3.5rem;
     margin-bottom: 25px;
     color: var(--text-dark);
     font-weight: bold;
     line-height: 1.2;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .hero h1 span {
