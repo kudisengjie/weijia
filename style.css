@@ -96,6 +96,25 @@ body {
     height: 60px;
 }
 
+/* 首页导航栏偏小 */
+.navbar-small .container {
+    height: 50px;
+    padding: 8px 20px;
+}
+
+.navbar-small .logo {
+    font-size: 1.2rem;
+}
+
+.navbar-small .logo::before {
+    font-size: 1.3rem;
+}
+
+.navbar-small .nav-links a {
+    padding: 5px 8px;
+    font-size: 0.9rem;
+}
+
 .logo {
     font-size: 1.3rem;
     font-weight: bold;
