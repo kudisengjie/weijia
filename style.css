@@ -372,7 +372,7 @@ body {
 .services-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 25px;
+    gap: 20px;
     position: relative;
 }
 
@@ -384,13 +384,14 @@ body {
 
 .service-card {
     background: var(--background-white);
-    padding: 35px;
+    padding: 30px 25px;
     border-radius: 12px;
     box-shadow: var(--shadow-md);
     transition: all 0.3s ease;
     border-top: 4px solid var(--primary-color);
     position: relative;
     overflow: hidden;
+    min-width: 0;
 }
 
 .service-card::before {
@@ -417,9 +418,12 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-wrap: wrap;
+}
+
+.service-card h3 span {
+    flex: 1;
+    min-width: 0;
 }
 
 .service-card h3::before {
