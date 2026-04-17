@@ -12,25 +12,21 @@ body {
     background-color: #f1f8e9;
 }
 
-/* 浅浅绿色背景 */
 body {
-    background-image: 
-        /* 科技感渐变 */
-        radial-gradient(circle at 10% 20%, rgba(200, 230, 201, 0.15) 0%, transparent 20%),
-        radial-gradient(circle at 90% 80%, rgba(200, 230, 201, 0.15) 0%, transparent 20%),
-        radial-gradient(circle at 50% 50%, rgba(200, 230, 201, 0.1) 0%, transparent 30%),
-        /* 基础渐变 */
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(165, 214, 167, 0.15) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(165, 214, 167, 0.15) 0%, transparent 20%),
+        radial-gradient(circle at 50% 50%, rgba(165, 214, 167, 0.1) 0%, transparent 30%),
         linear-gradient(135deg, #ffffff 0%, #f1f8e9 100%);
     background-attachment: fixed;
     background-blend-mode: overlay;
     background-color: #f1f8e9;
 }
 
-/* 颜色变量 */
 :root {
-    --primary-color: #4caf50;
-    --primary-dark: #388e3c;
-    --primary-light: #81c784;
+    --primary-color: #66bb6a;
+    --primary-dark: #4caf50;
+    --primary-light: #a5d6a7;
     --secondary-color: #6c757d;
     --secondary-light: #e9ecef;
     --accent-color: #ff6b6b;
@@ -45,7 +41,6 @@ body {
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
-/* 自定义滚动条 */
 ::-webkit-scrollbar {
     width: 8px;
 }
@@ -55,26 +50,24 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #4caf50;
+    background: #66bb6a;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #388e3c;
+    background: #4caf50;
 }
 
-/* 容器 */
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
 }
 
-/* 导航栏 */
 .navbar {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     position: fixed;
     width: 100%;
     top: 0;
@@ -86,16 +79,16 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 20px;
+    padding: 15px 20px;
     width: 100%;
     max-width: 1400px;
-    height: 60px;
+    min-height: 64px;
 }
 
 .logo {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: bold;
-    color: #4caf50;
+    color: #66bb6a;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -118,21 +111,21 @@ body {
     color: var(--text-dark);
     font-weight: 500;
     transition: all 0.3s ease;
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 6px;
     font-size: 0.95rem;
     white-space: nowrap;
 }
 
 .nav-links a:hover {
-    color: #4caf50;
-    background-color: rgba(76, 175, 80, 0.1);
+    color: #66bb6a;
+    background-color: rgba(102, 187, 106, 0.1);
 }
 
 .nav-links a.active {
-    color: #4caf50;
+    color: #66bb6a;
     font-weight: 600;
-    background-color: rgba(76, 175, 80, 0.1);
+    background-color: rgba(102, 187, 106, 0.1);
 }
 
 .menu-toggle {
@@ -148,7 +141,7 @@ body {
     display: block;
     width: 100%;
     height: 3px;
-    background: #4caf50;
+    background: #66bb6a;
     margin-bottom: 6px;
     border-radius: 2px;
     transition: all 0.3s ease;
@@ -166,7 +159,6 @@ body {
     transform: rotate(-45deg) translate(6px, -6px);
 }
 
-/* 英雄区 */
 .hero {
     height: 100vh;
     display: flex;
@@ -185,9 +177,9 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: 
-        radial-gradient(circle at 20% 30%, rgba(200, 230, 201, 0.2) 0%, transparent 30%),
-        radial-gradient(circle at 80% 70%, rgba(200, 230, 201, 0.2) 0%, transparent 30%);
+    background-image:
+        radial-gradient(circle at 20% 30%, rgba(165, 214, 167, 0.2) 0%, transparent 30%),
+        radial-gradient(circle at 80% 70%, rgba(165, 214, 167, 0.2) 0%, transparent 30%);
 }
 
 .hero-content {
@@ -198,7 +190,7 @@ body {
 }
 
 .hero h1 {
-    font-size: 3rem;
+    font-size: 3.5rem;
     margin-bottom: 25px;
     color: var(--text-dark);
     font-weight: bold;
@@ -208,7 +200,7 @@ body {
 }
 
 .hero h1 span {
-    color: #4caf50;
+    color: #66bb6a;
     position: relative;
 }
 
@@ -224,7 +216,7 @@ body {
 }
 
 .hero p {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     margin-bottom: 45px;
     color: var(--text-light);
     line-height: 1.6;
@@ -269,37 +261,37 @@ body {
 }
 
 .btn.primary {
-    background: linear-gradient(135deg, #4caf50, #388e3c);
+    background: linear-gradient(135deg, #66bb6a, #4caf50);
     color: white;
-    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4), 0 3px 10px rgba(76, 175, 80, 0.2);
+    box-shadow: 0 6px 20px rgba(102, 187, 106, 0.35), 0 3px 10px rgba(102, 187, 106, 0.2);
     transform: translateY(0) translateZ(0);
 }
 
 .btn.primary:hover {
     transform: translateY(-5px) translateZ(10px) rotateX(5deg);
-    box-shadow: 0 12px 30px rgba(76, 175, 80, 0.6), 0 6px 20px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 12px 30px rgba(102, 187, 106, 0.5), 0 6px 20px rgba(102, 187, 106, 0.3);
 }
 
 .btn.secondary {
     background: white;
-    color: #4caf50;
-    border: 2px solid #4caf50;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.1);
+    color: #66bb6a;
+    border: 2px solid #66bb6a;
+    box-shadow: 0 4px 15px rgba(102, 187, 106, 0.1);
     transform: translateY(0) translateZ(0);
 }
 
 .btn.secondary:hover {
-    background: #4caf50;
+    background: #66bb6a;
     color: white;
     transform: translateY(-5px) translateZ(10px) rotateX(5deg);
-    box-shadow: 0 12px 30px rgba(76, 175, 80, 0.6), 0 6px 20px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 12px 30px rgba(102, 187, 106, 0.5), 0 6px 20px rgba(102, 187, 106, 0.3);
 }
 
-/* 通用section样式 */
 .section {
     padding: 100px 0;
     position: relative;
     z-index: 1;
+    background: linear-gradient(135deg, #ffffff 0%, #f1f8e9 100%);
 }
 
 .section::before {
@@ -309,9 +301,9 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: 
-        radial-gradient(circle at 20% 50%, rgba(200, 230, 201, 0.05) 0%, transparent 50%),
-        radial-gradient(circle at 80% 50%, rgba(200, 230, 201, 0.05) 0%, transparent 50%);
+    background-image:
+        radial-gradient(circle at 20% 50%, rgba(165, 214, 167, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(165, 214, 167, 0.06) 0%, transparent 50%);
     z-index: -1;
 }
 
@@ -331,11 +323,10 @@ body {
     transform: translateX(-50%);
     width: 100px;
     height: 4px;
-    background: linear-gradient(90deg, #4caf50, #388e3c);
+    background: linear-gradient(90deg, #66bb6a, #4caf50);
     border-radius: 2px;
 }
 
-/* 关于我 */
 .about-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -372,14 +363,13 @@ body {
 }
 
 .about-skills li::before {
-    content: '✓';
+    content: '\2713';
     position: absolute;
     left: 0;
-    color: #4caf50;
+    color: #66bb6a;
     font-weight: bold;
 }
 
-/* 服务内容 */
 .services-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -425,7 +415,7 @@ body {
 }
 
 .service-card h3::before {
-    content: '🚀';
+    content: '\1F680';
     font-size: 1.5rem;
 }
 
@@ -442,7 +432,6 @@ body {
     color: var(--primary-color);
 }
 
-/* 案例展示 */
 .cases-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -486,7 +475,7 @@ body {
 }
 
 .case-card h3::before {
-    content: '📱';
+    content: '\1F4F1';
     font-size: 1.5rem;
 }
 
@@ -508,7 +497,6 @@ body {
     margin-top: 10px;
 }
 
-/* GEO多模式合作 */
 .cooperation-mode {
     margin-bottom: 60px;
     position: relative;
@@ -524,7 +512,7 @@ body {
 }
 
 .cooperation-mode h3::before {
-    content: '💼';
+    content: '\1F4BC';
     font-size: 1.8rem;
 }
 
@@ -553,7 +541,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, transparent 100%);
+    background: linear-gradient(135deg, rgba(102, 187, 106, 0.05) 0%, transparent 100%);
 }
 
 .pricing-card:hover {
@@ -641,7 +629,7 @@ body {
 }
 
 .training-info li::before, .partnership-info li::before {
-    content: '✓';
+    content: '\2713';
     position: absolute;
     left: 0;
     color: var(--primary-color);
@@ -649,7 +637,6 @@ body {
     font-size: 1.2rem;
 }
 
-/* 联系方式 */
 .contact-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -679,6 +666,14 @@ body {
     opacity: 0.3;
 }
 
+.contact-info h3 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: var(--text-dark);
+    position: relative;
+    z-index: 1;
+}
+
 .contact-info p {
     margin-bottom: 15px;
     font-size: 1.1rem;
@@ -691,16 +686,24 @@ body {
 }
 
 .contact-info p::before {
-    content: '📧';
+    content: '\1F4E7';
     font-size: 1.2rem;
 }
 
 .contact-info p:nth-child(2)::before {
-    content: '📱';
+    content: '\1F4F1';
 }
 
 .contact-info p:nth-child(3)::before {
-    content: '🌐';
+    content: '\1F310';
+}
+
+.contact-info p:nth-child(4)::before {
+    content: '\1F552';
+}
+
+.contact-info p:nth-child(5)::before {
+    content: '\1F30D';
 }
 
 .contact-form {
@@ -722,6 +725,14 @@ body {
     background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
 }
 
+.contact-form h3 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: var(--text-dark);
+    position: relative;
+    z-index: 1;
+}
+
 .contact-form input, .contact-form textarea {
     width: 100%;
     padding: 12px 15px;
@@ -735,7 +746,7 @@ body {
 .contact-form input:focus, .contact-form textarea:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    box-shadow: 0 0 0 3px rgba(102, 187, 106, 0.1);
 }
 
 .contact-form textarea {
@@ -743,7 +754,6 @@ body {
     min-height: 150px;
 }
 
-/* 博客/见解 */
 .blog-posts {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -787,7 +797,7 @@ body {
 }
 
 .blog-post h3::before {
-    content: '📝';
+    content: '\1F4DD';
     font-size: 1.5rem;
 }
 
@@ -804,7 +814,6 @@ body {
     margin-top: 10px;
 }
 
-/* 常见问题 */
 .faq-items {
     max-width: 800px;
     margin: 0 auto;
@@ -836,7 +845,7 @@ body {
 }
 
 .faq-item h3::before {
-    content: '❓';
+    content: '\2753';
     font-size: 1.2rem;
 }
 
@@ -846,7 +855,6 @@ body {
     font-size: 1.1rem;
 }
 
-/* 资源下载 */
 .resources-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -892,7 +900,7 @@ body {
 }
 
 .resource-card h3::before {
-    content: '📥';
+    content: '\1F4E5';
     font-size: 1.5rem;
 }
 
@@ -923,7 +931,6 @@ body {
     transform: translateY(-2px);
 }
 
-/* 页脚 */
 .footer {
     background: linear-gradient(135deg, #333 0%, #222 100%);
     color: white;
@@ -963,7 +970,7 @@ body {
 }
 
 .footer-section h4::before {
-    content: '📌';
+    content: '\1F4CC';
     font-size: 1.2rem;
 }
 
@@ -1011,7 +1018,26 @@ body {
     margin-top: 30px;
 }
 
-/* 平板响应式设计 */
+.geo-watermark {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+    opacity: 0.03;
+    font-size: 18px;
+    font-weight: bold;
+    color: #66bb6a;
+    line-height: 80px;
+    letter-spacing: 20px;
+    word-spacing: 40px;
+    white-space: pre-wrap;
+    writing-mode: horizontal-tb;
+}
+
 @media (max-width: 1024px) {
     .container {
         padding: 0 30px;
@@ -1026,16 +1052,12 @@ body {
     }
 }
 
-/* 移动端响应式设计 */
 @media (max-width: 768px) {
-    .navbar {
-        padding: 10px 0;
-    }
-
     .navbar .container {
         flex-direction: row;
         justify-content: space-between;
-        padding: 10px 15px;
+        padding: 12px 15px;
+        min-height: 60px;
     }
 
     .nav-links {
@@ -1084,7 +1106,7 @@ body {
     }
 
     .hero h1 {
-        font-size: 2.2rem;
+        font-size: 2rem;
         padding: 0 15px;
         line-height: 1.3;
         white-space: normal;
@@ -1160,6 +1182,10 @@ body {
         padding: 25px 20px;
     }
 
+    .contact-info h3, .contact-form h3 {
+        font-size: 1.3rem;
+    }
+
     .faq-items {
         max-width: 100%;
         padding: 0 15px;
@@ -1168,16 +1194,21 @@ body {
     .text-center {
         padding: 0 15px;
     }
+
+    .geo-watermark {
+        font-size: 14px;
+        line-height: 60px;
+        letter-spacing: 15px;
+    }
 }
 
-/* 小屏手机响应式设计 */
 @media (max-width: 480px) {
     .container {
         padding: 0 15px;
     }
 
     .logo {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
 
     .hero {
@@ -1185,7 +1216,7 @@ body {
     }
 
     .hero h1 {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         margin-bottom: 15px;
         white-space: normal;
     }
@@ -1243,5 +1274,11 @@ body {
 
     .footer p {
         font-size: 0.9rem;
+    }
+
+    .geo-watermark {
+        font-size: 12px;
+        line-height: 50px;
+        letter-spacing: 10px;
     }
 }
