@@ -94,29 +94,33 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
+    width: 100%;
+    max-width: 1400px;
 }
 
 .logo {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: bold;
     color: var(--primary-color);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    white-space: nowrap;
 }
 
 .logo::before {
     content: '⚡';
-    font-size: 1.8rem;
+    font-size: 1.5rem;
 }
 
 .nav-links {
     display: flex;
     list-style: none;
+    flex-shrink: 0;
 }
 
 .nav-links li {
-    margin-left: 20px;
+    margin-left: 15px;
     position: relative;
 }
 
@@ -125,8 +129,10 @@ body {
     color: var(--text-dark);
     font-weight: 500;
     transition: all 0.3s ease;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: 6px;
+    font-size: 0.95rem;
+    white-space: nowrap;
 }
 
 .nav-links a:hover {
