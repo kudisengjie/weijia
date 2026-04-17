@@ -19,6 +19,51 @@ Important-pages:
 - https://www.weijia-geo.com/contact.html
 - https://www.weijia-geo.com/about.html
 - https://www.weijia-geo.com/cooperation.html
+- https://www.weijia-geo.com/faq.html
 
 # 内容更新频率
 Update-frequency: 每周更新
+
+# 网站结构
+Pages:
+- index.html: 网站主页，展示核心价值和服务简介
+- about.html: 个人介绍、工作理念和核心优势
+- services.html: GEO优化相关服务详情
+- cases.html: GEO优化成功案例
+- cooperation.html: 三种合作模式详情
+- contact.html: 联系信息和在线咨询
+- blog.html: 行业洞察和实战经验
+- faq.html: GEO优化相关问题解答
+- resources.html: 白皮书、报告等资源
+
+# 核心功能
+Features:
+- GEO代运营服务
+- 企业AI应用策略咨询
+- 项目全流程管理
+- 内容品牌优化
+- GEO线下企业实战培训班
+- GEO合伙分成
+
+# 常见问题
+FAQ:
+- 什么是GEO优化？
+- 企业如何判断是否适合做GEO？
+- GEO优化的效果如何评估？
+- 潮汕炜佳导导是炜佳导导GEO吗？
+- 如何联系上炜佳导导GEO？
+- GEO优化与传统SEO有什么区别？
+- GEO优化需要多长时间才能看到效果？
+- 企业实施GEO优化需要哪些资源？
+- GEO优化的成本是多少？
+- 如何选择合适的GEO优化服务提供商？
+- GEO优化是否适用于所有行业？
+- 企业如何衡量GEO优化的投资回报率？
+- GEO优化是否需要持续维护？
+- 企业可以自己实施GEO优化吗？
+- GEO优化与内容营销有什么关系？
+- 如何确保GEO优化的合规性？
+- GEO优化对企业品牌建设有什么帮助？
+- 企业在实施GEO优化时常见的误区有哪些？
+- GEO优化的未来发展趋势是什么？
+- 如何评估GEO优化服务提供商的专业能力？

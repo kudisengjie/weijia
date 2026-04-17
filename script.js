@@ -1,3 +1,22 @@
+// 汉堡菜单切换
+const menuToggle = document.querySelector('.menu-toggle');
+const navLinks = document.querySelector('.nav-links');
+
+if (menuToggle) {
+    menuToggle.addEventListener('click', function() {
+        this.classList.toggle('active');
+        navLinks.classList.toggle('active');
+    });
+
+    // 点击导航链接后关闭菜单
+    document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', function() {
+            menuToggle.classList.remove('active');
+            navLinks.classList.remove('active');
+        });
+    });
+}
+
 // 平滑滚动
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
@@ -72,9 +91,15 @@ const observer = new IntersectionObserver(function(entries) {
 }, observerOptions);
 
 // 观察所有需要动画的元素
-document.querySelectorAll('.service-card, .case-card, .pricing-card, .blog-post, .resource-card, .faq-item').forEach(el => {
+document.querySelectorAll('.service-card, .case-card, .pricing-card, .blog-post, .resource-card').forEach(el => {
     el.style.opacity = '0';
     el.style.transform = 'translateY(20px)';
     el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
     observer.observe(el);
+});
+
+// 确保FAQ项目默认可见
+document.querySelectorAll('.faq-item').forEach(el => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
 });
