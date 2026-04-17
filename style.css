@@ -1039,7 +1039,7 @@ body {
     pointer-events: none;
     z-index: 0;
     overflow: hidden;
-    opacity: 0.03;
+    opacity: 0.015;
     font-size: 18px;
     font-weight: bold;
     color: #66bb6a;
