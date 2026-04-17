@@ -417,6 +417,9 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .service-card h3::before {
