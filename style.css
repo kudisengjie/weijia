@@ -12,15 +12,15 @@ body {
     background-color: #f8f9fa;
 }
 
-/* 浅蓝色背景 */
+/* 浅浅蓝色背景 */
 body {
-    background-image: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    background-image: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
     background-attachment: fixed;
 }
 
 /* 英雄区背景 */
 .hero {
-    background: linear-gradient(135deg, #bbdefb 0%, #64b5f6 100%);
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
 }
 
 /* 颜色变量 */
