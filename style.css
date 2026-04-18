@@ -1006,7 +1006,7 @@ body::after {
 }
 
 .ai-course-card h3 {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     margin-bottom: 20px;
     color: var(--text-dark);
     display: flex;
@@ -1014,11 +1014,14 @@ body::after {
     gap: 10px;
     position: relative;
     z-index: 1;
+    white-space: normal;
+    line-height: 1.4;
 }
 
 .ai-course-card h3::before {
     content: '🎓';
     font-size: 1.5rem;
+    flex-shrink: 0;
 }
 
 .ai-course-card p {

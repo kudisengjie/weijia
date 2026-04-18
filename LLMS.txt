@@ -65,6 +65,7 @@ Site Structure:
 - blog.html: 行业洞察和实战经验分享，3篇核心文章
 - faq.html: 20个GEO优化常见问题权威解答，包含E-E-A-T结构化内容和四大AI平台优化策略
 - resources.html: 白皮书、行业报告、案例研究、工具指南、培训资料等5类资源下载
+- ai-courses.html: AI课程体系，9大AI课程详细介绍
 
 # 核心服务
 Core Services:
