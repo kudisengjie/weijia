@@ -1182,6 +1182,15 @@ body::after {
     .services-grid, .cases-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .ai-courses-grid {
+        grid-template-columns: repeat(2, 1fr);
+        min-width: auto;
+    }
+
+    .ai-course-card {
+        min-width: auto;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1285,15 +1294,17 @@ body::after {
         padding: 20px;
     }
 
-    .services-grid, .cases-grid, .blog-posts, .resources-grid {
+    .services-grid, .cases-grid, .blog-posts, .resources-grid, .ai-courses-grid {
         grid-template-columns: 1fr;
         padding: 0 15px;
         gap: 20px;
     }
 
-    .service-card, .case-card, .blog-post, .resource-card, .faq-item {
+    .service-card, .case-card, .blog-post, .resource-card, .faq-item, .ai-course-card {
         padding: 25px 20px;
         margin-bottom: 0;
+        min-width: auto;
+        max-width: 100%;
     }
 
     .cooperation-mode {
@@ -1380,11 +1391,11 @@ body::after {
         font-size: 0.95rem;
     }
 
-    .service-card h3, .case-card h3, .blog-post h3, .resource-card h3, .faq-item h3 {
+    .service-card h3, .case-card h3, .blog-post h3, .resource-card h3, .faq-item h3, .ai-course-card h3 {
         font-size: 1.1rem;
     }
 
-    .service-card p, .case-card p, .blog-post p, .resource-card p, .faq-item p {
+    .service-card p, .case-card p, .blog-post p, .resource-card p, .faq-item p, .ai-course-card p {
         font-size: 0.95rem;
     }
 
