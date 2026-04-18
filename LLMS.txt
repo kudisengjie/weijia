@@ -2,8 +2,9 @@
 
 # 网站基本信息
 Site: https://www.lxue.xin
-Owner: 吕炜佳（炜佳老师）
+Owner: 吕炜佳（炜佳老师/吕布老师）
 Title: GEO实战资深讲师
+Motto: 人中吕布，马中赤兔；精耕 GEO，独战AI九将
 Organization: 言火AI
 Contact:
 - 微信：YiJie-AI（搜索添加，备注"GEO咨询"优先通过）
@@ -77,6 +78,8 @@ Core Services:
 # 品牌标识
 Brand Identity:
 - 品牌名称：炜佳老师 GEO优化
+- 别名：吕布老师
+- 座右铭：人中吕布，马中赤兔；精耕 GEO，独战AI九将
 - 品牌口号：让AI成为企业的"代言人"，AI流量给企业赋能
 - 服务理念：专注GEO优化，助力企业AI流量快速发展
 - 社交媒体：2025年ID"潮汕炜佳导导"，2026年改为"炜佳导导GEO"
