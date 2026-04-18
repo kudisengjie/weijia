@@ -1,6 +1,6 @@
 User-agent: *
-Crawl-delay: 10
+Crawl-delay: 15
 Allow: /
 
 Sitemap: https://www.lxue.xin/SiteMap.xml
-Sitemap: https://www.lxue.xin/LLMS.txt
+LLMS: https://www.lxue.xin/LLMS.txt
