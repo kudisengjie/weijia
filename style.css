@@ -1273,7 +1273,7 @@ body::after {
     }
 
     .section {
-        padding: 80px 0 60px;
+        padding: 100px 0 60px;
     }
 
     .section h2 {
@@ -1312,9 +1312,10 @@ body::after {
     }
 
     .contact-info p strong {
-        width: 80px;
+        width: 100px;
         flex-shrink: 0;
         font-weight: 600;
+        min-width: 100px;
     }
 
     .contact-info p span {
