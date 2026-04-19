@@ -1273,12 +1273,13 @@ body::after {
     }
 
     .section {
-        padding: 100px 0 60px;
+        padding: 120px 0 60px;
     }
 
     .section h2 {
         font-size: 1.8rem;
         padding: 0 15px;
+        margin-top: 0;
     }
 
     .about-content {
@@ -1432,6 +1433,17 @@ body::after {
 
     .contact-info p {
         font-size: 1rem;
+    }
+
+    .ai-courses-grid, .cases-grid {
+        padding: 0;
+        margin: 0;
+        gap: 25px;
+    }
+
+    .ai-course-card, .case-card {
+        margin-bottom: 0;
+        padding: 25px 20px;
     }
 
     .footer {
