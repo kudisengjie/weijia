@@ -1865,6 +1865,10 @@ body::after {
         padding: 0 15px;
     }
 
+    .faq-item {
+        margin-bottom: 20px;
+    }
+
     .text-center {
         padding: 0 15px;
     }
