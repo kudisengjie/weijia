@@ -747,12 +747,13 @@ body::after {
 }
 
 .case-card h3 {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     margin-bottom: 15px;
     color: var(--text-dark);
     display: flex;
     align-items: center;
     gap: 10px;
+    white-space: nowrap;
 }
 
 .case-card h3::before {
@@ -776,6 +777,110 @@ body::after {
     font-size: 0.8rem;
     font-weight: 500;
     margin-top: 10px;
+}
+
+.cases-intro, .courses-intro {
+    max-width: 900px;
+    margin: 0 auto 40px;
+    padding: 25px 30px;
+    background: rgba(102, 187, 106, 0.08);
+    border-radius: 12px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.cases-intro p, .courses-intro p {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.cases-intro a, .courses-intro a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.cases-intro a:hover, .courses-intro a:hover {
+    text-decoration: underline;
+}
+
+.case-meta, .course-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.case-meta span, .course-meta span {
+    font-size: 0.88rem;
+    color: var(--text-light);
+    background: rgba(102, 187, 106, 0.08);
+    padding: 4px 10px;
+    border-radius: 15px;
+}
+
+.case-content h4 {
+    font-size: 1.1rem;
+    color: var(--primary-dark);
+    margin: 20px 0 10px;
+    padding-left: 12px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.case-content p {
+    font-size: 1.02rem;
+    line-height: 1.7;
+    color: var(--text-dark);
+    margin-bottom: 12px;
+}
+
+.case-content ul {
+    padding-left: 25px;
+    margin: 10px 0;
+}
+
+.case-content ul li {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-dark);
+    margin-bottom: 6px;
+}
+
+.case-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+}
+
+.cases-cta, .courses-cta {
+    text-align: center;
+    margin-top: 40px;
+    padding: 25px;
+    background: var(--background-white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+}
+
+.cases-cta p, .courses-cta p {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.cases-cta a, .courses-cta a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.cases-cta a:hover, .courses-cta a:hover {
+    text-decoration: underline;
 }
 
 .cooperation-mode {
@@ -1391,12 +1496,12 @@ body::after {
     margin-bottom: 20px;
     color: var(--text-dark);
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
     position: relative;
     z-index: 1;
     white-space: nowrap;
-    line-height: 1.3;
+    line-height: 1.4;
     justify-content: center;
     text-align: center;
 }
@@ -1620,7 +1725,7 @@ body::after {
     .hero {
         height: auto;
         min-height: 100vh;
-        padding: 120px 0 60px;
+        padding: 100px 0 60px;
     }
 
     .hero h1 {
@@ -1650,13 +1755,14 @@ body::after {
     }
 
     .section {
-        padding: 120px 0 60px;
+        padding: 90px 0 60px;
     }
 
     .section h2 {
         font-size: 1.8rem;
         padding: 0 15px;
         margin-top: 0;
+        padding-top: 10px;
     }
 
     .about-content {
@@ -1669,6 +1775,30 @@ body::after {
     }
 
     .about-skills {
+        padding: 20px;
+    }
+
+    .services-grid, .cases-grid, .blog-posts, .resources-grid, .ai-courses-grid {
+        grid-template-columns: 1fr;
+        padding: 0 10px;
+        gap: 25px;
+    }
+
+    .ai-course-card {
+        min-width: auto;
+        max-width: 100%;
+    }
+
+    .ai-course-card h3 {
+        white-space: normal;
+        font-size: 1.05rem;
+    }
+
+    .platform-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .about-sidebar {
         padding: 20px;
     }
 
