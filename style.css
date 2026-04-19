@@ -1273,7 +1273,7 @@ body::after {
     }
 
     .section {
-        padding: 60px 0;
+        padding: 80px 0 60px;
     }
 
     .section h2 {
@@ -1294,10 +1294,32 @@ body::after {
         padding: 20px;
     }
 
-    .services-grid, .cases-grid, .blog-posts, .resources-grid, .ai-courses-grid {
-        grid-template-columns: 1fr;
+    .contact-content {
+        flex-direction: column;
         padding: 0 15px;
-        gap: 20px;
+    }
+
+    .contact-info, .contact-form {
+        width: 100%;
+        margin-bottom: 30px;
+    }
+
+    .contact-info p {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+
+    .contact-info p strong {
+        width: 80px;
+        flex-shrink: 0;
+        font-weight: 600;
+    }
+
+    .contact-info p span {
+        flex: 1;
+        word-break: break-word;
     }
 
     .service-card, .case-card, .blog-post, .resource-card, .faq-item, .ai-course-card {
