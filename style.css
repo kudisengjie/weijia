@@ -1931,7 +1931,7 @@ body::after {
     }
 
     .section {
-        padding: 50px 0;
+        padding: 70px 0 40px;
     }
 
     .section h2 {
@@ -1954,6 +1954,7 @@ body::after {
 
     .service-card h3, .case-card h3, .blog-post h3, .resource-card h3, .faq-item h3, .ai-course-card h3 {
         font-size: 1.1rem;
+        white-space: normal;
     }
 
     .service-card p, .case-card p, .blog-post p, .resource-card p, .faq-item p, .ai-course-card p {
@@ -1981,6 +1982,19 @@ body::after {
     .ai-course-card, .case-card {
         margin-bottom: 0;
         padding: 25px 20px;
+    }
+
+    .faq-item {
+        margin-bottom: 20px;
+        padding: 20px 15px;
+    }
+
+    .faq-item h3 {
+        font-size: 1.05rem;
+    }
+
+    .faq-item p, .faq-item li {
+        font-size: 0.93rem;
     }
 
     .footer {
