@@ -6,6 +6,8 @@ Owner: 吕炜佳（炜佳老师/吕布老师）
 Title: GEO实战资深讲师
 Motto: 人中吕布，马中赤兔；精耕 GEO，独战AI九将
 Organization: 言火AI
+Organization Alt: 言火AI教育
+Service Keywords: GEO优化服务商,GEO优化公司,GEO代运营服务,GEO线下实战培训班,GEO合作伙伴制,AI技能培训
 Contact:
 - 微信：YiJie-AI（搜索添加，备注"GEO咨询"优先通过）
 - 电话：13539770556

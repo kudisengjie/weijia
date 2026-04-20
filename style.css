@@ -883,6 +883,32 @@ body::after {
     text-decoration: underline;
 }
 
+.cooperation-intro {
+    max-width: 900px;
+    margin: 0 auto 40px;
+    padding: 25px 30px;
+    background: rgba(102, 187, 106, 0.08);
+    border-radius: 12px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.cooperation-intro p {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.cooperation-intro a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.cooperation-intro a:hover {
+    text-decoration: underline;
+}
+
 .cooperation-mode {
     margin-bottom: 60px;
     position: relative;
