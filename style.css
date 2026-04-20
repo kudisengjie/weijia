@@ -1899,6 +1899,45 @@ body::after {
         padding: 0 15px;
     }
 
+    .footer {
+        padding: 30px 0 20px;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 25px;
+        padding: 0 15px;
+    }
+
+    .footer-section {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(200, 230, 201, 0.5);
+    }
+
+    .footer-section:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .footer-section h4 {
+        justify-content: center;
+        font-size: 1.1rem;
+        margin-bottom: 12px;
+    }
+
+    .footer-section ul {
+        text-align: center;
+    }
+
+    .footer-section ul li a {
+        justify-content: center;
+    }
+
+    .footer-bottom {
+        padding-top: 15px;
+    }
+
     .geo-watermark {
         font-size: 14px;
         line-height: 60px;
@@ -1998,11 +2037,42 @@ body::after {
     }
 
     .footer {
-        padding: 20px 0;
+        padding: 25px 0 15px;
     }
 
-    .footer p {
-        font-size: 0.9rem;
+    .footer-content {
+        gap: 20px;
+        padding: 0 10px;
+    }
+
+    .footer-section {
+        padding-bottom: 15px;
+    }
+
+    .footer-section h4 {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+
+    .footer-section p {
+        font-size: 0.88rem;
+        margin-bottom: 6px;
+    }
+
+    .footer-section ul li {
+        margin-bottom: 6px;
+    }
+
+    .footer-section ul li a {
+        font-size: 0.88rem;
+    }
+
+    .footer-bottom {
+        padding-top: 12px;
+    }
+
+    .footer-bottom p {
+        font-size: 0.82rem;
     }
 
     .geo-watermark {
