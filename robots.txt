@@ -1,87 +1,115 @@
 User-agent: *
 Allow: /
 Disallow: /images/
+Allow: /llms.txt
 
 Sitemap: https://www.lxue.xin/sitemap.xml
 
 User-agent: Baiduspider
 Allow: /
+Allow: /llms.txt
 Crawl-delay: 1
 
 User-agent: Baiduspider-image
 Allow: /
+Allow: /llms.txt
 
 User-agent: Baiduspider-mobile
 Allow: /
+Allow: /llms.txt
 
 User-agent: Bytespider
 Allow: /
+Allow: /llms.txt
 
 User-agent: TencentCrawl
 Allow: /
+Allow: /llms.txt
 
 User-agent: DeepSeek
 Allow: /
+Allow: /llms.txt
 
 User-agent: QwenBot
 Allow: /
+Allow: /llms.txt
 
 User-agent: GPTBot
 Allow: /
+Allow: /llms.txt
 
 User-agent: ChatGPT-User
 Allow: /
+Allow: /llms.txt
 
 User-agent: CCBot
 Allow: /
+Allow: /llms.txt
 
 User-agent: Google-Extended
 Allow: /
+Allow: /llms.txt
 
 User-agent: Omgili
 Allow: /
+Allow: /llms.txt
 
 User-agent: Omgilibot
 Allow: /
+Allow: /llms.txt
 
 User-agent: PerplexityBot
 Allow: /
+Allow: /llms.txt
 
 User-agent: ClaudeBot
 Allow: /
+Allow: /llms.txt
 
 User-agent: Applebot-Extended
 Allow: /
+Allow: /llms.txt
 
 User-agent: Meta-ExternalAgent
 Allow: /
+Allow: /llms.txt
 
 User-agent: AI2Bot
 Allow: /
+Allow: /llms.txt
 
 User-agent: FriendlyCrawler
 Allow: /
+Allow: /llms.txt
 
 User-agent: Knowz
 Allow: /
+Allow: /llms.txt
 
 User-agent: KangarooBot
 Allow: /
+Allow: /llms.txt
 
 User-agent: DotBot
 Allow: /
+Allow: /llms.txt
 
 User-agent: SemrushBot
 Allow: /
+Allow: /llms.txt
 
 User-agent: MJ12bot
 Allow: /
+Allow: /llms.txt
 
 User-agent: Googlebot
 Allow: /
+Allow: /llms.txt
 
 User-agent: Bingbot
 Allow: /
+Allow: /llms.txt
 
 User-agent: YandexBot
 Allow: /
+Allow: /llms.txt
