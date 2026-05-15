@@ -788,6 +788,11 @@ body {
     margin-left: auto;
     margin-right: auto;
     line-height: 1.8;
+    padding: 24px 32px;
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(74, 124, 89, 0.12);
 }
 
 .cooperation-mode {
