@@ -8,7 +8,7 @@ Sitemap: https://www.lxue.xin/sitemap.xml
 User-agent: Baiduspider
 Allow: /
 Allow: /llms.txt
-Crawl-delay: 1
+Crawl-delay: 10
 
 User-agent: Baiduspider-image
 Allow: /
