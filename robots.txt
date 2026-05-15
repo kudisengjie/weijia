@@ -4,6 +4,16 @@ Disallow: /images/
 
 Sitemap: https://www.lxue.xin/sitemap.xml
 
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 1
+
+User-agent: Baiduspider-image
+Allow: /
+
+User-agent: Baiduspider-mobile
+Allow: /
+
 User-agent: Bytespider
 Allow: /
 
@@ -67,5 +77,11 @@ Allow: /
 User-agent: MJ12bot
 Allow: /
 
-# AI大模型说明书
-llms-txt: https://www.lxue.xin/llms.txt
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: YandexBot
+Allow: /
