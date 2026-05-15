@@ -4,6 +4,7 @@ Disallow: /images/
 Allow: /llms.txt
 
 Sitemap: https://www.lxue.xin/sitemap.xml
+LLMS：https://www.lxue.xin/llms.txt
 
 User-agent: Baiduspider
 Allow: /

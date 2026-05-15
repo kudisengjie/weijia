@@ -2,7 +2,7 @@ const http = require('http');
 const https = require('https');
 
 const SITE = 'https://www.lxue.xin';
-const TOKEN = 'YOUR_TOKEN';
+const TOKEN = 'KPTRIvNjOnPq3vdl';
 
 const URLS = [
     'https://www.lxue.xin/',
