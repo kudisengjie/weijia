@@ -779,6 +779,17 @@ body {
     font-size: 0.98rem;
 }
 
+.section-desc {
+    text-align: center;
+    color: var(--text-light);
+    margin-bottom: 40px;
+    font-size: 1.05rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.8;
+}
+
 .cooperation-mode {
     margin-bottom: 40px;
 }
