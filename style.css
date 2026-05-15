@@ -2148,9 +2148,9 @@ body {
         height: auto;
         min-height: 100vh;
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
-        padding-top: 60px;
+        padding-top: 80px;
     }
 
     .hero-content {
