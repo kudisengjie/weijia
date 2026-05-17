@@ -2290,8 +2290,8 @@ body {
 
     .hero h1 { white-space: normal; font-size: clamp(1.15rem, 6vw, 2.4rem); }
 
-    .hero p { font-size: 1.05rem; padding: 0 16px; word-wrap: break-word; max-width: 90%; margin-left: auto; margin-right: auto; }
-    .hero p.hero-sub { font-size: 0.9rem; word-wrap: break-word; max-width: 90%; margin-left: auto; margin-right: auto; }
+    .hero p { font-size: 1.05rem; padding: 0 16px; word-wrap: break-word; max-width: 90%; margin-left: auto; margin-right: auto; line-height: 1.6; }
+    .hero p.hero-sub { font-size: 1.05rem; word-wrap: break-word; max-width: 90%; margin-left: auto; margin-right: auto; line-height: 1.6; margin-top: 8px; }
 
     .cta-buttons { 
         flex-direction: column; 
