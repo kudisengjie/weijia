@@ -1952,8 +1952,8 @@ body {
 
 .hub-card {
     background: var(--bg-card);
-    border-radius: 16px;
-    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
     overflow: hidden;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
@@ -1968,7 +1968,7 @@ body {
 }
 
 .hub-card-body {
-    padding: 28px 28px 16px;
+    padding: 20px 20px 12px;
     flex: 1;
 }
 
@@ -1988,7 +1988,7 @@ body {
 
 .hub-card-sm {
     text-align: center;
-    padding: 24px 18px;
+    padding: 18px 14px;
 }
 
 .hub-card-sm h3 {
@@ -2543,9 +2543,9 @@ body {
 
 .support-help-card {
     background: var(--bg-card);
-    border-radius: 16px;
-    border: 2px solid var(--border-color);
-    padding: 24px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    padding: 16px;
 }
 
 .support-help-card h3 {
