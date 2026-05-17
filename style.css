@@ -365,6 +365,9 @@ body {
     margin-top: 6px;
     animation: slideUp 0.8s ease-out 0.8s forwards;
     opacity: 0;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: normal;
 }
 
 .cta-buttons {
