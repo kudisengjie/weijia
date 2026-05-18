@@ -370,52 +370,6 @@ body {
     overflow-wrap: normal;
 }
 
-.hero-badge {
-    display: inline-block;
-    padding: 6px 16px;
-    background: linear-gradient(135deg, rgba(74, 124, 89, 0.3), rgba(74, 124, 89, 0.15));
-    border: 1px solid rgba(74, 124, 89, 0.5);
-    border-radius: 20px;
-    color: #ffffff;
-    font-size: 0.85rem;
-    font-weight: 500;
-    margin-bottom: 20px;
-    animation: slideUp 0.8s ease-out 0.3s forwards;
-    opacity: 0;
-}
-
-.hero-description {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    padding: 18px 16px;
-    margin: 16px 0 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.hero-divider {
-    width: 40px;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(74, 124, 89, 0.8), transparent);
-    margin: 12px auto;
-}
-
-.hero-description .hero-p1 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 500;
-    padding: 0;
-    max-width: 100%;
-}
-
-.hero-description .hero-sub {
-    margin: 0;
-    font-size: 0.9rem;
-    opacity: 0.9;
-    padding: 0;
-    max-width: 100%;
-}
-
 .cta-buttons {
     display: flex;
     justify-content: center;
@@ -2336,19 +2290,8 @@ body {
 
     .hero h1 { white-space: normal; font-size: clamp(1.3rem, 7vw, 2.6rem); }
 
-    .hero-badge {
-        padding: 5px 14px;
-        font-size: 0.8rem;
-        margin-bottom: 16px;
-    }
-
-    .hero-description {
-        margin: 14px 12px 20px;
-        padding: 16px 14px;
-    }
-
-    .hero p { font-size: 1.05rem; padding: 0; word-wrap: break-word; max-width: 100%; margin: 0; line-height: 1.6; }
-    .hero p.hero-sub { font-size: 0.9rem; word-wrap: break-word; max-width: 100%; margin: 0; line-height: 1.6; margin-top: 0; }
+    .hero p { font-size: 1.05rem; padding: 0 16px; word-wrap: break-word; max-width: 90%; margin-left: auto; margin-right: auto; line-height: 1.6; }
+    .hero p.hero-sub { font-size: 0.9rem; word-wrap: break-word; max-width: 90%; margin-left: auto; margin-right: auto; line-height: 1.6; margin-top: 8px; }
 
     .cta-buttons { 
         flex-direction: column; 
