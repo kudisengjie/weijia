@@ -683,28 +683,76 @@ body {
     border-left: 4px solid var(--primary-color);
 }
 
-.profile-contact-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
+.profile-contact-section {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    margin-bottom: 28px;
+    padding: 28px 32px;
+    background: var(--bg-card);
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary-color);
 }
 
-.profile-contact-item {
-    padding: 12px 16px;
+.profile-contact-qr {
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.profile-contact-qr img {
+    width: 160px;
+    height: 160px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    object-fit: cover;
+}
+
+.profile-contact-qr p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+.profile-contact-info {
+    flex: 1;
+}
+
+.profile-contact-info h3 {
+    font-size: 1.25rem;
+    color: var(--primary-dark);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 700;
+}
+
+.profile-contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profile-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
     background: rgba(255,255,255,0.6);
     border-radius: 10px;
     border: 1px solid var(--border-color);
 }
 
-.profile-contact-item strong {
-    display: block;
-    font-size: 0.85rem;
+.contact-label {
+    font-size: 0.88rem;
     color: var(--primary-dark);
-    margin-bottom: 4px;
+    font-weight: 600;
+    min-width: 130px;
+    flex-shrink: 0;
 }
 
-.profile-contact-item span {
-    font-size: 0.92rem;
+.contact-value {
+    font-size: 0.95rem;
     color: var(--text-light);
 }
 
@@ -2465,7 +2513,9 @@ body {
 
     .profile-layout { grid-template-columns: 1fr; gap: 24px; }
     .profile-sidebar { position: static; }
-    .profile-contact-grid { grid-template-columns: 1fr; }
+    .profile-contact-section { flex-direction: column; gap: 20px; }
+    .profile-contact-qr img { width: 140px; height: 140px; }
+    .contact-label { min-width: 100px; }
 
     .cases-grid, .blog-posts, .resources-grid, .ai-courses-grid {
         grid-template-columns: 1fr;
