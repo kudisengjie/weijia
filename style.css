@@ -475,6 +475,28 @@ body {
     overflow-x: hidden;
 }
 
+.coming-soon-notice {
+    text-align: center;
+    padding: 80px 20px;
+    margin: 40px auto;
+    max-width: 600px;
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.coming-soon-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.coming-soon-text {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+}
+
 .section::before { display: none; }
 .section:nth-child(even) { background: var(--bg-primary); }
 
