@@ -3926,7 +3926,7 @@ body {
     flex-direction: column;
     gap: 8px;
     margin-bottom: 0;
-    width: 210px;
+    width: 220px;
 }
 
 .contact-row {
@@ -3937,12 +3937,13 @@ body {
     background: #ffffff;
     border: 1px solid rgba(30, 58, 95, 0.1);
     border-radius: 8px;
-    height: 42px;
+    height: 44px;
+    white-space: nowrap;
 }
 
 .contact-icon {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4112,16 +4113,16 @@ body {
 }
 
 .principle-icon {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
     color: #ffffff;
     border-radius: 8px;
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.85rem;
+    font-weight: 800;
 }
 
 .principle-text {
