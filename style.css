@@ -3805,37 +3805,30 @@ body {
 .expertise-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 16px;
 }
 
 .expertise-item {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 16px 12px;
+    align-items: flex-start;
+    padding: 14px 14px;
     background: linear-gradient(135deg, rgba(30, 58, 95, 0.06) 0%, rgba(30, 58, 95, 0.03) 100%);
     border: 1px solid rgba(30, 58, 95, 0.1);
-    border-radius: 12px;
-    text-align: center;
+    border-radius: 10px;
     transition: all 0.3s ease;
 }
 
 .expertise-item:hover {
     background: rgba(30, 58, 95, 0.08);
     border-color: rgba(30, 58, 95, 0.18);
-    transform: translateY(-2px);
-}
-
-.expertise-icon {
-    font-size: 1.5rem;
-    margin-bottom: 8px;
 }
 
 .expertise-title {
-    font-size: 0.92rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #1e3a5f;
     margin-bottom: 4px;
 }
 
@@ -3894,11 +3887,12 @@ body {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 10px 14px;
+    padding: 8px 14px;
     background: #ffffff;
     border: 1px solid rgba(30, 58, 95, 0.1);
     border-radius: 8px;
-    height: 42px;
+    height: auto;
+    min-height: 38px;
 }
 
 .contact-icon {
@@ -4287,15 +4281,11 @@ body {
     }
     
     .expertise-item {
-        padding: 14px 10px;
-    }
-    
-    .expertise-icon {
-        font-size: 1.3rem;
+        padding: 12px 10px;
     }
     
     .expertise-title {
-        font-size: 0.88rem;
+        font-size: 0.85rem;
     }
     
     .expertise-desc {
