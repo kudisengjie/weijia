@@ -2920,6 +2920,258 @@ body {
     padding: 60px 0;
 }
 
+/* 行业博客页面样式 */
+.blog-section {
+    padding: 60px 0;
+}
+
+.blog-intro {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.blog-intro p {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+}
+
+.blog-articles {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.blog-article {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    padding: 28px;
+    transition: all 0.3s ease;
+}
+
+.blog-article:hover {
+    border-color: rgba(30, 58, 95, 0.3);
+    box-shadow: 0 4px 20px rgba(30, 58, 95, 0.08);
+}
+
+.article-header {
+    margin-bottom: 20px;
+}
+
+.article-meta {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.article-date {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: rgba(30, 58, 95, 0.06);
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.article-tag {
+    font-size: 0.85rem;
+    color: #1e3a5f;
+    background: rgba(30, 58, 95, 0.1);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.article-header h3 {
+    font-size: 1.5rem;
+    color: var(--text-dark);
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.article-body {
+    padding-left: 0;
+}
+
+.article-intro {
+    font-size: 1.05rem;
+    color: var(--text-dark);
+    line-height: 1.8;
+    margin-bottom: 20px;
+    font-weight: 500;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.article-content {
+    color: var(--text-light);
+}
+
+.article-content p {
+    font-size: 0.98rem;
+    line-height: 1.8;
+    margin-bottom: 16px;
+}
+
+.article-highlight {
+    background: rgba(30, 58, 95, 0.06);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    border-left: 4px solid #1e3a5f;
+}
+
+.highlight-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+}
+
+.highlight-stat {
+    text-align: center;
+    padding: 12px;
+}
+
+.highlight-stat strong {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 6px;
+}
+
+.highlight-stat span {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.algorithm-changes {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.change-item {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.change-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3a5f, #2c5282);
+    color: #ffffff;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.change-text {
+    flex: 1;
+}
+
+.change-text h4 {
+    font-size: 1.05rem;
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.change-text p {
+    font-size: 0.92rem;
+    color: var(--text-light);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.driver-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.driver-card {
+    background: rgba(30, 58, 95, 0.04);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(30, 58, 95, 0.1);
+}
+
+.driver-icon {
+    font-size: 1.6rem;
+    margin-bottom: 12px;
+}
+
+.driver-card h4 {
+    font-size: 1.05rem;
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.driver-card p {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.article-conclusion {
+    background: rgba(30, 58, 95, 0.06);
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    border-left: 3px solid #1e3a5f;
+}
+
+.article-conclusion p {
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    margin: 0;
+    font-weight: 500;
+}
+
+.article-conclusion.geo30-endgame {
+    background: rgba(30, 58, 95, 0.08);
+    padding: 20px;
+}
+
+.article-conclusion.geo30-endgame p {
+    font-size: 1rem;
+}
+
+.blog-disclaimer {
+    background: rgba(200, 200, 200, 0.1);
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin-top: 40px;
+    border-left: 4px solid #cccccc;
+}
+
+.blog-disclaimer p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+.blog-disclaimer .update-date {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin: 0;
+}
+
+.guide-section {
+    padding: 60px 0;
+}
+
 .guide-intro {
     margin-bottom: 40px;
 }
