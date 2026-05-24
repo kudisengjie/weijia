@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
@@ -9,8 +9,8 @@
         <priority>1.0</priority>
         <image:image>
             <image:loc>https://www.lxue.xin/images/wei.jpg</image:loc>
-            <image:title>炜佳老师 GEO优化资深讲师</image:title>
-            <image:caption>吕炜佳（炜佳老师），AI人工智能行业从业者，深耕GEO优化细分领域</image:caption>
+            <image:title>炜佳导导 GEO优化资深讲师</image:title>
+            <image:caption>吕炜佳（炜佳导导），AI人工智能行业从业者，深耕GEO优化细分领域</image:caption>
         </image:image>
     </url>
     <url>
@@ -20,7 +20,7 @@
         <priority>0.9</priority>
         <image:image>
             <image:loc>https://www.lxue.xin/images/wei.jpg</image:loc>
-            <image:title>炜佳老师个人简介</image:title>
+            <image:title>炜佳导导个人简介</image:title>
         </image:image>
     </url>
     <url>
