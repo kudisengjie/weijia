@@ -3476,6 +3476,128 @@ body {
     margin: 0;
 }
 
+/* 首页内容区域 */
+.home-content {
+    padding: 50px 0;
+}
+
+.content-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.content-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.content-item:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    border-color: rgba(30, 58, 95, 0.3);
+}
+
+.item-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(30, 58, 95, 0.1) 0%, rgba(30, 58, 95, 0.05) 100%);
+    color: #1e3a5f;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-content h3 {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.item-content h3 a {
+    color: var(--text-dark);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.item-content h3 a:hover {
+    color: #1e3a5f;
+}
+
+.item-content p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-light);
+}
+
+.item-content p a {
+    color: #1e3a5f;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.item-content p a:hover {
+    text-decoration: underline;
+}
+
+.item-arrow {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.content-item:hover .item-arrow {
+    color: #1e3a5f;
+    transform: translateX(4px);
+}
+
+.content-item-contact {
+    background: linear-gradient(135deg, rgba(30, 58, 95, 0.06) 0%, rgba(30, 58, 95, 0.02) 100%);
+    border-color: rgba(30, 58, 95, 0.15);
+}
+
+@media (max-width: 768px) {
+    .home-content {
+        padding: 30px 0;
+    }
+    
+    .content-item {
+        padding: 18px;
+        gap: 16px;
+    }
+    
+    .item-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 0.75rem;
+    }
+    
+    .item-content h3 {
+        font-size: 1rem;
+    }
+    
+    .item-content p {
+        font-size: 0.88rem;
+    }
+}
+
 /* 首页模块样式 */
 .section-home {
     padding: 40px 0;
