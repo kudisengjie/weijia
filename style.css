@@ -451,41 +451,44 @@ body {
 .btn.primary {
     background: #ffffff;
     color: #000000;
-    border: 1px solid #ffffff;
+    border: 1px solid #cccccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .hero .btn.primary {
     background: #ffffff;
     color: #000000;
-    border: 1px solid #ffffff;
+    border: 1px solid #cccccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .hero .btn.secondary {
     background: #ffffff;
     color: #000000;
-    border: 1px solid #ffffff;
+    border: 1px solid #cccccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .btn.primary:hover {
     background: #f5f5f5 !important;
-    border-color: #ffffff !important;
+    border-color: #cccccc !important;
     transform: translateY(-3px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
 }
 
 .btn.secondary {
     background: #ffffff;
     color: #000000;
-    border: 1px solid #ffffff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #cccccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .btn.secondary:hover {
     background: #f5f5f5;
     color: #000000;
-    border-color: #ffffff;
+    border-color: #cccccc;
     transform: translateY(-3px);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
 }
 
 .btn.secondary-light {
@@ -2910,6 +2913,315 @@ body {
 @media (max-width: 768px) {
     .support-faq-card, .support-help-card { padding: 18px; }
     .support-download-btn { padding: 8px 14px; font-size: 0.82rem; }
+}
+
+/* GEO优化指南页面样式 */
+.guide-section {
+    padding: 60px 0;
+}
+
+.guide-intro {
+    margin-bottom: 40px;
+}
+
+.guide-intro .intro-highlight {
+    background: rgba(30, 58, 95, 0.08);
+    border-left: 4px solid #1e3a5f;
+    padding: 20px 24px;
+    border-radius: 0 10px 10px 0;
+    margin-bottom: 20px;
+}
+
+.guide-intro .intro-highlight p {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    margin: 0;
+    font-weight: 500;
+}
+
+.guide-intro p {
+    font-size: 1.02rem;
+    line-height: 1.8;
+    color: var(--text-light);
+    margin-bottom: 16px;
+}
+
+.guide-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.guide-stat-item {
+    text-align: center;
+    padding: 12px;
+}
+
+.guide-stat-item strong {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 6px;
+}
+
+.guide-stat-item span {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.guide-section-block {
+    margin-bottom: 48px;
+    padding: 24px;
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.guide-section-block h3 {
+    font-size: 1.4rem;
+    color: var(--text-dark);
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.guide-section-block .section-desc {
+    font-size: 0.95rem;
+    color: #1e3a5f;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.guide-section-block p {
+    font-size: 0.98rem;
+    line-height: 1.8;
+    color: var(--text-light);
+    margin-bottom: 16px;
+}
+
+.value-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.value-card {
+    background: rgba(30, 58, 95, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(30, 58, 95, 0.15);
+}
+
+.value-icon {
+    font-size: 1.8rem;
+    margin-bottom: 12px;
+}
+
+.value-card h4 {
+    font-size: 1.05rem;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.value-card p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.suitable-note {
+    background: rgba(30, 58, 95, 0.06);
+    padding: 16px 20px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    color: var(--text-light);
+    border-left: 3px solid #1e3a5f;
+}
+
+.principle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.principle-item {
+    display: flex;
+    gap: 20px;
+}
+
+.principle-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3a5f, #2c5282);
+    color: #ffffff;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.principle-content {
+    flex: 1;
+}
+
+.principle-content h4 {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.principle-content p {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-light);
+    margin: 0;
+}
+
+.eeat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.eeat-item {
+    background: rgba(30, 58, 95, 0.05);
+    padding: 14px 16px;
+    border-radius: 8px;
+}
+
+.eeat-item strong {
+    display: block;
+    font-size: 0.9rem;
+    color: #1e3a5f;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.eeat-item p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.path-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.path-step {
+    background: rgba(30, 58, 95, 0.04);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 3px solid #1e3a5f;
+}
+
+.step-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.step-number {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1e3a5f;
+    background: rgba(30, 58, 95, 0.1);
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.path-step h4 {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    font-weight: 600;
+    margin: 0;
+}
+
+.path-step p {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-light);
+    margin: 0;
+}
+
+.benchmark-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.benchmark-card {
+    background: rgba(30, 58, 95, 0.06);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid rgba(30, 58, 95, 0.15);
+}
+
+.benchmark-card strong {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 8px;
+}
+
+.benchmark-card span {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.benchmark-note {
+    background: rgba(30, 58, 95, 0.08);
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin-top: 16px;
+}
+
+.benchmark-note p {
+    font-size: 0.95rem;
+    color: var(--text-light);
+    margin: 0;
+}
+
+.guide-disclaimer {
+    background: rgba(200, 200, 200, 0.1);
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin-top: 40px;
+    border-left: 4px solid #cccccc;
+}
+
+.guide-disclaimer p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+.guide-disclaimer .update-date {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin: 0;
 }
 
 /* GEO线下企业实战培训班详�?*/
