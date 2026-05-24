@@ -2300,8 +2300,17 @@ body {
 }
 
 .insight-icon {
-    font-size: 2rem;
-    margin-bottom: 12px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+    color: #ffffff;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 14px;
 }
 
 .insight-highlight {
@@ -4096,7 +4105,16 @@ body {
 }
 
 .principle-icon {
-    font-size: 1.1rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+    color: #ffffff;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
 }
 
 .principle-text {
