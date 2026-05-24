@@ -3731,14 +3731,124 @@ body {
 .card-primary {
     grid-column: span 2;
     background: linear-gradient(135deg, rgba(30, 58, 95, 0.03) 0%, rgba(30, 58, 95, 0.02) 100%);
+    padding: 22px;
 }
 
 .card-primary::before {
     opacity: 1;
 }
 
+.card-primary .card-header {
+    margin-bottom: 12px;
+}
+
+.card-primary h3 {
+    margin-bottom: 6px;
+    font-size: 1.4rem;
+}
+
+.card-primary .card-desc {
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.card-primary .card-stats {
+    margin-bottom: 16px;
+}
+
+.card-primary .stat-badge {
+    padding: 12px;
+}
+
 .card-contact {
+    grid-column: span 3;
     background: linear-gradient(135deg, rgba(30, 58, 95, 0.05) 0%, rgba(30, 58, 95, 0.02) 100%);
+}
+
+.card-contact:hover {
+    transform: translateY(-4px);
+}
+
+.contact-content-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+}
+
+.contact-left {
+    flex: 1;
+}
+
+.contact-left h3 {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.contact-left .card-desc {
+    margin-bottom: 0;
+    font-size: 1rem;
+}
+
+.contact-right {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.contact-info-pro {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 0;
+}
+
+.contact-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: #ffffff;
+    border: 1px solid rgba(30, 58, 95, 0.12);
+    border-radius: 10px;
+}
+
+.contact-icon {
+    font-size: 1.1rem;
+}
+
+.contact-text {
+    font-size: 0.92rem;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+.contact-cta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.contact-link {
+    font-size: 1rem;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.contact-arrow {
+    font-size: 1.2rem;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.card-contact:hover .contact-cta {
+    transform: scale(1.03);
+    box-shadow: 0 8px 24px rgba(30, 58, 95, 0.3);
 }
 
 .card-header {
@@ -3941,32 +4051,7 @@ body {
     font-weight: 500;
 }
 
-.contact-info-pro {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 20px;
-}
 
-.contact-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    background: #ffffff;
-    border: 1px solid rgba(30, 58, 95, 0.1);
-    border-radius: 10px;
-}
-
-.contact-icon {
-    font-size: 1.1rem;
-}
-
-.contact-text {
-    font-size: 0.9rem;
-    color: #1a1a1a;
-    font-weight: 500;
-}
 
 .card-footer {
     display: flex;
@@ -4000,6 +4085,36 @@ body {
     
     .card-primary {
         grid-column: span 2;
+    }
+    
+    .card-contact {
+        grid-column: span 2;
+    }
+    
+    .contact-content-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+    
+    .contact-right {
+        width: 100%;
+        justify-content: space-between;
+        gap: 20px;
+    }
+    
+    .contact-info-pro {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .contact-row {
+        flex: 1;
+        min-width: calc(50% - 8px);
+    }
+    
+    .contact-cta {
+        padding: 12px 20px;
     }
 }
 
@@ -4071,6 +4186,47 @@ body {
     
     .card-primary {
         grid-column: span 1;
+        padding: 18px;
+    }
+    
+    .card-contact {
+        grid-column: span 1;
+    }
+    
+    .contact-content-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .contact-left h3 {
+        font-size: 1.2rem;
+    }
+    
+    .contact-left .card-desc {
+        font-size: 0.9rem;
+    }
+    
+    .contact-right {
+        width: 100%;
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .contact-info-pro {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .contact-row {
+        min-width: 100%;
+        padding: 10px 14px;
+    }
+    
+    .contact-cta {
+        width: 100%;
+        justify-content: center;
+        padding: 14px;
     }
     
     .home-card-pro {
