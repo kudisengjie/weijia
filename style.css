@@ -512,6 +512,10 @@ body {
     justify-content: center;
     gap: 16px;
     margin-bottom: 20px;
+    padding: 24px 48px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .hero-title-decoration {
@@ -546,6 +550,11 @@ body {
 }
 .hero h1 .hero-title-white {
     color: #ffffff;
+}
+
+.hero h1 .hero-highlight {
+    color: #1e3a5f;
+    font-weight: 800;
 }
 
 .hero p {
@@ -3926,18 +3935,19 @@ body {
     flex-direction: column;
     gap: 8px;
     margin-bottom: 0;
-    width: 220px;
+    width: 100%;
+    align-items: center;
 }
 
 .contact-row {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     padding: 10px 16px;
     background: #ffffff;
     border: 1px solid rgba(30, 58, 95, 0.1);
     border-radius: 8px;
-    height: 44px;
     white-space: nowrap;
 }
 
@@ -4240,26 +4250,26 @@ body {
     
     .contact-content-row {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         gap: 20px;
     }
     
     .contact-right {
         width: 100%;
-        justify-content: space-between;
+        justify-content: center;
         gap: 20px;
         align-items: center;
     }
     
     .contact-info-pro {
-        flex-direction: row;
-        flex-wrap: wrap;
+        flex-direction: column;
         align-items: center;
+        width: 100%;
     }
     
     .contact-row {
-        flex: 1;
-        min-width: calc(50% - 8px);
+        width: 100%;
+        justify-content: center;
     }
     
     .contact-cta {
@@ -4399,8 +4409,9 @@ body {
     }
     
     .contact-row {
-        min-width: 100%;
+        width: 100%;
         padding: 10px 14px;
+        justify-content: center;
     }
     
     .contact-cta {
@@ -4491,6 +4502,7 @@ body {
     
     .contact-row {
         padding: 10px 12px;
+        justify-content: center;
     }
     
     .contact-text {
