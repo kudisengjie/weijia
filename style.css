@@ -1732,8 +1732,7 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 16px;
-    justify-items: center;
-}
+    }
 
 .transparent-card {
     padding: 22px;
@@ -2609,8 +2608,7 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
-    justify-items: center;
-}
+    }
 
 .ai-course-card {
     background: var(--bg-card);
@@ -3854,7 +3852,6 @@ body {
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     margin-bottom: 16px;
-    justify-items: center;
 }
 
 .expertise-item {
@@ -4348,7 +4345,6 @@ body {
     .expertise-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;
-        justify-items: center;
     }
     
     .expertise-item {
@@ -4437,7 +4433,7 @@ body {
     .card-desc {
         font-size: 0.88rem;
         margin-bottom: 16px;
-    }
+}
     
     .card-stats {
         gap: 12px;
