@@ -4686,87 +4686,172 @@ body {
 .ci-container {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     margin-top: 16px;
-    padding: 18px 22px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
-    border: 1px solid rgba(30, 58, 95, 0.15);
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(30, 58, 95, 0.12);
-    backdrop-filter: blur(10px);
+    padding: 20px 24px;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+    border: 1.5px solid rgba(30, 58, 95, 0.18);
+    border-radius: 20px;
+    box-shadow: 
+        0 4px 15px rgba(30, 58, 95, 0.08),
+        0 8px 32px rgba(30, 58, 95, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+}
+
+.ci-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(30, 58, 95, 0.3), transparent);
 }
 
 .ci-item {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
-    background: #ffffff;
-    border: 1px solid rgba(30, 58, 95, 0.08);
-    border-radius: 10px;
-    transition: all 0.3s ease;
+    gap: 16px;
+    padding: 14px 18px;
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border: 1px solid rgba(30, 58, 95, 0.1);
+    border-radius: 12px;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.ci-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(30, 58, 95, 0.03) 0%, transparent 50%);
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .ci-item:hover {
-    border-color: rgba(30, 58, 95, 0.2);
-    box-shadow: 0 4px 14px rgba(30, 58, 95, 0.08);
-    transform: translateY(-2px);
+    border-color: rgba(30, 58, 95, 0.25);
+    box-shadow: 
+        0 6px 20px rgba(30, 58, 95, 0.12),
+        0 2px 8px rgba(30, 58, 95, 0.08);
+    transform: translateY(-3px);
+}
+
+.ci-item:hover::before {
+    opacity: 1;
 }
 
 .ci-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 28px;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-    border-radius: 6px;
+    width: 48px;
+    height: 30px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);
+    background-size: 200% 200%;
+    border-radius: 8px;
     color: #ffffff;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     flex-shrink: 0;
+    box-shadow: 
+        0 2px 8px rgba(30, 58, 95, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.3s ease;
+}
+
+.ci-item:hover .ci-icon {
+    animation: iconGradient 2s ease infinite;
+    box-shadow: 
+        0 4px 12px rgba(30, 58, 95, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+@keyframes iconGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .ci-details {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
+    flex: 1;
 }
 
 .ci-label {
-    font-size: 0.78rem;
-    color: #666666;
+    font-size: 0.75rem;
+    color: #71717a;
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
 }
 
 .ci-value {
-    font-size: 0.95rem;
+    font-size: 1rem;
     color: #1e3a5f;
     font-weight: 600;
+    letter-spacing: 0.3px;
 }
 
 .ci-cta {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-top: 8px;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-    border-radius: 10px;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #3182ce 100%);
+    background-size: 200% 200%;
+    border-radius: 12px;
     color: #ffffff;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+        0 4px 12px rgba(30, 58, 95, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.ci-cta::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
 }
 
 .ci-cta:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(30, 58, 95, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 
+        0 8px 24px rgba(30, 58, 95, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    animation: ctaGradient 3s ease infinite;
+}
+
+.ci-cta:hover::before {
+    left: 100%;
+}
+
+@keyframes ctaGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .ci-link {
