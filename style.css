@@ -3931,7 +3931,7 @@ body {
 .contact-info-pro {
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    gap: 12px;
     margin-bottom: 0;
     align-items: center;
     justify-content: center;
@@ -3941,37 +3941,36 @@ body {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 10px;
-    padding: 10px 16px;
+    gap: 8px;
+    padding: 8px 12px;
     background: #ffffff;
     border: 1px solid rgba(30, 58, 95, 0.1);
     border-radius: 8px;
     white-space: nowrap;
-    width: 190px;
-    height: 42px;
+    width: 200px;
+    height: 38px;
 }
 
 .contact-icon {
-    width: 36px;
-    height: 20px;
+    width: 34px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
     color: #ffffff !important;
     border-radius: 4px;
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     font-weight: 700;
     text-align: center;
     flex-shrink: 0;
-    letter-spacing: 0.5px;
 }
 
 .contact-text {
-    font-size: 0.88rem;
+    font-size: 0.82rem;
     color: #1a1a1a;
     font-weight: 500;
-    flex-shrink: 0;
+    flex-shrink: 1;
 }
 
 .contact-cta {
