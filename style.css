@@ -3908,6 +3908,10 @@ body {
     background: linear-gradient(135deg, rgba(30, 58, 95, 0.03) 0%, rgba(30, 58, 95, 0.01) 100%);
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 30px;
 }
 
 .card-contact:hover {
@@ -3919,6 +3923,16 @@ body {
 .card-contact .card-desc {
     position: relative;
     z-index: 2;
+}
+
+.card-contact .contact-left-content {
+    flex: 1;
+}
+
+.card-contact .ci-container {
+    flex-shrink: 0;
+    min-width: 220px;
+    margin-top: 0;
 }
 
 .card-header {
@@ -4280,6 +4294,14 @@ body {
     
     .card-contact {
         grid-column: span 1;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .card-contact .ci-container {
+        min-width: 100%;
+        margin-top: 8px;
     }
     
     .home-card-pro {
