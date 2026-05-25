@@ -1620,8 +1620,9 @@ body {
     flex-direction: row;
     align-items: flex-start;
     gap: 30px;
-    overflow: visible;
 }
+
+.card-contact::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #1e3a5f 0%, #2c5282 100%); border-radius: 16px 16px 0 0; }
 
 .card-contact:hover { transform: translateY(-4px); }
 
@@ -1695,7 +1696,7 @@ body {
     .expertise-title { font-size: 0.85rem; }
     .expertise-desc { font-size: 0.75rem; }
     .expertise-tag { padding: 5px 12px; font-size: 0.78rem; }
-    .card-contact { grid-column: span 1; flex-direction: column; align-items: flex-start; gap: 16px; overflow: visible; }
+    .card-contact { grid-column: span 1; flex-direction: column; align-items: flex-start; gap: 16px; }
     .card-contact .ci-container { min-width: 100%; margin-top: 8px; }
     .home-card-pro { padding: 20px; border-radius: 12px; }
     .card-header { gap: 10px; margin-bottom: 12px; }
