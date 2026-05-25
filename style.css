@@ -3951,10 +3951,11 @@ body {
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-    color: #ffffff;
+    color: #ffffff !important;
     border-radius: 6px;
     font-size: 0.7rem;
     font-weight: 700;
+    text-align: center;
 }
 
 .contact-text {
@@ -4249,11 +4250,13 @@ body {
         width: 100%;
         justify-content: space-between;
         gap: 20px;
+        align-items: center;
     }
     
     .contact-info-pro {
         flex-direction: row;
         flex-wrap: wrap;
+        align-items: center;
     }
     
     .contact-row {
@@ -4344,11 +4347,14 @@ body {
     
     .expertise-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+        gap: 12px;
+        justify-items: center;
     }
     
     .expertise-item {
-        padding: 12px 10px;
+        padding: 14px 14px;
+        align-items: center;
+        text-align: center;
     }
     
     .expertise-title {
@@ -4386,11 +4392,13 @@ body {
         width: 100%;
         flex-direction: column;
         gap: 16px;
+        align-items: flex-start;
     }
     
     .contact-info-pro {
         flex-direction: column;
         width: 100%;
+        align-items: flex-start;
     }
     
     .contact-row {
