@@ -124,6 +124,7 @@ i18n.translations.zh = {
     'card.faq.desc': 'GEO优化常见问题解答',
     'card.faq.q1': 'GEO如何帮助企业建立竞争壁垒？',
     'card.faq.q2': '如何判断企业是否需要做GEO优化？',
+    'card.faq.q3': 'GEO优化与传统SEO有什么区别？',
 
     'card.contact.tag': '联系咨询',
     'card.contact.title': '立即咨询',
@@ -539,6 +540,7 @@ i18n.translations.en = {
     'card.faq.desc': 'Common GEO optimization questions answered',
     'card.faq.q1': 'How does GEO help build competitive barriers?',
     'card.faq.q2': 'How to determine if your business needs GEO?',
+    'card.faq.q3': 'What is the difference between GEO and traditional SEO?',
 
     'card.contact.tag': 'Contact',
     'card.contact.title': 'Consult Now',
