@@ -4147,7 +4147,7 @@ body {
     background: rgba(30, 58, 95, 0.04);
     border: 1px solid rgba(30, 58, 95, 0.08);
     border-radius: 10px;
-    height: 56px;
+    min-height: 40px;
     white-space: nowrap;
 }
 
@@ -4169,7 +4169,9 @@ body {
     font-size: 0.82rem;
     color: #1a1a1a;
     font-weight: 500;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .article-list {
@@ -4518,7 +4520,7 @@ body {
     
     .principle-badge {
         padding: 8px 10px;
-        flex-wrap: wrap;
+        white-space: nowrap;
     }
     
     .principle-icon {
@@ -4528,10 +4530,11 @@ body {
     }
     
     .principle-text {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         flex-shrink: 1;
-        white-space: normal;
-        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .article-title {
@@ -4964,121 +4967,118 @@ body {
     }
 }
 
-.home-card-pro.card-contact .contact-info-container {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-    margin-top: 16px !important;
-    padding: 18px 22px !important;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%) !important;
-    border: 1px solid rgba(30, 58, 95, 0.15) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 8px 32px rgba(30, 58, 95, 0.12) !important;
-    backdrop-filter: blur(10px) !important;
+.ci-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 18px 22px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+    border: 1px solid rgba(30, 58, 95, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(30, 58, 95, 0.12);
+    backdrop-filter: blur(10px);
 }
 
-.home-card-pro.card-contact .contact-item {
-    display: flex !important;
-    align-items: center !important;
-    gap: 14px !important;
-    padding: 12px 16px !important;
-    background: #ffffff !important;
-    border: 1px solid rgba(30, 58, 95, 0.08) !important;
-    border-radius: 10px !important;
-    transition: all 0.3s ease !important;
+.ci-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1px solid rgba(30, 58, 95, 0.08);
+    border-radius: 10px;
+    transition: all 0.3s ease;
 }
 
-.home-card-pro.card-contact .contact-item:hover {
-    border-color: rgba(30, 58, 95, 0.2) !important;
-    box-shadow: 0 4px 14px rgba(30, 58, 95, 0.08) !important;
-    transform: translateY(-2px) !important;
+.ci-item:hover {
+    border-color: rgba(30, 58, 95, 0.2);
+    box-shadow: 0 4px 14px rgba(30, 58, 95, 0.08);
+    transform: translateY(-2px);
 }
 
-.home-card-pro.card-contact .contact-label-icon {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 44px !important;
-    height: 28px !important;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%) !important;
-    border-radius: 6px !important;
-    color: #ffffff !important;
-    font-size: 0.75rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.5px !important;
-    flex-shrink: 0 !important;
+.ci-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 28px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
 }
 
-.home-card-pro.card-contact .contact-details {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
+.ci-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.home-card-pro.card-contact .contact-label {
-    font-size: 0.78rem !important;
-    color: #666666 !important;
-    font-weight: 500 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    min-width: auto !important;
+.ci-label {
+    font-size: 0.78rem;
+    color: #666666;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.home-card-pro.card-contact .contact-value {
-    font-size: 0.95rem !important;
-    color: #1e3a5f !important;
-    font-weight: 600 !important;
+.ci-value {
+    font-size: 0.95rem;
+    color: #1e3a5f;
+    font-weight: 600;
 }
 
-.home-card-pro.card-contact .contact-cta {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    margin-top: 8px !important;
-    padding: 10px 20px !important;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%) !important;
-    border-radius: 10px !important;
-    color: #ffffff !important;
-    font-weight: 600 !important;
-    font-size: 0.9rem !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
+.ci-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+    border-radius: 10px;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.home-card-pro.card-contact .contact-cta:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(30, 58, 95, 0.4) !important;
+.ci-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(30, 58, 95, 0.4);
 }
 
-.home-card-pro.card-contact .contact-link {
-    white-space: nowrap !important;
+.ci-link {
+    white-space: nowrap;
 }
 
-.home-card-pro.card-contact .contact-arrow {
-    font-size: 1.1rem !important;
+.ci-arrow {
+    font-size: 1.1rem;
 }
 
 @media (max-width: 600px) {
-    .home-card-pro.card-contact .contact-info-container {
-        position: static !important;
-        margin: 16px 0 !important;
-        padding: 16px !important;
-        min-width: auto !important;
-        box-shadow: 0 4px 16px rgba(30, 58, 95, 0.08) !important;
+    .ci-container {
+        margin: 16px 0;
+        padding: 16px;
+        box-shadow: 0 4px 16px rgba(30, 58, 95, 0.08);
     }
     
-    .home-card-pro.card-contact .contact-item {
-        padding: 10px 14px !important;
+    .ci-item {
+        padding: 10px 14px;
     }
     
-    .home-card-pro.card-contact .contact-label-icon {
-        width: 40px !important;
-        height: 26px !important;
-        font-size: 0.7rem !important;
+    .ci-icon {
+        width: 40px;
+        height: 26px;
+        font-size: 0.7rem;
     }
     
-    .home-card-pro.card-contact .contact-value {
-        font-size: 0.9rem !important;
+    .ci-value {
+        font-size: 0.9rem;
     }
 }
