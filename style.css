@@ -2191,7 +2191,7 @@ body {
 
 .resources-note {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 14px;
     background: rgba(255, 193, 7, 0.1);
     padding: 18px 22px;
