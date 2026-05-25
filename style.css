@@ -4388,13 +4388,13 @@ body {
         width: 100%;
         flex-direction: column;
         gap: 16px;
-        align-items: flex-start;
+        align-items: center;
     }
     
     .contact-info-pro {
         flex-direction: column;
         width: 100%;
-        align-items: flex-start;
+        align-items: center;
     }
     
     .contact-row {
