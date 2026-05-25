@@ -3924,16 +3924,15 @@ body {
 .contact-right {
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 16px;
     margin-top: 0;
 }
 
 .contact-info-pro {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex-direction: row;
+    gap: 12px;
     margin-bottom: 0;
-    width: 100%;
     align-items: center;
 }
 
@@ -4116,29 +4115,29 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 10px 8px;
+    gap: 10px;
+    padding: 20px 15px;
     background: rgba(30, 58, 95, 0.04);
     border: 1px solid rgba(30, 58, 95, 0.08);
-    border-radius: 8px;
+    border-radius: 10px;
     aspect-ratio: 1 / 1;
 }
 
 .principle-icon {
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
     color: #ffffff;
-    border-radius: 6px;
-    font-size: 0.7rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
     font-weight: 800;
 }
 
 .principle-text {
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     color: #1a1a1a;
     font-weight: 500;
 }
