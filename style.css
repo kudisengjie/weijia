@@ -4783,23 +4783,62 @@ body {
 
 .ci-details {
     display: flex;
-    flex-direction: column;
-    gap: 3px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
     flex: 1;
 }
 
 .ci-label {
-    font-size: 0.75rem;
-    color: #71717a;
+    font-size: 0.85rem;
+    color: #475569;
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.5px;
 }
 
 .ci-value {
     font-size: 1rem;
     color: #1e3a5f;
     font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.ci-divider {
+    width: 1px;
+    height: 20px;
+    background: linear-gradient(180deg, transparent, rgba(30, 58, 95, 0.2), transparent);
+    margin: 0 4px;
+}
+
+.ci-decoration {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(30, 58, 95, 0.1);
+}
+
+.ci-decoration-dot {
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(135deg, #1e3a5f, #3182ce);
+    border-radius: 50%;
+    animation: dotPulse 2s ease-in-out infinite;
+}
+
+.ci-decoration-dot:nth-child(2) { animation-delay: 0.3s; }
+.ci-decoration-dot:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes dotPulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+.ci-hint {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-weight: 400;
     letter-spacing: 0.3px;
 }
 
