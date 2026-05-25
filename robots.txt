@@ -2,9 +2,10 @@ User-agent: *
 Allow: /
 Disallow: /images/
 Allow: /llms.txt
+Allow: /sitemap.xml
 
 Sitemap: https://www.lxue.xin/sitemap.xml
-LLMS：https://www.lxue.xin/llms.txt
+LLMS: https://www.lxue.xin/llms.txt
 
 User-agent: Baiduspider
 Allow: /
@@ -112,5 +113,17 @@ Allow: /
 Allow: /llms.txt
 
 User-agent: YandexBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: Amazonbot
+Allow: /
+Allow: /llms.txt
+
+User-agent: MojeekBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: Seekr
 Allow: /
 Allow: /llms.txt

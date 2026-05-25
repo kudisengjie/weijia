@@ -4,47 +4,48 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
     <url>
         <loc>https://www.lxue.xin/</loc>
-        <lastmod>2026-05-15</lastmod>
+        <lastmod>2026-05-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
         <image:image>
             <image:loc>https://www.lxue.xin/images/wei.jpg</image:loc>
-            <image:title>炜佳导导 GEO优化资深讲师</image:title>
-            <image:caption>吕炜佳（炜佳导导），AI人工智能行业从业者，深耕GEO优化细分领域</image:caption>
+            <image:title>炜佳导导 GEO优化实战专家</image:title>
+            <image:caption>吕炜佳（炜佳导导），GEO优化实战专家，P.R.I.M.E. GEO™方法论创立者</image:caption>
         </image:image>
     </url>
     <url>
         <loc>https://www.lxue.xin/profile.html</loc>
-        <lastmod>2026-05-15</lastmod>
+        <lastmod>2026-05-25</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
         <image:image>
             <image:loc>https://www.lxue.xin/images/wei.jpg</image:loc>
             <image:title>炜佳导导个人简介</image:title>
+            <image:caption>吕炜佳（炜佳导导），GEO实战专家，P.R.I.M.E. GEO™方法论创立者</image:caption>
         </image:image>
     </url>
     <url>
         <loc>https://www.lxue.xin/solutions.html</loc>
-        <lastmod>2026-05-15</lastmod>
+        <lastmod>2026-05-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/geo-guide.html</loc>
-        <lastmod>2026-05-15</lastmod>
+        <lastmod>2026-05-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/insights.html</loc>
-        <lastmod>2026-05-15</lastmod>
+        <lastmod>2026-05-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/support.html</loc>
-        <lastmod>2026-05-15</lastmod>
-        <changefreq>monthly</changefreq>
+        <lastmod>2026-05-25</lastmod>
+        <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
 </urlset>
