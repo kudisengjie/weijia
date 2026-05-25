@@ -47,13 +47,17 @@
             <div class="logo">零雪科技-Genesis</div>
             <div class="menu-toggle"><span></span><span></span><span></span></div>
             <ul class="nav-links">
-                <li><a href="index.html">首页</a></li>
-                <li><a href="profile.html">关于我</a></li>
-                <li><a href="solutions.html" class="active">行业博客</a></li>
-                <li><a href="geo-guide.html">GEO优化指南</a></li>
-                <li><a href="insights.html">案例与见解</a></li>
-                <li><a href="support.html">常见问题</a></li>
+                <li><a href="index.html" data-i18n="nav.home">首页</a></li>
+                <li><a href="profile.html" data-i18n="nav.about">关于我</a></li>
+                <li><a href="solutions.html" class="active" data-i18n="nav.blog">行业博客</a></li>
+                <li><a href="geo-guide.html" data-i18n="nav.geo">GEO优化指南</a></li>
+                <li><a href="insights.html" data-i18n="nav.cases">案例与见解</a></li>
+                <li><a href="support.html" data-i18n="nav.faq">常见问题</a></li>
+                <li><a href="#" class="lang-switch-mobile" data-i18n="nav.lang">EN</a></li>
             </ul>
+            <div class="nav-actions">
+                <a href="#" class="lang-switch" data-i18n="nav.lang">EN</a>
+            </div>
         </div>
     </nav>
 
@@ -243,27 +247,28 @@
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-brand">
-                <div class="footer-logo">炜佳导导 GEO优化</div>
-                <p>专注GEO优化，用AI重塑企业流量架构</p>
+                <div class="footer-logo" data-i18n="footer.brand">炜佳导导 GEO优化</div>
+                <p data-i18n="footer.desc">专注GEO优化，用AI重塑企业流量架构</p>
             </div>
             <div class="footer-links">
-                <a href="index.html">首页</a>
-                <a href="profile.html">关于我</a>
-                <a href="solutions.html">行业博客</a>
-                <a href="insights.html">案例与见解</a>
-                <a href="support.html">常见问题</a>
+                <a href="index.html" data-i18n="footer.home">首页</a>
+                <a href="profile.html" data-i18n="footer.about">关于我</a>
+                <a href="solutions.html" data-i18n="footer.blog">行业博客</a>
+                <a href="insights.html" data-i18n="footer.cases">案例与见解</a>
+                <a href="support.html" data-i18n="footer.faq">常见问题</a>
             </div>
             <div class="footer-contact">
-                <p>微信：YiJie-AI | 电话：13539770556</p>
-                <p>抖音/视频号/公众号：炜佳导导GEO</p>
+                <p data-i18n="footer.contact">微信：YiJie-AI | 电话：13539770556</p>
+                <p data-i18n="footer.social">抖音/视频号/公众号：炜佳导导GEO</p>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; <span class="auto-year">2026</span> 炜佳导导 GEO优化. 保留所有权利.</p>
+            <p data-i18n="footer.copyright">&copy; <span class="auto-year">2026</span> 炜佳导导 GEO优化. 保留所有权利.</p>
             <p>邮箱：1914224955@qq.com | <span style="color: #999;">粤ICP备2026018563号</span></p>
         </div>
     </footer>
 
+    <script src="i18n.js"></script>
     <script src="script.js"></script>
 <script>
 (function(){
