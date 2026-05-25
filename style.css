@@ -3921,108 +3921,6 @@ body {
     z-index: 2;
 }
 
-
-
-.contact-content-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 30px;
-}
-
-.contact-left {
-    flex: 1;
-}
-
-.contact-left h3 {
-    font-size: 1.5rem;
-    margin-bottom: 8px;
-}
-
-.contact-left .card-desc {
-    margin-bottom: 0;
-    font-size: 1rem;
-}
-
-.contact-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-top: 0;
-}
-
-.contact-info-pro {
-    display: flex;
-    flex-direction: row;
-    gap: 12px;
-    margin-bottom: 0;
-    align-items: center;
-    justify-content: center;
-}
-
-.contact-row {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    padding: 8px 12px;
-    background: #ffffff;
-    border: 1px solid rgba(30, 58, 95, 0.1);
-    border-radius: 8px;
-    white-space: nowrap;
-    width: 200px;
-    height: 38px;
-}
-
-.contact-icon {
-    width: 34px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-    color: #ffffff !important;
-    border-radius: 4px;
-    font-size: 0.6rem;
-    font-weight: 700;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.contact-text {
-    font-size: 0.82rem;
-    color: #1a1a1a;
-    font-weight: 500;
-    flex-shrink: 1;
-}
-
-.contact-cta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 28px;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-    border-radius: 12px;
-    transition: all 0.3s ease;
-}
-
-.contact-link {
-    font-size: 1rem;
-    color: #ffffff;
-    font-weight: 600;
-}
-
-.contact-arrow {
-    font-size: 1.2rem;
-    color: #ffffff;
-    font-weight: 600;
-}
-
-.card-contact:hover .contact-cta {
-    transform: scale(1.03);
-    box-shadow: 0 8px 24px rgba(30, 58, 95, 0.3);
-}
-
 .card-header {
     display: flex;
     align-items: center;
@@ -4278,35 +4176,6 @@ body {
     .card-contact {
         grid-column: span 2;
     }
-    
-    .contact-content-row {
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-    }
-    
-    .contact-right {
-        width: 100%;
-        justify-content: center;
-        gap: 20px;
-        align-items: center;
-    }
-    
-    .contact-info-pro {
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-    }
-    
-    .contact-row {
-        width: 180px;
-        height: 40px;
-        justify-content: center;
-    }
-    
-    .contact-cta {
-        padding: 12px 20px;
-    }
 }
 
 @media (max-width: 768px) {
@@ -4413,51 +4282,6 @@ body {
         grid-column: span 1;
     }
     
-    .contact-content-row {
-        flex-direction: column;
-        align-items: center;
-        gap: 16px;
-    }
-    
-    .contact-left h3 {
-        font-size: 1.2rem;
-    }
-    
-    .contact-info-container {
-        min-width: 180px;
-        padding: 14px 18px;
-    }
-    
-    .contact-left .card-desc {
-        font-size: 0.9rem;
-    }
-    
-    .contact-right {
-        width: 100%;
-        flex-direction: column;
-        gap: 16px;
-        align-items: center;
-    }
-    
-    .contact-info-pro {
-        flex-direction: column;
-        width: 100%;
-        align-items: center;
-    }
-    
-    .contact-row {
-        width: 180px;
-        height: 40px;
-        padding: 8px 14px;
-        justify-content: center;
-    }
-    
-    .contact-cta {
-        width: 100%;
-        justify-content: center;
-        padding: 14px;
-    }
-    
     .home-card-pro {
         padding: 20px;
         border-radius: 12px;
@@ -4543,16 +4367,6 @@ body {
     
     .faq-text {
         font-size: 0.82rem;
-    }
-    
-    .contact-row {
-        width: 200px;
-        padding: 10px 12px;
-        justify-content: center;
-    }
-    
-    .contact-text {
-        font-size: 0.85rem;
     }
     
     .card-footer {
@@ -4844,126 +4658,6 @@ body {
         color: #ffffff;
         box-shadow: 0 0 20px rgba(45, 90, 74, 0.5);
         animation: none;
-    }
-}
-
-.custom-contact-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    width: 100%;
-}
-
-.custom-contact-left {
-    flex: 1;
-}
-
-.custom-contact-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 12px;
-}
-
-.custom-contact-items {
-    display: flex;
-    gap: 12px;
-}
-
-.custom-contact-box {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: #ffffff;
-    border: 1px solid rgba(30, 58, 95, 0.1);
-    border-radius: 8px;
-    width: 195px;
-    height: 38px;
-    box-sizing: border-box;
-}
-
-.custom-icon {
-    width: 34px;
-    height: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-    color: #ffffff;
-    border-radius: 4px;
-    font-size: 0.58rem;
-    font-weight: 700;
-    flex-shrink: 0;
-    letter-spacing: 0.3px;
-}
-
-.custom-text {
-    font-size: 0.82rem;
-    color: #1a1a1a;
-    font-weight: 500;
-    flex-shrink: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.custom-contact-cta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #1e3a5f;
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-.custom-contact-cta:hover {
-    color: #2c5282;
-}
-
-.custom-contact-link {
-    white-space: nowrap;
-}
-
-.custom-contact-arrow {
-    font-size: 1.1rem;
-}
-
-@media (max-width: 900px) {
-    .custom-contact-wrapper {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-    }
-    
-    .custom-contact-right {
-        width: 100%;
-        align-items: flex-start;
-    }
-    
-    .custom-contact-items {
-        width: 100%;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    
-    .custom-contact-box {
-        width: calc(50% - 5px);
-        min-width: 160px;
-    }
-}
-
-@media (max-width: 600px) {
-    .custom-contact-items {
-        flex-direction: column;
-    }
-    
-    .custom-contact-box {
-        width: 100%;
-        min-width: auto;
     }
 }
 
