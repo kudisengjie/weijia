@@ -3854,17 +3854,19 @@ body {
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     margin-bottom: 16px;
+    justify-items: center;
 }
 
 .expertise-item {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     padding: 14px 14px;
     background: linear-gradient(135deg, rgba(30, 58, 95, 0.06) 0%, rgba(30, 58, 95, 0.03) 100%);
     border: 1px solid rgba(30, 58, 95, 0.1);
     border-radius: 10px;
     transition: all 0.3s ease;
+    text-align: center;
 }
 
 .expertise-item:hover {
@@ -3917,9 +3919,9 @@ body {
 
 .contact-right {
     display: flex;
-    align-items: flex-start;
-    gap: 40px;
-    margin-top: -10px;
+    align-items: center;
+    gap: 30px;
+    margin-top: 0;
 }
 
 .contact-info-pro {
