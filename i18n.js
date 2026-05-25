@@ -131,6 +131,8 @@ i18n.translations.zh = {
     'card.contact.desc': '获取专业GEO优化建议',
     'card.contact.wechat': '微信：YiJie-AI',
     'card.contact.phone': '电话：13539770556',
+    'card.contact.wechat.label': '微信',
+    'card.contact.phone.label': '电话',
 
     'footer.brand': '炜佳导导 GEO优化',
     'footer.desc': '专注GEO优化，用AI重塑企业流量架构',
@@ -547,6 +549,8 @@ i18n.translations.en = {
     'card.contact.desc': 'Get professional GEO optimization advice',
     'card.contact.wechat': 'WeChat: YiJie-AI',
     'card.contact.phone': 'Phone: 13539770556',
+    'card.contact.wechat.label': 'WeChat',
+    'card.contact.phone.label': 'Phone',
 
     'footer.brand': 'Weijia Daodao GEO Optimization',
     'footer.desc': 'Focused on GEO optimization, rebuilding enterprise traffic with AI',
