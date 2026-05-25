@@ -4809,3 +4809,123 @@ body {
         animation: none;
     }
 }
+
+.custom-contact-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    width: 100%;
+}
+
+.custom-contact-left {
+    flex: 1;
+}
+
+.custom-contact-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.custom-contact-items {
+    display: flex;
+    gap: 12px;
+}
+
+.custom-contact-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #ffffff;
+    border: 1px solid rgba(30, 58, 95, 0.1);
+    border-radius: 8px;
+    width: 195px;
+    height: 38px;
+    box-sizing: border-box;
+}
+
+.custom-icon {
+    width: 34px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+    color: #ffffff;
+    border-radius: 4px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: 0.3px;
+}
+
+.custom-text {
+    font-size: 0.82rem;
+    color: #1a1a1a;
+    font-weight: 500;
+    flex-shrink: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.custom-contact-cta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1e3a5f;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.custom-contact-cta:hover {
+    color: #2c5282;
+}
+
+.custom-contact-link {
+    white-space: nowrap;
+}
+
+.custom-contact-arrow {
+    font-size: 1.1rem;
+}
+
+@media (max-width: 900px) {
+    .custom-contact-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .custom-contact-right {
+        width: 100%;
+        align-items: flex-start;
+    }
+    
+    .custom-contact-items {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .custom-contact-box {
+        width: calc(50% - 5px);
+        min-width: 160px;
+    }
+}
+
+@media (max-width: 600px) {
+    .custom-contact-items {
+        flex-direction: column;
+    }
+    
+    .custom-contact-box {
+        width: 100%;
+        min-width: auto;
+    }
+}
