@@ -3947,9 +3947,7 @@ body {
     border: 1px solid rgba(30, 58, 95, 0.1);
     border-radius: 8px;
     white-space: nowrap;
-    min-width: 200px;
-    width: 100%;
-    max-width: 220px;
+    width: 200px;
 }
 
 .contact-icon {
@@ -4270,7 +4268,7 @@ body {
     }
     
     .contact-row {
-        width: 100%;
+        width: 200px;
         justify-content: center;
     }
     
@@ -4385,7 +4383,7 @@ body {
     
     .contact-content-row {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         gap: 16px;
     }
     
@@ -4411,7 +4409,7 @@ body {
     }
     
     .contact-row {
-        width: 100%;
+        width: 200px;
         padding: 10px 14px;
         justify-content: center;
     }
@@ -4503,6 +4501,7 @@ body {
     }
     
     .contact-row {
+        width: 200px;
         padding: 10px 12px;
         justify-content: center;
     }
