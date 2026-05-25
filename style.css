@@ -1017,7 +1017,7 @@ body {
 
 .contact-row {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 10px;
     margin-bottom: 10px;
     padding-bottom: 10px;
