@@ -4116,12 +4116,14 @@ body {
 .principle-badge {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    padding: 12px;
+    padding: 16px 12px;
     background: rgba(30, 58, 95, 0.04);
     border: 1px solid rgba(30, 58, 95, 0.08);
     border-radius: 10px;
     width: calc(50% - 6px);
+    aspect-ratio: 1/1;
 }
 
 .principle-icon {
