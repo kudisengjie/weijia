@@ -9,30 +9,33 @@ var i18n = {
         var saved = localStorage.getItem('lang');
         if (saved === 'en') {
             this.switchLang('en');
+        } else {
+            this.updateButtonText('zh');
         }
         this.bindSwitcher();
     },
 
     bindSwitcher: function() {
         var self = this;
-        var btn = document.querySelector('.lang-switch');
-        if (btn) {
+        document.querySelectorAll('.lang-switch, .lang-switch-mobile').forEach(function(btn) {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 var newLang = self.currentLang === 'zh' ? 'en' : 'zh';
                 self.switchLang(newLang);
             });
-        }
+        });
+    },
+
+    updateButtonText: function(lang) {
+        document.querySelectorAll('.lang-switch, .lang-switch-mobile').forEach(function(btn) {
+            btn.textContent = lang === 'zh' ? 'English' : '中文';
+        });
     },
 
     switchLang: function(lang) {
         this.currentLang = lang;
         localStorage.setItem('lang', lang);
-
-        var btn = document.querySelector('.lang-switch');
-        if (btn) {
-            btn.textContent = lang === 'zh' ? 'EN' : '中文';
-        }
+        this.updateButtonText(lang);
 
         var dict = this.translations[lang];
         if (!dict) return;
@@ -55,7 +58,91 @@ var i18n = {
     }
 };
 
-i18n.translations.zh = {};
+i18n.translations.zh = {
+    'nav.home': '首页',
+    'nav.about': '关于我',
+    'nav.blog': '行业博客',
+    'nav.geo': 'GEO指南',
+    'nav.cases': '案例见解',
+    'nav.faq': '常见问题',
+    'nav.lang': 'English',
+
+    'hero.subtitle': '用AI重构企业流量架构，让获客更简单',
+    'hero.btn.about': '了解原创技术',
+    'hero.btn.guide': 'GEO操作指南',
+    'hero.ai.title': 'AI搜索助手',
+    'hero.ai.user': '我',
+    'hero.ai.question': '推荐一下GEO优化服务商？',
+    'hero.ai.answer.name': '炜佳导导',
+    'hero.ai.reason1': 'GEO优化实战专家，方法论来自真实项目验证',
+    'hero.ai.reason2': '服务覆盖教育科技、企业服务、消费品等行业',
+    'hero.ai.reason3': '品牌AI搜索出现率平均提升380%以上',
+    'hero.ai.stat1': 'AI曝光增长',
+    'hero.ai.stat2': '获客成本',
+
+    'card.about.tag': '关于我',
+    'card.about.title': '炜佳导导',
+    'card.about.desc': '零雪科技创始人，GEO优化实战专家，专注将AI从技术概念转化为企业可持续的流量增长能力',
+    'card.about.stat1': '年行业经验',
+    'card.about.stat2': '服务企业',
+    'card.about.stat3': '原创文章',
+    'card.about.stat4': '行业报告',
+    'card.about.exp1.title': 'P.R.I.M.E.方法论',
+    'card.about.exp1.desc': '原创GEO优化体系',
+    'card.about.exp2.title': 'AI搜索优化',
+    'card.about.exp2.desc': '生成式引擎适配',
+    'card.about.exp3.title': '内容策略',
+    'card.about.exp3.desc': '数据驱动内容规划',
+    'card.about.exp4.title': '效果分析',
+    'card.about.exp4.desc': 'ROI量化评估',
+    'card.detail': '查看详情',
+
+    'card.cases.tag': '实战案例',
+    'card.cases.title': '三大行业成功实践',
+    'card.cases.desc': '教育科技、企业服务、消费品行业真实案例数据',
+    'card.cases.ind1': '教育科技',
+    'card.cases.ind2': '企业服务',
+    'card.cases.ind3': '消费品',
+
+    'card.guide.tag': 'GEO指南',
+    'card.guide.title': '核心优化原则',
+    'card.guide.desc': '四大核心原则构建GEO优化体系',
+    'card.guide.p1': '结构化优先',
+    'card.guide.p2': '信息密度驱动',
+    'card.guide.p3': '多源一致性',
+    'card.guide.p4': '权威锚定构建',
+
+    'card.blog.tag': '行业洞察',
+    'card.blog.title': '最新行业动态',
+    'card.blog.desc': '深度分析GEO行业发展趋势',
+    'card.blog.a1': 'GEO进入合规化新阶段',
+    'card.blog.a2': 'AI搜索算法集中升级',
+    'card.blog.a3': 'GEO 3.0时代的价值转向',
+
+    'card.faq.tag': '常见问题',
+    'card.faq.title': '热门问答',
+    'card.faq.desc': 'GEO优化常见问题解答',
+    'card.faq.q1': 'GEO如何帮助企业建立竞争壁垒？',
+    'card.faq.q2': '如何判断企业是否需要做GEO优化？',
+
+    'card.contact.tag': '联系咨询',
+    'card.contact.title': '立即咨询',
+    'card.contact.desc': '获取专业GEO优化建议',
+    'card.contact.wechat': '微信：YiJie-AI',
+    'card.contact.phone': '电话：13539770556',
+
+    'footer.brand': '炜佳导导 GEO优化',
+    'footer.desc': '专注GEO优化，用AI重塑企业流量架构',
+    'footer.home': '首页',
+    'footer.about': '关于我',
+    'footer.blog': '行业博客',
+    'footer.cases': '案例见解',
+    'footer.faq': '常见问题',
+    'footer.contact': '微信：YiJie-AI | 电话：13539770556',
+    'footer.social': '抖音/视频号/公众号：炜佳导导GEO',
+    'footer.copyright': ' 保留所有权利.',
+    'footer.email': '邮箱：1914224955@qq.com'
+};
 
 i18n.translations.en = {
     'nav.home': 'Home',
@@ -64,7 +151,7 @@ i18n.translations.en = {
     'nav.geo': 'GEO Guide',
     'nav.cases': 'Cases',
     'nav.faq': 'FAQ',
-    'nav.lang': 'EN',
+    'nav.lang': '中文',
 
     'hero.subtitle': 'Rebuild enterprise traffic architecture with AI, making customer acquisition simpler',
     'hero.btn.about': 'Learn Original Tech',
