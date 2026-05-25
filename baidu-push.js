@@ -7,7 +7,7 @@ const TOKEN = 'KPTRIvNjOnPq3vdl';
 const URLS = [
     'https://www.lxue.xin/',
     'https://www.lxue.xin/profile.html',
-    'https://www.lxue.xin/solutions.html',
+    'https://www.lxue.xin/Blog.html',
     'https://www.lxue.xin/geo-guide.html',
     'https://www.lxue.xin/insights.html',
     'https://www.lxue.xin/support.html'

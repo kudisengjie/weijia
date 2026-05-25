@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /images/
+Disallow: /npm-cache/
 Allow: /llms.txt
 Allow: /sitemap.xml
 
