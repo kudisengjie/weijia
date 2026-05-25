@@ -3949,6 +3949,9 @@ body {
     border: 1px solid rgba(30, 58, 95, 0.1);
     border-radius: 8px;
     white-space: nowrap;
+    min-width: 200px;
+    width: 100%;
+    max-width: 220px;
 }
 
 .contact-icon {
@@ -4123,7 +4126,7 @@ body {
     border: 1px solid rgba(30, 58, 95, 0.08);
     border-radius: 10px;
     width: calc(50% - 6px);
-    aspect-ratio: 1/1;
+    height: 120px;
 }
 
 .principle-icon {
@@ -4484,6 +4487,7 @@ body {
     
     .principle-badge {
         padding: 10px;
+        height: 100px;
     }
     
     .principle-icon {
