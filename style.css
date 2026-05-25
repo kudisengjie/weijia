@@ -4125,8 +4125,7 @@ body {
     background: rgba(30, 58, 95, 0.04);
     border: 1px solid rgba(30, 58, 95, 0.08);
     border-radius: 10px;
-    width: calc(50% - 6px);
-    height: 120px;
+    aspect-ratio: 1 / 1;
 }
 
 .principle-icon {
@@ -4487,7 +4486,6 @@ body {
     
     .principle-badge {
         padding: 10px;
-        height: 100px;
     }
     
     .principle-icon {
