@@ -578,7 +578,7 @@ body {
 
 .hero p.hero-p1 {
     font-size: 1.15rem;
-    color: #555555;
+    color: #1e3a5f;
     margin-top: 12px;
     font-weight: 500;
     animation: slideUp 0.8s ease-out 0.8s forwards;
@@ -3919,11 +3919,7 @@ body {
     z-index: 2;
 }
 
-.card-contact .card-footer {
-    position: relative;
-    z-index: 2;
-    margin-top: 120px;
-}
+
 
 .contact-content-row {
     display: flex;
@@ -4285,10 +4281,6 @@ body {
         gap: 20px;
     }
     
-    .card-contact .card-footer {
-        margin-top: 140px;
-    }
-    
     .contact-right {
         width: 100%;
         justify-content: center;
@@ -4425,10 +4417,6 @@ body {
     
     .contact-left h3 {
         font-size: 1.2rem;
-    }
-    
-    .card-contact .card-footer {
-        margin-top: 150px;
     }
     
     .contact-info-container {
@@ -4969,19 +4957,16 @@ body {
 }
 
 .contact-info-container {
-    position: absolute;
-    top: 20px;
-    right: 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-top: 16px;
     padding: 18px 22px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
     border: 1px solid rgba(30, 58, 95, 0.15);
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(30, 58, 95, 0.12);
     backdrop-filter: blur(10px);
-    min-width: 200px;
 }
 
 .contact-item {
@@ -5034,6 +5019,35 @@ body {
     font-size: 0.95rem;
     color: #1e3a5f;
     font-weight: 600;
+}
+
+.contact-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+    border-radius: 10px;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.contact-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(30, 58, 95, 0.4);
+}
+
+.contact-link {
+    white-space: nowrap;
+}
+
+.contact-arrow {
+    font-size: 1.1rem;
 }
 
 @media (max-width: 600px) {
