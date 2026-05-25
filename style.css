@@ -517,15 +517,15 @@ body {
 }
 
 .hero-title-decoration {
-    width: 60px;
-    height: 2px;
-    background: linear-gradient(90deg, rgba(192, 192, 192, 0.9), rgba(192, 192, 192, 0.3));
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(150, 150, 150, 0.9), rgba(192, 192, 192, 0.5), rgba(192, 192, 192, 0.2));
     border-radius: 2px;
-    animation: pulse 2s ease-in-out infinite;
+    animation: pulse 2.5s ease-in-out infinite;
 }
 
 .hero-title-decoration.decoration-right {
-    background: linear-gradient(90deg, rgba(192, 192, 192, 0.3), rgba(192, 192, 192, 0.9));
+    background: linear-gradient(90deg, rgba(192, 192, 192, 0.2), rgba(192, 192, 192, 0.5), rgba(150, 150, 150, 0.9));
 }
 
 .hero h1 {
@@ -566,7 +566,7 @@ body {
 }
 
 .hero p.hero-sub {
-    font-size: 0.95rem;
+    font-size: 1rem;
     color: #666666;
     margin-top: 6px;
     animation: slideUp 0.8s ease-out 0.8s forwards;
@@ -574,6 +574,16 @@ body {
     white-space: normal;
     word-break: keep-all;
     overflow-wrap: normal;
+}
+
+.hero p.hero-p1 {
+    font-size: 1.15rem;
+    color: #555555;
+    margin-top: 12px;
+    font-weight: 500;
+    animation: slideUp 0.8s ease-out 0.8s forwards;
+    opacity: 0;
+    line-height: 1.6;
 }
 
 .cta-buttons {
@@ -3893,11 +3903,26 @@ body {
 
 .card-contact {
     grid-column: span 3;
-    background: linear-gradient(135deg, rgba(30, 58, 95, 0.05) 0%, rgba(30, 58, 95, 0.02) 100%);
+    background: linear-gradient(135deg, rgba(30, 58, 95, 0.03) 0%, rgba(30, 58, 95, 0.01) 100%);
+    position: relative;
+    overflow: hidden;
 }
 
 .card-contact:hover {
     transform: translateY(-4px);
+}
+
+.card-contact .card-header,
+.card-contact h3,
+.card-contact .card-desc {
+    position: relative;
+    z-index: 2;
+}
+
+.card-contact .card-footer {
+    position: relative;
+    z-index: 2;
+    margin-top: 120px;
 }
 
 .contact-content-row {
@@ -4260,6 +4285,10 @@ body {
         gap: 20px;
     }
     
+    .card-contact .card-footer {
+        margin-top: 140px;
+    }
+    
     .contact-right {
         width: 100%;
         justify-content: center;
@@ -4396,6 +4425,15 @@ body {
     
     .contact-left h3 {
         font-size: 1.2rem;
+    }
+    
+    .card-contact .card-footer {
+        margin-top: 150px;
+    }
+    
+    .contact-info-container {
+        min-width: 180px;
+        padding: 14px 18px;
     }
     
     .contact-left .card-desc {
@@ -4931,15 +4969,19 @@ body {
 }
 
 .contact-info-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin: 16px 0 20px 0;
-    padding: 20px;
-    background: linear-gradient(135deg, rgba(30, 58, 95, 0.03) 0%, rgba(44, 82, 130, 0.05) 100%);
-    border: 1px solid rgba(30, 58, 95, 0.12);
-    border-radius: 14px;
-    box-shadow: 0 2px 12px rgba(30, 58, 95, 0.06);
+    gap: 10px;
+    padding: 18px 22px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+    border: 1px solid rgba(30, 58, 95, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(30, 58, 95, 0.12);
+    backdrop-filter: blur(10px);
+    min-width: 200px;
 }
 
 .contact-item {
@@ -4996,7 +5038,11 @@ body {
 
 @media (max-width: 600px) {
     .contact-info-container {
+        position: static;
+        margin: 16px 0;
         padding: 16px;
+        min-width: auto;
+        box-shadow: 0 4px 16px rgba(30, 58, 95, 0.08);
     }
     
     .contact-item {
