@@ -187,6 +187,12 @@ i18n.translations.zh = {
     'profile.verify.h3': '实战验证',
     'profile.verify.p1': '某教育科技企业，核心产品AI技能培训，初始状态下6大主流AI平台核心品类词曝光率接近为零。',
     'profile.verify.p2': 'P.R.I.M.E.五步跑完：Lighthouse定位问题→Blueprint重建内容结构→Anchor建立信任锚点→Compass精准分发→Radar持续追踪。3个月内，核心品类词AI出现率从零提升至超过60%。关键区别：这些曝光不依赖持续付费，一次构建长期生效。',
+
+    'profile.onemorething.label': 'One More Thing',
+    'profile.onemorething.h3': 'GEO不是成本，是投资',
+    'profile.onemorething.p1': '很多企业把GEO当成一笔"花出去就没了"的费用。但GEO构建的是数字资产——一次搭建，持续产生曝光，边际成本递减。和广告投放的本质区别在于：广告停了流量就断，GEO停了流量还在。',
+    'profile.onemorething.p2': '当你的竞品还在犹豫要不要做GEO的时候，你已经在AI搜索中占据了位置。先发优势在AI引用网络中有复利效应——越早布局，信任锚点越深，后来者追赶成本越高。',
+
     'profile.contact.qr': '扫码添加炜佳导导微信',
     'profile.contact.h3': '联系我',
     'profile.contact.wechat.label': '微信',
@@ -606,6 +612,12 @@ i18n.translations.en = {
     'profile.verify.h3': 'Real-World Validation',
     'profile.verify.p1': 'An education technology company with core AI skills training products had near-zero exposure for core category keywords across 6 major AI platforms in its initial state.',
     'profile.verify.p2': 'After completing the P.R.I.M.E. five steps: Lighthouse identified problems → Blueprint reconstructed content structure → Anchor established trust anchors → Compass precision distribution → Radar continuous tracking. Within 3 months, core category keyword AI appearance rate increased from zero to over 60%. Key distinction: these exposures do not depend on continued payment — build once, sustain long-term.',
+
+    'profile.onemorething.label': 'One More Thing',
+    'profile.onemorething.h3': 'GEO Is Not a Cost — It\'s an Investment',
+    'profile.onemorething.p1': 'Many companies treat GEO as an expense that\'s "gone once spent." But GEO builds digital assets — build once, generate exposure continuously, with diminishing marginal costs. The fundamental difference from ad spending: stop advertising and traffic stops; stop GEO and traffic persists.',
+    'profile.onemorething.p2': 'While your competitors are still hesitating about GEO, you\'ve already secured your position in AI search. First-mover advantage has a compounding effect in AI citation networks — the earlier you build, the deeper your trust anchors, and the higher the cost for latecomers to catch up.',
+
     'profile.contact.qr': 'Scan to add Weijia Daodao on WeChat',
     'profile.contact.h3': 'Contact Me',
     'profile.contact.wechat.label': 'WeChat',
