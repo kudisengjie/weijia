@@ -82,7 +82,7 @@ i18n.translations.zh = {
 
     'card.about.tag': '关于我',
     'card.about.title': '炜佳导导',
-    'card.about.desc': '零雪科技创始人，GEO优化实战专家，专注将AI从技术概念转化为企业可持续的流量增长引擎',
+    'card.about.desc': '零雪科技CEO，GEO优化实战专家，专注将AI从技术概念转化为企业可持续的流量增长引擎',
     'card.about.stat1': '年行业经验',
     'card.about.stat2': '服务企业',
     'card.about.stat3': '原创文章',
