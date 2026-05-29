@@ -1,4 +1,4 @@
-﻿var i18n = {
+var i18n = {
     currentLang: 'zh',
     translations: {
         zh: {},
@@ -220,7 +220,7 @@ i18n.translations.zh = {
     'profile.intent.decide.p': '用户已经锁定范围，在做最后确认，问的是"靠不靠谱""要多少钱""资质怎么样"。这层拼的是信任转化——资质展示、透明的服务说明、FAQ式信任建设，帮用户迈出最后一步。',
     'profile.intent.note': '三层内容在知识图谱中必须串联贯通，让AI能够带着用户从"了解"平滑走到"决策"，而不是每一层都要重新搜索、重新认知。',
     'profile.scene.h3': 'GEO五大实施场景',
-    'profile.scene.intro': 'GEO不是一套死板流程，面对不同的品牌起点和竞争态势，有五种不同的打法：',
+    'profile.scene.intro': 'GEO不是一套固定流程，面对不同的品牌起点和竞争态势，有五种不同的打法：',
     'profile.scene.th.scene': '场景',
     'profile.scene.th.when': '什么时候用',
     'profile.scene.th.how': '怎么做',
@@ -692,7 +692,7 @@ i18n.translations.en = {
     'profile.intent.decide.p': 'Users have narrowed their scope, making final confirmation, asking "is it reliable" "how much does it cost" "what are the qualifications." This layer competes for trust conversion — credential displays, transparent service descriptions, FAQ-style trust building, helping users take the final step.',
     'profile.intent.note': 'Three layers of content must be interconnected in the knowledge graph, allowing AI to smoothly guide users from "understanding" to "decision," rather than requiring re-searching and re-cognition at each layer.',
     'profile.scene.h3': 'Five GEO Implementation Scenarios',
-    'profile.scene.intro': 'GEO is not a rigid process — facing different brand starting points and competitive dynamics, there are five different approaches:',
+    'profile.scene.intro': 'GEO is not a fixed process — facing different brand starting points and competitive dynamics, there are five different approaches:',
     'profile.scene.th.scene': 'Scenario',
     'profile.scene.th.when': 'When to Use',
     'profile.scene.th.how': 'How to Execute',
