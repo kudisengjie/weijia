@@ -1,4 +1,4 @@
-﻿var i18n = {
+var i18n = {
     currentLang: 'zh',
     translations: {
         zh: {},
@@ -147,10 +147,10 @@ i18n.translations.zh = {
     'footer.copyright': ' 保留所有权利.',
     'footer.email': '邮箱：1914224955@qq.com',
 
-    'profile.h2': '吕炜佳（炜佳导导）—— GEO实战专家',
+    'profile.h2': '吕炜佳（炜佳导导）—— GEO战略技术研发',
     'profile.tagline': '不卖焦虑，不卖概念。只卖一个结果：当潜在客户向AI打听你的品类时，AI推荐的那个名字，是你。',
     'profile.identity.h3': '我是谁',
-    'profile.identity.p1': '炜佳导导，生成式引擎优化（GEO）领域实战讲师与战略技术研发。过去数年只做一件事：帮品牌在AI搜索结果中建立不可忽视的存在。',
+    'profile.identity.p1': '炜佳导导，生成式引擎优化（GEO）领域实战专业讲师。过去数年只做一件事：帮品牌在AI搜索结果中建立不可忽视的存在。',
     'profile.identity.p2': '搜索的入口已经发生了根本性迁移。今天，用户不再翻网页，而是打开AI直接问"这个行业哪家靠谱""那个产品怎么选""有什么注意事项"。AI不会给你十个链接让你自己看——它会综合全网信息，直接生成一个答案，列出推荐、给出建议、附上避坑提示。',
     'profile.identity.p3': '问题很简单：这个答案里有你吗？',
     'profile.identity.p4': '大多数品牌测出来的结果很残酷——没有。不是排名靠后的问题，而是在AI的认知地图里，根本没有这个品牌的坐标。你的官网在、公众号在、短视频也在，但AI看不到。因为信息散乱、没有结构化、缺乏多源一致的可信背书——对AI来说，这些内容等于不存在。',
@@ -619,10 +619,10 @@ i18n.translations.en = {
     'footer.copyright': ' All Rights Reserved.',
     'footer.email': 'Email: 1914224955@qq.com',
 
-    'profile.h2': 'Lv Weijia (Weijia Daodao) —— GEO Optimization Expert',
+    'profile.h2': 'Lv Weijia (Weijia Daodao) —— GEO Strategic Technology Developer',
     'profile.tagline': 'No fear-mongering, no buzzwords. Just one result: when potential customers ask AI about your category, the name AI recommends is yours.',
     'profile.identity.h3': 'Who Am I',
-    'profile.identity.p1': 'Weijia Daodao, a practical lecturer and strategic technology developer in Generative Engine Optimization (GEO). For the past several years, focused on one thing: helping brands build an undeniable presence in AI search results.',
+    'profile.identity.p1': 'Weijia Daodao, a professional practical lecturer in Generative Engine Optimization (GEO). For the past several years, focused on one thing: helping brands build an undeniable presence in AI search results.',
     'profile.identity.p2': 'The entry point for search has fundamentally shifted. Today, users no longer browse web pages — they open AI and directly ask "which company is reliable in this industry" "how to choose that product" "what should I watch out for." AI won\'t give you ten links to read yourself — it synthesizes information across the web, directly generating an answer with recommendations, suggestions, and pitfall alerts.',
     'profile.identity.p3': 'The question is simple: are you in that answer?',
     'profile.identity.p4': 'Most brands get brutal results — no. It\'s not about low ranking; it\'s that the brand has no coordinates on AI\'s cognitive map. Your website exists, your official account exists, your short videos exist, but AI can\'t see them. Because the information is scattered, unstructured, and lacks multi-source consistent credible endorsement — to AI, this content effectively doesn\'t exist.',
