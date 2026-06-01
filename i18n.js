@@ -1,4 +1,4 @@
-var i18n = {
+﻿var i18n = {
     currentLang: 'zh',
     translations: {
         zh: {},
@@ -254,7 +254,7 @@ i18n.translations.zh = {
 
     'blog.h2': '行业博客',
     'blog.intro': '洞察GEO行业前沿动态，解读AI搜索算法变化，探讨品牌数字化转型策略',
-    'blog.a1.date': '2026年5月30日',
+    'blog.a1.date': '2026年6月1日',
     'blog.a1.tag': '行业趋势',
     'blog.a1.h3': 'GEO进入合规化新阶段：标准建立与行业重塑',
     'blog.a1.intro': '2026年上半年，GEO行业迎来一次标志性转折：从野蛮生长进入标准化建设阶段。',
@@ -267,7 +267,7 @@ i18n.translations.zh = {
     'blog.a1.stat2.label': '全年预计市场规模',
     'blog.a1.stat3.num': '19%',
     'blog.a1.stat3.label': '具备自研技术能力的服务商',
-    'blog.a2.date': '2026年5月30日',
+    'blog.a2.date': '2026年6月1日',
     'blog.a2.tag': '算法升级',
     'blog.a2.h3': 'AI搜索算法集中升级：信任构建取代关键词成为核心',
     'blog.a2.intro': '本月，多个主流AI搜索平台完成了集中算法升级。共同指向一个方向：信任构建正在全面取代关键词匹配，成为内容收录的核心评估维度。',
@@ -278,7 +278,7 @@ i18n.translations.zh = {
     'blog.a2.change3.h4': '用户行为信号纳入引用权重',
     'blog.a2.change3.p': '用户停留时长超过2分钟、点击"有帮助"等正向信号获得加权；标记"不准确"则触发负向降权。这意味着GEO优化需延伸至用户交互层，内容不仅要被收录，还要让用户愿意看完、愿意认可。',
     'blog.a2.conclusion': '核心启示：内容策略需要从"能被搜到"升级为"被信任、被阅读、被认可"的全链路优化。',
-    'blog.a3.date': '2026年5月30日',
+    'blog.a3.date': '2026年6月1日',
     'blog.a3.tag': '战略洞察',
     'blog.a3.h3': '从流量思维到资产思维：GEO 3.0时代的价值转向',
     'blog.a3.intro': 'GEO正从2.0的语义匹配时代迈入3.0的全链路意图优化时代。核心转变在于：目标从"让AI推荐你"升级为"AI推荐你之后，用户为什么选择你"。',
@@ -290,7 +290,7 @@ i18n.translations.zh = {
     'blog.a3.driver3.p': '不同AI平台与各自内容生态深度绑定，单一的全网通发策略正在失效。品牌需要建立"核心平台深度布局 + 辅助平台精准补充"的差异化矩阵。资源永远不够，把好钢用在刀刃上。',
     'blog.a3.conclusion': 'GEO 3.0的终局不是"做一次管一年"，而是让品牌在AI搜索中拥有持续、稳定、可量化的存在能力——这是AI时代品牌资产的基本配置。',
     'blog.disclaimer': '本文基于GEO行业公开研究与实践观察撰写。市场数据引自GEO行业数据速查表（2026）、QuestMobile（2026）等公开来源。',
-    'blog.update': '更新于：2026年5月30日',
+    'blog.update': '更新于：2026年6月1日',
     'blog.resources.h3': '专业资源下载',
     'blog.resources.intro': '为帮助企业更好地理解和实施GEO优化，我们整理了一系列专业资料供您参考。',
     'blog.resources.r1.h4': 'GEO优化实战白皮书',
@@ -371,7 +371,7 @@ i18n.translations.zh = {
     'insights.views.h3': '行业见解',
     'insights.view1.h4': '结构化内容正在取代内容数量成为核心指标',
     'insights.view1.author': '吕炜佳',
-    'insights.view1.date': '2026年5月30日',
+    'insights.view1.date': '2026年6月1日',
     'insights.view1.p1': '过去企业做内容追求"越多越好"——多写文章、多铺渠道、多买软文。但在AI搜索时代，内容数量与AI引用概率不再成正比。',
     'insights.view1.p2': 'AI追求的是信息增量——每千字包含的可验证新信息量。通用性、重复性、模板化的内容在AI评估中信息密度趋近于零。',
     'insights.view1.highlight1': '一篇结构正确的高密度内容，引用概率远超十篇散装文案。',
@@ -381,7 +381,7 @@ i18n.translations.zh = {
     'insights.view1.tag3': 'AI引用',
     'insights.view2.h4': '多源一致性是AI信任构建的第一关',
     'insights.view2.author': '吕炜佳',
-    'insights.view2.date': '2026年5月30日',
+    'insights.view2.date': '2026年6月1日',
     'insights.view2.p1': '大多数品牌不知道的是：自己在不同平台上残留的旧版信息、矛盾描述、过时数据，正在全天候拉低AI对其的可信度评分。',
     'insights.view2.p2': 'AI的可信度评估依赖交叉核验——在多个独立来源中验证同一信息的一致性。信息不一致直接触发跳过。',
     'insights.view2.highlight1': '修复多源一致性的成本远低于新建内容，但收益却可能是最快的——很多企业仅靠统一全平台品牌信息，AI可见度就有明显改善。',
@@ -390,7 +390,7 @@ i18n.translations.zh = {
     'insights.view2.tag3': '交叉核验',
     'insights.view3.h4': '合规不是负担，是长期竞争壁垒',
     'insights.view3.author': '吕炜佳',
-    'insights.view3.date': '2026年5月30日',
+    'insights.view3.date': '2026年6月1日',
     'insights.view3.p1': '2026年GEO行业进入合规化加速度——首部行业技术规范进入立项评审，央媒入局建立标准，GEO投毒被明确定性为违法行为。',
     'insights.view3.p2': '对于认真做GEO的企业来说，合规是利好而非限制。不合规的操作在AI交叉核验机制下不仅效果不可持续，还面临平台封禁和法律追责。',
     'insights.view3.highlight1': '白帽GEO的核心很简单：',
@@ -402,7 +402,7 @@ i18n.translations.zh = {
     'insights.view3.tag2': '合规化',
     'insights.view3.tag3': '长期主义',
     'insights.disclaimer': '以上案例数据来自真实项目，已做脱敏处理。效果数据受行业、竞争强度、执行周期等多因素影响，不同项目结果存在差异。',
-    'insights.update': '更新于：2026年5月30日',
+    'insights.update': '更新于：2026年6月1日',
     'insights.cta': '想要了解您的行业如何做GEO优化？立即联系炜佳导导，获取专属GEO优化方案。',
 
     'faq.h2': 'GEO常见问题',
@@ -527,7 +527,7 @@ i18n.translations.zh = {
     'guide.bm4.label': '从零构建的品牌，合理预期周期',
     'guide.benchmark.note': 'GEO构建的是长期数字资产，一次构建持续生效。',
     'guide.disclaimer': '本文所述方法论基于GEO行业公开研究与实践经验整理。效果数据受行业、竞争强度、执行周期等多因素影响，不同项目结果存在差异。各企业在实施GEO策略时应结合自身实际情况进行判断。',
-    'guide.update': '更新于：2026年5月30日'
+    'guide.update': '更新于：2026年6月1日'
 };
 
 i18n.translations.en = {
@@ -726,7 +726,7 @@ i18n.translations.en = {
 
     'blog.h2': 'Industry Blog',
     'blog.intro': 'Insights into GEO industry frontiers, analysis of AI search algorithm changes, and exploration of brand digital transformation strategies',
-    'blog.a1.date': 'May 30, 2026',
+    'blog.a1.date': 'June 1, 2026',
     'blog.a1.tag': 'Industry Trends',
     'blog.a1.h3': 'GEO Enters a New Compliance Phase: Standard Establishment and Industry Reshaping',
     'blog.a1.intro': 'In the first half of 2026, the GEO industry reached a landmark turning point: transitioning from wild growth into standardized development.',
@@ -739,7 +739,7 @@ i18n.translations.en = {
     'blog.a1.stat2.label': 'Full-year projected market size (CNY)',
     'blog.a1.stat3.num': '19%',
     'blog.a1.stat3.label': 'Service providers with in-house R&D capabilities',
-    'blog.a2.date': 'May 30, 2026',
+    'blog.a2.date': 'June 1, 2026',
     'blog.a2.tag': 'Algorithm Upgrade',
     'blog.a2.h3': 'AI Search Algorithm Concentrated Upgrades: Trust Building Replaces Keywords as the Core',
     'blog.a2.intro': 'This month, multiple mainstream AI search platforms completed concentrated algorithm upgrades. They all point in one direction: trust building is comprehensively replacing keyword matching as the core evaluation dimension for content inclusion.',
@@ -750,7 +750,7 @@ i18n.translations.en = {
     'blog.a2.change3.h4': 'User Behavior Signals Incorporated into Citation Weighting',
     'blog.a2.change3.p': 'Positive signals such as user dwell time exceeding 2 minutes and clicking "helpful" receive weighting boosts; marking "inaccurate" triggers negative penalties. This means GEO optimization needs to extend to the user interaction layer — content must not only be included but also make users want to read through and endorse it.',
     'blog.a2.conclusion': 'Core insight: Content strategy needs to evolve from "being searchable" to full-funnel optimization of "being trusted, being read, and being endorsed."',
-    'blog.a3.date': 'May 30, 2026',
+    'blog.a3.date': 'June 1, 2026',
     'blog.a3.tag': 'Strategic Insight',
     'blog.a3.h3': 'From Traffic Thinking to Asset Thinking: The Value Shift in the GEO 3.0 Era',
     'blog.a3.intro': 'GEO is transitioning from the 2.0 semantic matching era to the 3.0 full-funnel intent optimization era. The core shift: the objective evolves from "getting AI to recommend you" to "why users choose you after AI recommends you."',
@@ -762,7 +762,7 @@ i18n.translations.en = {
     'blog.a3.driver3.p': 'Different AI platforms are deeply bound to their respective content ecosystems, and a one-size-fits-all distribution strategy is becoming ineffective. Brands need to build a differentiated matrix of "core platform deep deployment + auxiliary platform precision supplementation." Resources are always limited — use them where they matter most.',
     'blog.a3.conclusion': 'The endgame of GEO 3.0 is not "do it once and it lasts a year," but enabling brands to have a continuous, stable, and quantifiable presence in AI search — this is the essential infrastructure for brand assets in the AI era.',
     'blog.disclaimer': 'This article is based on public GEO industry research and practical observations. Market data is sourced from GEO Industry Data Quick Reference (2026), QuestMobile (2026), and other public sources.',
-    'blog.update': 'Updated: May 30, 2026',
+    'blog.update': 'Updated: June 1, 2026',
     'blog.resources.h3': 'Professional Resources',
     'blog.resources.intro': 'To help enterprises better understand and implement GEO optimization, we have compiled a series of professional materials for your reference.',
     'blog.resources.r1.h4': 'GEO Optimization Practical White Paper',
@@ -843,7 +843,7 @@ i18n.translations.en = {
     'insights.views.h3': 'Industry Insights',
     'insights.view1.h4': 'Structured Content Is Replacing Content Volume as the Core Metric',
     'insights.view1.author': 'Lv Weijia',
-    'insights.view1.date': 'May 30, 2026',
+    'insights.view1.date': 'June 1, 2026',
     'insights.view1.p1': 'In the past, companies pursued "more is better" for content — more articles, more channels, more sponsored posts. But in the AI search era, content volume no longer correlates with AI citation probability.',
     'insights.view1.p2': 'AI pursues information increment — the amount of verifiable new information per thousand words. Generic, repetitive, templated content has near-zero information density in AI evaluation.',
     'insights.view1.highlight1': 'One well-structured, high-density content piece has far greater citation probability than ten scattered articles.',
@@ -853,7 +853,7 @@ i18n.translations.en = {
     'insights.view1.tag3': 'AI Citation',
     'insights.view2.h4': 'Multi-Source Consistency Is the First Gate of AI Trust Building',
     'insights.view2.author': 'Lv Weijia',
-    'insights.view2.date': 'May 30, 2026',
+    'insights.view2.date': 'June 1, 2026',
     'insights.view2.p1': 'What most brands don\'t realize: their outdated information, contradictory descriptions, and obsolete data lingering across different platforms are continuously dragging down their AI credibility scores around the clock.',
     'insights.view2.p2': 'AI\'s credibility assessment relies on cross-verification — validating the consistency of the same information across multiple independent sources. Inconsistent information directly triggers a skip.',
     'insights.view2.highlight1': 'The cost of fixing multi-source consistency is far lower than creating new content, yet the returns may be the fastest — many companies see noticeable AI visibility improvements just by unifying brand information across all platforms.',
@@ -862,7 +862,7 @@ i18n.translations.en = {
     'insights.view2.tag3': 'Cross-verification',
     'insights.view3.h4': 'Compliance Is Not a Burden — It\'s a Long-Term Competitive Barrier',
     'insights.view3.author': 'Lv Weijia',
-    'insights.view3.date': 'May 30, 2026',
+    'insights.view3.date': 'June 1, 2026',
     'insights.view3.p1': 'In 2026, the GEO industry entered a compliance acceleration phase — the first industry technical specification entered project review, state media established standards, and GEO poisoning was explicitly classified as illegal.',
     'insights.view3.p2': 'For companies serious about GEO, compliance is an advantage, not a restriction. Non-compliant practices are not only unsustainable under AI cross-verification mechanisms but also face platform bans and legal liability.',
     'insights.view3.highlight1': 'The core of white-hat GEO is simple:',
@@ -874,7 +874,7 @@ i18n.translations.en = {
     'insights.view3.tag2': 'Compliance',
     'insights.view3.tag3': 'Long-termism',
     'insights.disclaimer': 'The above case data comes from real projects and has been anonymized. Performance data is affected by multiple factors including industry, competitive intensity, and execution timeline — results vary across projects.',
-    'insights.update': 'Updated: May 30, 2026',
+    'insights.update': 'Updated: June 1, 2026',
     'insights.cta': 'Want to know how to do GEO optimization for your industry? Contact Weijia Daodao now for a customized GEO optimization plan.',
 
     'faq.h2': 'GEO FAQ',
@@ -999,7 +999,7 @@ i18n.translations.en = {
     'guide.bm4.label': 'Reasonable expectation for brands building from scratch',
     'guide.benchmark.note': 'GEO builds long-term digital assets — build once, sustain continuously.',
     'guide.disclaimer': 'The methodology described in this article is based on public GEO industry research and practical experience. Performance data is affected by multiple factors including industry, competitive intensity, and execution timeline — results vary across projects. Each enterprise should make judgments based on its own actual circumstances when implementing GEO strategies.',
-    'guide.update': 'Updated: May 30, 2026'
+    'guide.update': 'Updated: June 1, 2026'
 };
 
 document.addEventListener('DOMContentLoaded', function() {
