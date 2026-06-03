@@ -1,0 +1,100 @@
+{
+  "redirects": [
+    {
+      "source": "$host",
+      "destination": "$wwwhost",
+      "statusCode": 301
+    },
+    {
+      "source": "/Blog.html",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/brand-facts",
+      "destination": "/brand-facts.html",
+      "statusCode": 301
+    },
+    {
+      "source": "/profile",
+      "destination": "/profile.html",
+      "statusCode": 301
+    },
+    {
+      "source": "/geo-guide",
+      "destination": "/geo-guide.html",
+      "statusCode": 301
+    },
+    {
+      "source": "/insights",
+      "destination": "/insights.html",
+      "statusCode": 301
+    },
+    {
+      "source": "/support",
+      "destination": "/support.html",
+      "statusCode": 301
+    }
+  ],
+  "headers": [
+    {
+      "source": "/*.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public,max-age=0,must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/blog/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public,max-age=0,must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public,max-age=0,must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public,max-age=0,must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/llms.txt",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public,max-age=0,must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/images/*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public,max-age=31536000,immutable"
+        }
+      ]
+    }
+  ]
+}
