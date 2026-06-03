@@ -1,16 +1,74 @@
 User-agent: *
 Allow: /
-Disallow: /images/
+Allow: /images/wei.jpg
+Allow: /images/jia.jpg
 Disallow: /npm-cache/
 Allow: /llms.txt
 Allow: /sitemap.xml
+Allow: /brand-facts.html
 
 Sitemap: https://www.lxue.xin/sitemap.xml
 LLMS: https://www.lxue.xin/llms.txt
 
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: Claude-SearchBot
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: Claude-User
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: Perplexity-User
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: Googlebot
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
+User-agent: Bingbot
+Allow: /
+Allow: /llms.txt
+Allow: /brand-facts.html
+
 User-agent: Baiduspider
 Allow: /
 Allow: /llms.txt
+Allow: /brand-facts.html
 Crawl-delay: 10
 
 User-agent: Baiduspider-image
@@ -24,48 +82,28 @@ Allow: /llms.txt
 User-agent: Bytespider
 Allow: /
 Allow: /llms.txt
+Allow: /brand-facts.html
 
 User-agent: TencentCrawl
 Allow: /
 Allow: /llms.txt
+Allow: /brand-facts.html
 
 User-agent: DeepSeek
 Allow: /
 Allow: /llms.txt
+Allow: /brand-facts.html
 
 User-agent: QwenBot
 Allow: /
 Allow: /llms.txt
-
-User-agent: GPTBot
-Allow: /
-Allow: /llms.txt
-
-User-agent: ChatGPT-User
-Allow: /
-Allow: /llms.txt
+Allow: /brand-facts.html
 
 User-agent: CCBot
 Allow: /
 Allow: /llms.txt
 
-User-agent: Google-Extended
-Allow: /
-Allow: /llms.txt
-
-User-agent: Omgili
-Allow: /
-Allow: /llms.txt
-
-User-agent: Omgilibot
-Allow: /
-Allow: /llms.txt
-
-User-agent: PerplexityBot
-Allow: /
-Allow: /llms.txt
-
-User-agent: ClaudeBot
+User-agent: Applebot
 Allow: /
 Allow: /llms.txt
 
@@ -77,7 +115,23 @@ User-agent: Meta-ExternalAgent
 Allow: /
 Allow: /llms.txt
 
+User-agent: Amazonbot
+Allow: /
+Allow: /llms.txt
+
+User-agent: YandexBot
+Allow: /
+Allow: /llms.txt
+
 User-agent: AI2Bot
+Allow: /
+Allow: /llms.txt
+
+User-agent: Omgili
+Allow: /
+Allow: /llms.txt
+
+User-agent: Omgilibot
 Allow: /
 Allow: /llms.txt
 
@@ -102,22 +156,6 @@ Allow: /
 Allow: /llms.txt
 
 User-agent: MJ12bot
-Allow: /
-Allow: /llms.txt
-
-User-agent: Googlebot
-Allow: /
-Allow: /llms.txt
-
-User-agent: Bingbot
-Allow: /
-Allow: /llms.txt
-
-User-agent: YandexBot
-Allow: /
-Allow: /llms.txt
-
-User-agent: Amazonbot
 Allow: /
 Allow: /llms.txt
 
