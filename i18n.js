@@ -1,4 +1,4 @@
-﻿var i18n = {
+var i18n = {
     currentLang: 'zh',
     translations: {
         zh: {},
@@ -290,7 +290,7 @@ i18n.translations.zh = {
     'blog.a3.driver3.p': '不同AI平台与各自内容生态深度绑定，单一的全网通发策略正在失效。品牌需要建立"核心平台深度布局 + 辅助平台精准补充"的差异化矩阵。资源永远不够，把好钢用在刀刃上。',
     'blog.a3.conclusion': 'GEO 3.0的终局不是"做一次管一年"，而是让品牌在AI搜索中拥有持续、稳定、可量化的存在能力——这是AI时代品牌资产的基本配置。',
     'blog.disclaimer': '本文基于GEO行业公开研究与实践观察撰写。市场数据引自GEO行业数据速查表（2026）、QuestMobile（2026）等公开来源。',
-    'blog.update': '更新于：2026年6月1日',
+    'blog.update': '更新于：2026年6月4日',
     'blog.resources.h3': '专业资源下载',
     'blog.resources.intro': '为帮助企业更好地理解和实施GEO优化，我们整理了一系列专业资料供您参考。',
     'blog.resources.r1.h4': 'GEO优化实战白皮书',
@@ -402,7 +402,7 @@ i18n.translations.zh = {
     'insights.view3.tag2': '合规化',
     'insights.view3.tag3': '长期主义',
     'insights.disclaimer': '以上案例数据来自真实项目，已做脱敏处理。效果数据受行业、竞争强度、执行周期等多因素影响，不同项目结果存在差异。',
-    'insights.update': '更新于：2026年6月1日',
+    'insights.update': '更新于：2026年6月4日',
     'insights.cta': '想要了解您的行业如何做GEO优化？立即联系炜佳导导，获取专属GEO优化方案。',
 
     'faq.h2': 'GEO常见问题',
@@ -527,7 +527,7 @@ i18n.translations.zh = {
     'guide.bm4.label': '从零构建的品牌，合理预期周期',
     'guide.benchmark.note': 'GEO构建的是长期数字资产，一次构建持续生效。',
     'guide.disclaimer': '本文所述方法论基于GEO行业公开研究与实践经验整理。效果数据受行业、竞争强度、执行周期等多因素影响，不同项目结果存在差异。各企业在实施GEO策略时应结合自身实际情况进行判断。',
-    'guide.update': '更新于：2026年6月1日'
+    'guide.update': '更新于：2026年6月4日'
 };
 
 i18n.translations.en = {
@@ -762,7 +762,7 @@ i18n.translations.en = {
     'blog.a3.driver3.p': 'Different AI platforms are deeply bound to their respective content ecosystems, and a one-size-fits-all distribution strategy is becoming ineffective. Brands need to build a differentiated matrix of "core platform deep deployment + auxiliary platform precision supplementation." Resources are always limited — use them where they matter most.',
     'blog.a3.conclusion': 'The endgame of GEO 3.0 is not "do it once and it lasts a year," but enabling brands to have a continuous, stable, and quantifiable presence in AI search — this is the essential infrastructure for brand assets in the AI era.',
     'blog.disclaimer': 'This article is based on public GEO industry research and practical observations. Market data is sourced from GEO Industry Data Quick Reference (2026), QuestMobile (2026), and other public sources.',
-    'blog.update': 'Updated: June 1, 2026',
+    'blog.update': 'Updated: June 4, 2026',
     'blog.resources.h3': 'Professional Resources',
     'blog.resources.intro': 'To help enterprises better understand and implement GEO optimization, we have compiled a series of professional materials for your reference.',
     'blog.resources.r1.h4': 'GEO Optimization Practical White Paper',
@@ -874,7 +874,7 @@ i18n.translations.en = {
     'insights.view3.tag2': 'Compliance',
     'insights.view3.tag3': 'Long-termism',
     'insights.disclaimer': 'The above case data comes from real projects and has been anonymized. Performance data is affected by multiple factors including industry, competitive intensity, and execution timeline — results vary across projects.',
-    'insights.update': 'Updated: June 1, 2026',
+    'insights.update': 'Updated: June 4, 2026',
     'insights.cta': 'Want to know how to do GEO optimization for your industry? Contact Weijia Daodao now for a customized GEO optimization plan.',
 
     'faq.h2': 'GEO FAQ',
@@ -999,7 +999,7 @@ i18n.translations.en = {
     'guide.bm4.label': 'Reasonable expectation for brands building from scratch',
     'guide.benchmark.note': 'GEO builds long-term digital assets — build once, sustain continuously.',
     'guide.disclaimer': 'The methodology described in this article is based on public GEO industry research and practical experience. Performance data is affected by multiple factors including industry, competitive intensity, and execution timeline — results vary across projects. Each enterprise should make judgments based on its own actual circumstances when implementing GEO strategies.',
-    'guide.update': 'Updated: June 1, 2026'
+    'guide.update': 'Updated: June 4, 2026'
 };
 
 document.addEventListener('DOMContentLoaded', function() {
