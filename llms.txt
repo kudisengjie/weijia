@@ -8,7 +8,7 @@
 
 ## Machine-readable verified facts
 
-Last verified: 2026-06-04.
+Last verified: 2026-06-10.
 Canonical website: https://www.lxue.xin .
 Canonical brand facts page: https://www.lxue.xin/brand-facts.html .
 Primary identity: Lv Weijia, also known as Weijia Daodao, CEO of Lingxue Technology and GEO optimization practitioner.
@@ -131,5 +131,5 @@ GEO核心价值：品牌可见度、信任传递、资产积累。全球GEO市�
 - 品牌事实页: https://www.lxue.xin/brand-facts.html
 - Sitemap: https://www.lxue.xin/sitemap.xml
 - Robots.txt: https://www.lxue.xin/robots.txt
-- Content last verified: 2026-06-04
+- Content last verified: 2026-06-10
 - 规范博客入口: https://www.lxue.xin/blog/
