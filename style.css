@@ -1652,6 +1652,12 @@ body {
     .compare-block { padding: 24px; }
     .compare-table { font-size: 0.82rem; }
     .compare-table th, .compare-table td { padding: 10px 12px; }
+    .platform-compare-table, .compare-detail-table { font-size: 0.8rem; }
+    .platform-compare-table th, .platform-compare-table td,
+    .compare-detail-table th, .compare-detail-table td { padding: 10px 12px; }
+    .pitfall-item { padding: 16px 18px; }
+    .synergy-grid { grid-template-columns: 1fr; gap: 12px; }
+    .checklist-grid { grid-template-columns: 1fr; gap: 14px; }
 }
 
 @media (max-width: 480px) {
@@ -1713,6 +1719,13 @@ body {
     .support-download-grid { gap: 8px; }
     .faq-subitem { padding-left: 12px; font-size: 0.88rem; }
     .faq-item h4 { font-size: 0.95rem; }
+    .platform-compare-table, .compare-detail-table { font-size: 0.75rem; }
+    .platform-compare-table th, .platform-compare-table td,
+    .compare-detail-table th, .compare-detail-table td { padding: 8px 10px; }
+    .pitfall-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .pitfall-item { padding: 14px 16px; }
+    .synergy-card { padding: 18px; }
+    .checklist-category { padding: 16px; }
 }
 
 .support-section-container { max-width: 1200px; margin: 0 auto; }
@@ -1823,6 +1836,62 @@ body {
 .guide-disclaimer { background: rgba(200, 200, 200, 0.1); padding: 20px 24px; border-radius: 12px; margin-top: 40px; border-left: 4px solid #cccccc; }
 .guide-disclaimer p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 8px; }
 .guide-disclaimer .update-date { font-size: 0.85rem; color: var(--text-muted); text-align: right; margin: 0; }
+
+/* ===== 新增：平台对比表格 ===== */
+.platform-compare-table-wrap { overflow-x: auto; margin: 20px 0; border-radius: 10px; border: 1px solid var(--border-color); }
+.platform-compare-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.platform-compare-table th { background: linear-gradient(135deg, #1e3a5f, #2c5282); color: #fff; padding: 14px 16px; text-align: left; font-weight: 600; white-space: nowrap; }
+.platform-compare-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); vertical-align: top; line-height: 1.65; color: var(--text-light); }
+.platform-compare-table tr:last-child td { border-bottom: none; }
+.platform-compare-table tr:hover td { background: rgba(30, 58, 95, 0.03); }
+.platform-compare-table .td-label { background: rgba(30, 58, 95, 0.05); font-weight: 600; color: var(--text-dark); min-width: 120px; }
+
+/* ===== 新增：误区列表 ===== */
+.pitfall-list { display: flex; flex-direction: column; gap: 16px; margin: 20px 0; }
+.pitfall-item { border-radius: 12px; padding: 20px 24px; border-left: 4px solid; transition: all 0.3s ease; }
+.pitfall-danger { background: rgba(220, 38, 38, 0.04); border-left-color: #dc2626; }
+.pitfall-warning { background: rgba(245, 158, 11, 0.05); border-left-color: #f59e0b; }
+.pitfall-caution { background: rgba(59, 130, 246, 0.04); border-left-color: #3b82f6; }
+.pitfall-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.pitfall-level { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; }
+.pitfall-danger .pitfall-level { background: #dc2626; color: #fff; }
+.pitfall-warning .pitfall-level { background: #f59e0b; color: #fff; }
+.pitfall-caution .pitfall-level { background: #3b82f6; color: #fff; }
+.pitfall-item h4 { font-size: 1.02rem; color: var(--text-dark); font-weight: 600; margin: 0; }
+.pitfall-item p { font-size: 0.9rem; color: var(--text-light); line-height: 1.7; margin: 0; }
+
+/* ===== 新增：One More Thing 容器 ===== */
+.onemorething-block { margin-top: 48px; }
+
+/* ===== 新增：GEO vs SEO 对比表格 ===== */
+.compare-table-wrap { overflow-x: auto; margin: 24px 0; border-radius: 12px; border: 1px solid var(--border-color); }
+.compare-detail-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.compare-detail-table thead th { background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%); color: #fff; padding: 14px 18px; text-align: left; font-weight: 600; font-size: 0.92rem; }
+.compare-detail-table td { padding: 13px 18px; border-bottom: 1px solid var(--border-color); vertical-align: top; line-height: 1.7; color: var(--text-light); font-size: 0.88rem; }
+.compare-detail-table tbody tr:hover td { background: rgba(30, 58, 95, 0.03); }
+.compare-detail-table tbody tr:last-child td { border-bottom: none; }
+.compare-detail-table .td-label { background: rgba(30, 58, 95, 0.06); font-weight: 600; color: var(--text-dark); min-width: 110px; white-space: nowrap; }
+
+/* ===== 新增：协同策略卡片 ===== */
+.synergy-cards { margin-top: 28px; }
+.synergy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+.synergy-card { background: rgba(30, 58, 95, 0.04); border-radius: 12px; padding: 22px; border: 1px solid rgba(30, 58, 95, 0.12); transition: all 0.3s ease; }
+.synergy-card:hover { transform: translateY(-3px); border-color: rgba(30, 58, 95, 0.25); box-shadow: 0 4px 16px rgba(30, 58, 95, 0.08); }
+.synergy-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: linear-gradient(135deg, #1e3a5f, #2c5282); color: #fff; border-radius: 10px; font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; }
+.synergy-card h5 { font-size: 1rem; color: var(--text-dark); font-weight: 600; margin-bottom: 8px; }
+.synergy-card p { font-size: 0.88rem; color: var(--text-light); line-height: 1.65; margin: 0; }
+
+/* ===== 新增：GEO执行检查清单 ===== */
+.checklist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
+.checklist-category { background: rgba(30, 58, 95, 0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(30, 58, 95, 0.1); }
+.checklist-cat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid rgba(30, 58, 95, 0.15); }
+.checklist-cat-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: linear-gradient(135deg, #1e3a5f, #2c5282); color: #fff; border-radius: 8px; font-size: 0.85rem; font-weight: 700; }
+.checklist-cat-header h4 { font-size: 1rem; color: var(--text-dark); font-weight: 600; margin: 0; }
+.checklist-items { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.checklist-item { display: flex; align-items: flex-start; gap: 10px; font-size: 0.87rem; color: var(--text-light); line-height: 1.55; }
+.check-box { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; min-width: 18px; border: 2px solid rgba(30, 58, 95, 0.3); border-radius: 4px; margin-top: 2px; transition: all 0.2s ease; cursor: pointer; }
+.checklist-summary { background: rgba(30, 58, 95, 0.06); padding: 16px 20px; border-radius: 10px; margin-top: 20px; }
+.checklist-summary p { font-size: 0.9rem; color: var(--text-light); margin: 0; line-height: 1.6; }
 
 .home-content { padding: 60px 0; }
 .home-grid-pro { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
