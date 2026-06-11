@@ -1882,7 +1882,7 @@ body {
 .synergy-card p { font-size: 0.88rem; color: var(--text-light); line-height: 1.65; margin: 0; }
 
 /* ===== 新增：GEO执行检查清单 ===== */
-.checklist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
+.checklist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; align-items: start; }
 .checklist-category { background: rgba(30, 58, 95, 0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(30, 58, 95, 0.1); }
 .checklist-cat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid rgba(30, 58, 95, 0.15); }
 .checklist-cat-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: linear-gradient(135deg, #1e3a5f, #2c5282); color: #fff; border-radius: 8px; font-size: 0.85rem; font-weight: 700; }
