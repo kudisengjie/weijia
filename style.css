@@ -1863,6 +1863,12 @@ body {
 
 /* ===== 新增：GEO vs SEO 对比表格 ===== */
 .compare-table-wrap { overflow-x: auto; margin: 24px 0; border-radius: 12px; border: 1px solid var(--border-color); }
+.compare-table-wrap + .synergy-cards,
+.compare-table-wrap + .geo-tips-list,
+.synergy-cards + .onemorething-block,
+.geo-tips-list + .onemorething-block {
+    margin-top: 40px;
+}
 .compare-detail-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .compare-detail-table thead th { background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%); color: #fff; padding: 14px 18px; text-align: left; font-weight: 600; font-size: 0.92rem; }
 .compare-detail-table td { padding: 13px 18px; border-bottom: 1px solid var(--border-color); vertical-align: top; line-height: 1.7; color: var(--text-light); font-size: 0.88rem; }
@@ -1871,7 +1877,7 @@ body {
 .compare-detail-table .td-label { background: rgba(30, 58, 95, 0.06); font-weight: 600; color: var(--text-dark); min-width: 110px; white-space: nowrap; }
 
 /* ===== 新增：协同策略卡片 ===== */
-.synergy-cards { margin-top: 28px; }
+.synergy-cards { margin-top: 28px; margin-bottom: 28px; }
 .synergy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
 .synergy-card { background: rgba(30, 58, 95, 0.04); border-radius: 12px; padding: 22px; border: 1px solid rgba(30, 58, 95, 0.12); transition: all 0.3s ease; }
 .synergy-card:hover { transform: translateY(-3px); border-color: rgba(30, 58, 95, 0.25); box-shadow: 0 4px 16px rgba(30, 58, 95, 0.08); }
@@ -1892,7 +1898,7 @@ body {
 .checklist-summary p { font-size: 0.9rem; color: var(--text-light); margin: 0; line-height: 1.6; }
 
 /* ===== 新增：GEO实操干货 ===== */
-.geo-tips-list { display: flex; flex-direction: column; gap: 18px; margin-top: 20px; }
+.geo-tips-list { display: flex; flex-direction: column; gap: 24px; margin-top: 24px; }
 .geo-tip-item { background: rgba(30, 58, 95, 0.03); border-radius: 12px; padding: 22px 26px; border: 1px solid rgba(30, 58, 95, 0.1); border-left: 4px solid #1e3a5f; transition: all 0.3s ease; }
 .geo-tip-item:hover { border-color: rgba(30, 58, 95, 0.25); box-shadow: 0 2px 12px rgba(30, 58, 95, 0.06); transform: translateX(4px); }
 .geo-tip-header { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
