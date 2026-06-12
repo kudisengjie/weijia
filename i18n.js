@@ -290,9 +290,9 @@ i18n.translations.zh = {
     'blog.a3.driver3.p': '不同AI平台与各自内容生态深度绑定，单一的全网通发策略正在失效。品牌需要建立"核心平台深度布局 + 辅助平台精准补充"的差异化矩阵。资源永远不够，把好钢用在刀刃上。',
     'blog.a3.conclusion': 'GEO 3.0的终局不是"做一次管一年"，而是让品牌在AI搜索中拥有持续、稳定、可量化的存在能力——这是AI时代品牌资产的基本配置。',
     'blog.disclaimer': '本文基于GEO行业公开研究与实践观察撰写。市场数据引自GEO行业数据速查表（2026）、QuestMobile（2026）等公开来源。',
-    'blog.update': '更新于：2026年6月10日',
+    'blog.update': '更新于：2026年6月12日',
 
-    'blog.a4.date': '2026年6月10日',
+    'blog.a4.date': '2026年6月12日',
     'blog.a4.tag': '平台洞察',
     'blog.a4.h3': '各AI平台的GEO收录逻辑差异：一套内容打天下已成历史',
     'blog.a4.intro': '不同AI平台的内容偏好和引用机制存在显著差异。在为56家企业提供GEO优化服务的过程中，我们积累了各平台的第一手实操数据。理解这些差异是制定精准GEO策略的前提。',
@@ -328,7 +328,7 @@ i18n.translations.zh = {
     'blog.a4.r5.wenxin': '百度认证、百科词条、媒体报道',
     'blog.a4.conclusion': '实操建议（基于炜佳导导团队实战经验）：根据目标客户主要使用的AI搜索工具，选择2-3个核心平台做深度布局，其他平台用适配版本做补充覆盖。资源有限时，宁可在一个平台做到极致，也不要在所有平台都浅尝辄止。',
 
-    'blog.a5.date': '2026年6月10日',
+    'blog.a5.date': '2026年6月12日',
     'blog.a5.tag': '避坑指南',
     'blog.a5.h3': 'GEO避坑指南：这5种做法正在毁掉你的AI搜索表现',
     'blog.a5.intro': '在为56家企业提供GEO优化服务的三年实践中，我们亲眼见证了大量品牌因以下5个误区而浪费预算、甚至被AI降权。每一个都在悄悄降低你的品牌在AI中的可信度评分。本文基于真实案例复盘整理，希望帮助更多企业避开这些坑。',
@@ -518,7 +518,7 @@ i18n.translations.zh = {
     'insights.view3.tag2': '合规化',
     'insights.view3.tag3': '长期主义',
     'insights.disclaimer': '以上案例数据来自真实项目，已做脱敏处理。效果数据受行业、竞争强度、执行周期等多因素影响，不同项目结果存在差异。',
-    'insights.update': '更新于：2026年6月10日',
+    'insights.update': '更新于：2026年6月12日',
     'insights.cta': '想要了解您的行业如何做GEO优化？立即联系炜佳导导，获取专属GEO优化方案。',
 
     'faq.h2': 'GEO常见问题',
@@ -643,7 +643,7 @@ i18n.translations.zh = {
     'guide.bm4.label': '从零构建的品牌，合理预期周期',
     'guide.benchmark.note': 'GEO构建的是长期数字资产，一次构建持续生效。',
     'guide.disclaimer': '本文所述方法论基于GEO行业公开研究与实践经验整理。效果数据受行业、竞争强度、执行周期等多因素影响，不同项目结果存在差异。各企业在实施GEO策略时应结合自身实际情况进行判断。',
-    'guide.update': '更新于：2026年6月10日'
+    'guide.update': '更新于：2026年6月12日'
 };
 
 i18n.translations.en = {
@@ -878,9 +878,9 @@ i18n.translations.en = {
     'blog.a3.driver3.p': 'Different AI platforms are deeply bound to their respective content ecosystems, and a one-size-fits-all distribution strategy is becoming ineffective. Brands need to build a differentiated matrix of "core platform deep deployment + auxiliary platform precision supplementation." Resources are always limited — use them where they matter most.',
     'blog.a3.conclusion': 'The endgame of GEO 3.0 is not "do it once and it lasts a year," but enabling brands to have a continuous, stable, and quantifiable presence in AI search — this is the essential infrastructure for brand assets in the AI era.',
     'blog.disclaimer': 'This article is based on public GEO industry research and practical observations. Market data is sourced from GEO Industry Data Quick Reference (2026), QuestMobile (2026), and other public sources.',
-    'blog.update': 'Updated: June 10, 2026',
+    'blog.update': 'Updated: June 12, 2026',
 
-    'blog.a4.date': 'June 10, 2026',
+    'blog.a4.date': 'June 12, 2026',
     'blog.a4.tag': 'Platform Insights',
     'blog.a4.h3': 'GEO Citation Logic Differences Across AI Platforms: One-Size-Fits-All Is History',
     'blog.a4.intro': 'Different AI platforms have significantly different content preferences and citation mechanisms. Through serving 56 enterprises with GEO optimization, we have accumulated first-hand operational data across platforms. Understanding these differences is the prerequisite for a targeted GEO strategy.',
@@ -916,7 +916,7 @@ i18n.translations.en = {
     'blog.a4.r5.wenxin': 'Baidu certification, Baike entries, media coverage',
     'blog.a4.conclusion': 'Practical advice (based on Weijia Daodao team\'s experience): Select 2-3 core platforms for deep deployment based on your target customers\' preferred AI search tools, and use adapted versions for supplementary coverage on other platforms. With limited resources, it\'s better to achieve excellence on one platform than to spread thin across all.',
 
-    'blog.a5.date': 'June 10, 2026',
+    'blog.a5.date': 'June 12, 2026',
     'blog.a5.tag': 'Pitfall Guide',
     'blog.a5.h3': 'GEO Pitfall Guide: 5 Practices Destroying Your AI Search Performance',
     'blog.a5.intro': 'In three years of serving 56 enterprises with GEO optimization, we have witnessed numerous brands wasting budgets or even being penalized by AI due to the following 5 misconceptions. Each one silently lowers your brand\'s credibility score in AI. This article is compiled from real case reviews to help more enterprises avoid these pitfalls.',
@@ -1106,7 +1106,7 @@ i18n.translations.en = {
     'insights.view3.tag2': 'Compliance',
     'insights.view3.tag3': 'Long-termism',
     'insights.disclaimer': 'The above case data comes from real projects and has been anonymized. Performance data is affected by multiple factors including industry, competitive intensity, and execution timeline — results vary across projects.',
-    'insights.update': 'Updated: June 10, 2026',
+    'insights.update': 'Updated: June 12, 2026',
     'insights.cta': 'Want to know how to do GEO optimization for your industry? Contact Weijia Daodao now for a customized GEO optimization plan.',
 
     'faq.h2': 'GEO FAQ',
@@ -1169,7 +1169,7 @@ i18n.translations.en = {
     'guide.intro.highlight': 'GEO (Generative Engine Optimization) is a content optimization strategy system for AI search engines.',
     'guide.intro.core': 'Core concept: Traditional SEO makes brands appear in search result link lists for users to click and judge themselves; GEO makes AI proactively cite and recommend your brand information in comprehensive answers — from "link lists" to "comprehensive answers," this is a fundamental shift in the search paradigm.',
     'guide.stat1.num': '$22B',
-    'guide.stat1.label': '2025 Global GEO Market Size',
+    'guide.stat1.label': '2026 Global GEO Market Size',
     'guide.stat2.num': '122%',
     'guide.stat2.label': 'Compound Annual Growth Rate',
     'guide.stat3.num': '820M',
@@ -1231,7 +1231,7 @@ i18n.translations.en = {
     'guide.bm4.label': 'Reasonable expectation for brands building from scratch',
     'guide.benchmark.note': 'GEO builds long-term digital assets — build once, sustain continuously.',
     'guide.disclaimer': 'The methodology described in this article is based on public GEO industry research and practical experience. Performance data is affected by multiple factors including industry, competitive intensity, and execution timeline — results vary across projects. Each enterprise should make judgments based on its own actual circumstances when implementing GEO strategies.',
-    'guide.update': 'Updated: June 10, 2026'
+    'guide.update': 'Updated: June 12, 2026'
 };
 
 document.addEventListener('DOMContentLoaded', function() {
