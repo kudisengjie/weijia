@@ -1851,7 +1851,7 @@ body {
 .platform-compare-table .td-label { background: rgba(30, 58, 95, 0.05); font-weight: 600; color: var(--text-dark); min-width: 120px; }
 
 /* ===== 新增：误区列表 ===== */
-.pitfall-list { display: flex; flex-direction: column; gap: 16px; margin: 20px 0; }
+.pitfall-list { display: flex; flex-direction: column; gap: 24px; margin: 20px 0; }
 .pitfall-item { border-radius: 12px; padding: 20px 24px; border-left: 4px solid #1e3a5f; background: rgba(30, 58, 95, 0.03); transition: all 0.3s ease; }
 .pitfall-item:hover { background: rgba(30, 58, 95, 0.06); transform: translateX(4px); }
 .pitfall-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
@@ -1860,7 +1860,15 @@ body {
 .pitfall-item p { font-size: 0.9rem; color: var(--text-light); line-height: 1.7; margin: 0; }
 
 /* ===== 新增：One More Thing 容器 ===== */
-.onemorething-block { margin-top: 48px; }
+.onemorething-block { margin: 48px 0; }
+
+/* 区块间间距：确保各模块不贴在一起 */
+.pitfall-list + .blog-disclaimer,
+.blog-disclaimer + .resources-section,
+.resources-section + .onemorething-block,
+.onemorething-block + .footer {
+    margin-top: 40px;
+}
 
 /* ===== 新增：GEO vs SEO 对比表格 ===== */
 .compare-table-wrap { overflow-x: auto; margin: 24px 0; border-radius: 12px; border: 1px solid var(--border-color); }
