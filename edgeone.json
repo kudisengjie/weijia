@@ -46,6 +46,10 @@
       "source": "/*.html",
       "headers": [
         {
+          "key": "Content-Type",
+          "value": "text/html; charset=UTF-8"
+        },
+        {
           "key": "Cache-Control",
           "value": "public,max-age=0,must-revalidate"
         }
@@ -54,6 +58,10 @@
     {
       "source": "/blog/",
       "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/html; charset=UTF-8"
+        },
         {
           "key": "Cache-Control",
           "value": "public,max-age=0,must-revalidate"
@@ -64,6 +72,14 @@
       "source": "/robots.txt",
       "headers": [
         {
+          "key": "Content-Type",
+          "value": "text/plain; charset=UTF-8"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
           "key": "Cache-Control",
           "value": "public,max-age=0,must-revalidate"
         }
@@ -73,6 +89,14 @@
       "source": "/sitemap.xml",
       "headers": [
         {
+          "key": "Content-Type",
+          "value": "application/xml; charset=UTF-8"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
           "key": "Cache-Control",
           "value": "public,max-age=0,must-revalidate"
         }
@@ -81,6 +105,14 @@
     {
       "source": "/llms.txt",
       "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=UTF-8"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
         {
           "key": "Cache-Control",
           "value": "public,max-age=0,must-revalidate"

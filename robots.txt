@@ -8,7 +8,7 @@ Allow: /sitemap.xml
 Allow: /brand-facts.html
 
 Sitemap: https://www.lxue.xin/sitemap.xml
-LLMS: https://www.lxue.xin/llms.txt
+# AI-readable site summary: https://www.lxue.xin/llms.txt
 
 User-agent: OAI-SearchBot
 Allow: /
@@ -80,21 +80,32 @@ Allow: /
 Allow: /llms.txt
 
 User-agent: Bytespider
+User-agent: ByteSpider
+User-agent: DoubaoBot
+User-agent: Doubao
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 
 User-agent: TencentCrawl
+User-agent: TencentBot
+User-agent: YuanbaoBot
+User-agent: TencentYuanbaoBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 
 User-agent: DeepSeek
+User-agent: DeepSeekBot
+User-agent: DeepSeekCrawler
+User-agent: DeepSeek-Crawler
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 
 User-agent: QwenBot
+User-agent: Qwen
+User-agent: AlibabaBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
