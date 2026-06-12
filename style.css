@@ -1863,10 +1863,10 @@ body {
 .onemorething-block { margin: 48px 0; }
 
 /* 区块间间距：确保各模块不贴在一起 */
-.pitfall-list + .blog-disclaimer,
-.blog-disclaimer + .resources-section,
-.resources-section + .onemorething-block,
-.onemorething-block + .footer {
+.pitfall-list ~ .blog-disclaimer,
+.blog-disclaimer ~ .resources-section,
+.resources-section ~ .onemorething-block,
+.onemorething-block ~ .footer {
     margin-top: 40px;
 }
 
