@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行业博客|炜佳导导|GEO优化|GEO战略技术研</title>
+    <meta name="description" content="炜佳导导行业博客，基于官方文档与学术研究，分享GEO优化、AI搜索、结构化数据、E-E-A-T与合规实践">
+    <meta name="keywords" content="行业博客,GEO优化,AI搜索,AI Overviews,E-E-A-T,结构化数？OpenAI爬虫,生成式AI合规,炜佳导导,吕炜">
+    <meta name="author" content="吕炜">
+    <meta name="robots" content="index, follow">
+    <meta name="baidu-site-verification" content="codeva-dkxhxBZyY5" />
+    <meta name="applicable-device" content="pc,mobile">
+    <meta property="article:modified_time" content="2026-06-22T00:00:00+08:00">
+    <link rel="canonical" href="https://www.lxue.xin/blog/">
+    <link rel="alternate" type="text/plain" href="https://www.lxue.xin/llms.txt">
+    <link rel="sitemap" type="application/xml" href="https://www.lxue.xin/sitemap.xml">
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="apple-touch-icon" href="../images/logo.png">
+    <link rel="stylesheet" href="../style.css">
+    <script type="application/ld+json">
+    {
+            "@context": "https://schema.org",
+            "@graph": [
+                    {
+                            "@type": "CollectionPage",
+                            "@id": "https://www.lxue.xin/blog/#webpage",
+                            "url": "https://www.lxue.xin/blog/",
+                            "name": "行业博客 - 炜佳导导 GEO优化",
+                            "description": "炜佳导导行业博客，围绕GEO优化、AI搜索、结构化数据、E-E-A-T与合规实践提供可验证的行业洞察？,
+                            "inLanguage": "zh-CN",
+                            "isPartOf": {
+                                    "@id": "https://www.lxue.xin/#website"
+                            },
+                            "author": {
+                                    "@id": "https://www.lxue.xin/#person"
+                            },
+                            "publisher": {
+                                    "@id": "https://www.lxue.xin/#organization"
+                            },
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22"
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-compliance",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "GEO进入合规化新阶段：标准建立与行业重塑",
+                            "description": "GEO从短期曝光技巧转向可信内容工程，核心边界是真实来源、清晰标注、可复核证据与持续监测？,
+                            "author": {
+                                    "@type": "Organization",
+                                    "name": "国家互联网信息办公室"
+                            },
+                            "publisher": {
+                                    "@type": "Organization",
+                                    "name": "国家互联网信息办公室"
+                            },
+                            "about": "GEO合规？,
+                            "citation": [
+                                    "https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：国家互联网信息办公？,
+                            "sourceOrganization": {
+                                    "@type": "Organization",
+                                    "name": "国家互联网信息办公室"
+                            },
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "国家互联网信息办公室"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-algorithm",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "AI搜索算法集中升级：信任构建取代关键词成为核心",
+                            "description": "AI搜索优化应围绕可验证事实、清晰作者、来源一致与用户价值，而不是关键词堆砌？,
+                            "author": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "publisher": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "about": "AI搜索算法",
+                            "citation": [
+                                    "https://developers.google.com/search/docs/fundamentals/creating-helpful-content"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：Google Search Central",
+                            "sourceOrganization": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://developers.google.com/search/docs/fundamentals/creating-helpful-content",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "Google Search Central"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-geo30",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "从流量思维到资产思维：GEO 3.0时代的价值转？,
+                            "description": "GEO的长期价值在于构建可被AI理解、引用、核验的品牌知识资产，而不是一次性流量购买？,
+                            "author": {
+                                    "@type": "Organization",
+                                    "name": "arXiv"
+                            },
+                            "publisher": {
+                                    "@type": "Organization",
+                                    "name": "arXiv"
+                            },
+                            "about": "GEO 3.0",
+                            "citation": [
+                                    "https://arxiv.org/abs/2311.09735"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：arXiv",
+                            "sourceOrganization": {
+                                    "@type": "Organization",
+                                    "name": "arXiv"
+                            },
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://arxiv.org/abs/2311.09735",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "arXiv"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-platform",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "各AI平台的GEO收录逻辑差异：一套内容打天下已成历史",
+                            "description": "不同AI平台和内容生态对信源、格式与时效性的偏好不同，GEO应先诊断再分层布局？,
+                            "author": [
+                                    {
+                                            "@type": "Organization",
+                                            "name": "OpenAI"
+                                    },
+                                    {
+                                            "@type": "Organization",
+                                            "name": "Google Search Central"
+                                    }
+                            ],
+                            "publisher": [
+                                    {
+                                            "@type": "Organization",
+                                            "name": "OpenAI"
+                                    },
+                                    {
+                                            "@type": "Organization",
+                                            "name": "Google Search Central"
+                                    }
+                            ],
+                            "about": "AI平台差异",
+                            "citation": [
+                                    "https://platform.openai.com/docs/bots",
+                                    "https://developers.google.com/search/docs/appearance/ai-features"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：OpenAI / Google Search Central",
+                            "sourceOrganization": [
+                                    {
+                                            "@type": "Organization",
+                                            "name": "OpenAI"
+                                    },
+                                    {
+                                            "@type": "Organization",
+                                            "name": "Google Search Central"
+                                    }
+                            ],
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://platform.openai.com/docs/bots",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "OpenAI"
+                                            }
+                                    },
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://developers.google.com/search/docs/appearance/ai-features",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "Google Search Central"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-pitfalls",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "GEO避坑指南：这5种做法正在毁掉你的AI搜索表现",
+                            "description": "GEO常见误区包括关键词堆砌、一式多投、多源不一致、只看收录和缺乏监测？,
+                            "author": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "publisher": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "about": "GEO误区",
+                            "citation": [
+                                    "https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：Google Search Central",
+                            "sourceOrganization": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "Google Search Central"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-google-ai-features",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "Google AI Overviews / AI Mode 对GEO的真实要？,
+                            "description": "Google明确表示AI功能没有额外特殊优化要求，核心仍是索引、可抓取、可见文本、页面体验与可见内容匹配的结构化数据？,
+                            "author": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "publisher": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "about": "Google AI Overviews与AI Mode",
+                            "citation": [
+                                    "https://developers.google.com/search/docs/appearance/ai-features"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：Google Search Central",
+                            "sourceOrganization": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://developers.google.com/search/docs/appearance/ai-features",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "Google Search Central"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-eeat-who-how-why",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "E-E-A-T ？Who / How / Why 落地",
+                            "description": "E-E-A-T不是单一排名因子，Trust是核心；内容应说明谁写、如何产生、为什么写，尤其涉及AI辅助时要透明？,
+                            "author": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "publisher": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "about": "E-E-A-T",
+                            "citation": [
+                                    "https://developers.google.com/search/docs/fundamentals/creating-helpful-content"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：Google Search Central",
+                            "sourceOrganization": {
+                                    "@type": "Organization",
+                                    "name": "Google Search Central"
+                            },
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://developers.google.com/search/docs/fundamentals/creating-helpful-content",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "Google Search Central"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-structured-data-jsonld",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "Schema.org ？JSON-LD：让AI读懂，但不替内容背书",
+                            "description": "结构化数据用于给搜索系统提供页面含义线索，必须与用户可见内容一致，推荐使用JSON-LD并保持可验证？,
+                            "author": [
+                                    {
+                                            "@type": "Organization",
+                                            "name": "Google Search Central"
+                                    },
+                                    {
+                                            "@type": "Organization",
+                                            "name": "Schema.org"
+                                    }
+                            ],
+                            "publisher": [
+                                    {
+                                            "@type": "Organization",
+                                            "name": "Google Search Central"
+                                    },
+                                    {
+                                            "@type": "Organization",
+                                            "name": "Schema.org"
+                                    }
+                            ],
+                            "about": "结构化数？,
+                            "citation": [
+                                    "https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data",
+                                    "https://schema.org/BlogPosting",
+                                    "https://schema.org/FAQPage"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：Google Search Central / Schema.org",
+                            "sourceOrganization": [
+                                    {
+                                            "@type": "Organization",
+                                            "name": "Google Search Central"
+                                    },
+                                    {
+                                            "@type": "Organization",
+                                            "name": "Schema.org"
+                                    }
+                            ],
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "Google Search Central"
+                                            }
+                                    },
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://schema.org/BlogPosting",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "Schema.org"
+                                            }
+                                    },
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://schema.org/FAQPage",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "Schema.org"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-openai-crawlers",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "OAI-SearchBot、GPTBot ？robots.txt 边界",
+                            "description": "OpenAI将搜索抓取和训练抓取区分为不同User-Agent：OAI-SearchBot用于ChatGPT搜索，GPTBot用于训练相关抓取？,
+                            "author": {
+                                    "@type": "Organization",
+                                    "name": "OpenAI"
+                            },
+                            "publisher": {
+                                    "@type": "Organization",
+                                    "name": "OpenAI"
+                            },
+                            "about": "OpenAI爬虫",
+                            "citation": [
+                                    "https://platform.openai.com/docs/bots"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：OpenAI",
+                            "sourceOrganization": {
+                                    "@type": "Organization",
+                                    "name": "OpenAI"
+                            },
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://platform.openai.com/docs/bots",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "OpenAI"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-china-ai-compliance",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "中国生成式AI合规下的白帽GEO边界",
+                            "description": "白帽GEO应尊重知识产权、商业道德、个人权益，提高信息准确性与可靠性，避免虚假有害信息和不正当竞争？,
+                            "author": {
+                                    "@type": "Organization",
+                                    "name": "国家互联网信息办公室"
+                            },
+                            "publisher": {
+                                    "@type": "Organization",
+                                    "name": "国家互联网信息办公室"
+                            },
+                            "about": "生成式AI合规",
+                            "citation": [
+                                    "https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：国家互联网信息办公？,
+                            "sourceOrganization": {
+                                    "@type": "Organization",
+                                    "name": "国家互联网信息办公室"
+                            },
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "国家互联网信息办公室"
+                                            }
+                                    }
+                            ]
+                    },
+                    {
+                            "@type": "BlogPosting",
+                            "@id": "https://www.lxue.xin/blog/#article-geo-research-framework",
+                            "mainEntityOfPage": "https://www.lxue.xin/blog/",
+                            "headline": "GEO学术框架与生成式答案可见？,
+                            "description": "GEO论文将优化目标从网页排名转向生成式答案中的可见度与引用，提醒企业用黑盒评估和领域化方法做长期监测？,
+                            "author": {
+                                    "@type": "Organization",
+                                    "name": "arXiv"
+                            },
+                            "publisher": {
+                                    "@type": "Organization",
+                                    "name": "arXiv"
+                            },
+                            "about": "GEO学术研究",
+                            "citation": [
+                                    "https://arxiv.org/abs/2311.09735"
+                            ],
+                            "datePublished": "2026-06-22",
+                            "dateModified": "2026-06-22",
+                            "creditText": "文章来源：arXiv",
+                            "sourceOrganization": {
+                                    "@type": "Organization",
+                                    "name": "arXiv"
+                            },
+                            "isBasedOn": [
+                                    {
+                                            "@type": "WebPage",
+                                            "url": "https://arxiv.org/abs/2311.09735",
+                                            "publisher": {
+                                                    "@type": "Organization",
+                                                    "name": "arXiv"
+                                            }
+                                    }
+                            ]
+                    }
+            ]
+    }
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">零雪科技-Genesis</div>
+            <div class="menu-toggle"><span></span><span></span><span></span></div>
+            <ul class="nav-links">
+                <li><a href="../index.html" data-i18n="nav.home">首页</a></li>
+                <li><a href="../profile.html" data-i18n="nav.about">关于</a></li>
+                <li><a href="./" class="active" data-i18n="nav.blog">行业博客</a></li>
+                <li><a href="../geo-guide.html" data-i18n="nav.geo">GEO指南</a></li>
+                <li><a href="../insights.html" data-i18n="nav.cases">案例见解</a></li>
+                <li><a href="../support.html" data-i18n="nav.faq">常见问题</a></li>
+                <li><a href="#" class="lang-switch-mobile" data-i18n="nav.lang">English</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="#" class="lang-switch" data-i18n="nav.lang">English</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section blog-section">
+        <div class="container">
+            <h2 data-i18n="blog.h2">行业博客</h2>
+
+            <div class="blog-intro">
+                <p data-i18n="blog.intro">洞察GEO行业前沿动态，解读AI搜索算法变化，探讨品牌数字化转型策略。每篇内容均提供可验证来源，默认折叠，便于按需阅读</p>
+            </div>
+
+            <div class="blog-articles">
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a1.date">2026？？6</span><span class="article-tag" data-i18n="blog.a1.tag">行业趋势</span><span class="article-source" data-i18n="blog.a1.source">文章来源：国家互联网信息办公</span></span>
+                        <span class="accordion-title" data-i18n="blog.a1.h3">GEO进入合规化新阶段：标准建立与行业重塑</span>
+                        <span class="accordion-teaser" data-i18n="blog.a1.intro">GEO正在从短期曝光技巧，转向真实、可验证、可持续的内容与信任工程</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a1.p1">GEO如果要长期有效，底层不是“操控AI答案”，而是把品牌事实整理成可被用户、搜索系统和AI工具共同验证的信息资产。合规化的核心是来源清晰、事实一致、身份明确、更新可追踪</p>
+                        <p data-i18n="blog.a1.p2">从监管角度看，生成式AI服务强调合法来源、知识产权、透明度、准确性和可靠性。企业做GEO时，不能用虚假背书、冒用权威、批量低质内容去制造“看似全网都在说”的假象</p>
+                        <p data-i18n="blog.a1.p3">实操上，建议建立品牌事实台账：企业名称、服务边界、资质、案例口径、作者身份、联系方式和更新时间。每一次发布都从这份台账派生，避免官网、媒体页、问答页互相矛盾</p>
+                        <div class="article-highlight">
+                            <div class="highlight-stats">
+                                <div class="highlight-stat"><strong data-i18n="blog.a1.stat1.num">真实来源</strong><span data-i18n="blog.a1.stat1.label">所有关键事实可追溯到原始页面或官方文件</span></div>
+                                <div class="highlight-stat"><strong data-i18n="blog.a1.stat2.num">一致表</strong><span data-i18n="blog.a1.stat2.label">品牌核心信息跨页面保持同一口径</span></div>
+                                <div class="highlight-stat"><strong data-i18n="blog.a1.stat3.num">持续复核</strong><span data-i18n="blog.a1.stat3.label">每月至少复查AI引用与公开信源变化</span></div>
+                            </div>
+                        </div>
+                        <ul class="source-list">
+                            <li><a href="https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm" target="_blank" rel="noopener noreferrer">国家网信办：《生成式人工智能服务管理暂行办法</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a2.date">2026？？6</span><span class="article-tag" data-i18n="blog.a2.tag">算法升级</span><span class="article-source" data-i18n="blog.a2.source">文章来源：Google Search Central</span></span>
+                        <span class="accordion-title" data-i18n="blog.a2.h3">AI搜索算法集中升级：信任构建取代关键词成为核心</span>
+                        <span class="accordion-teaser" data-i18n="blog.a2.intro">关键词仍有帮助，但它不能替代可信来源、清晰作者和可验证内容</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a2.p1">AI搜索更像“答案合成”而不是“十个蓝色链接”。内容能不能被采纳，取决于系统是否能理解页面主题、判断来源可信、并把它和其他信源交叉验证</p>
+                        <div class="algorithm-changes">
+                            <div class="change-item"><div class="change-icon">1</div><div class="change-text"><h4 data-i18n="blog.a2.change1.h4">重要内容必须以文本存</h4><p data-i18n="blog.a2.change1.p">如果关键信息只在图片、视频或脚本渲染里，搜索与AI系统可能无法稳定提取。标题、摘要、结论、作者和来源应放在HTML正文中</p></div></div>
+                            <div class="change-item"><div class="change-icon">2</div><div class="change-text"><h4 data-i18n="blog.a2.change2.h4">结构化数据必须匹配可见内</h4><p data-i18n="blog.a2.change2.p">JSON-LD不是“隐藏加分器”。Google明确要求结构化数据描述页面上的可见内容，不能标记用户看不到的信息</p></div></div>
+                            <div class="change-item"><div class="change-icon">3</div><div class="change-text"><h4 data-i18n="blog.a2.change3.h4">信任来自可解释的证据</h4><p data-i18n="blog.a2.change3.p">作者是谁、为什么写、如何验证、引用了哪些来源，会直接影响读者和系统对内容可信度的判断</p></div></div>
+                        </div>
+                        <div class="article-conclusion"><p data-i18n="blog.a2.conclusion">核心启示：GEO不是关键词密度竞赛，而是把专业判断、来源证据和可读结构放到同一页上</p></div>
+                        <ul class="source-list">
+                            <li><a href="https://developers.google.com/search/docs/fundamentals/creating-helpful-content" target="_blank" rel="noopener noreferrer">Google Search Central：Creating helpful, reliable, people-first content</a></li>
+                            <li><a href="https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data" target="_blank" rel="noopener noreferrer">Google Search Central：Structured data introduction</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a3.date">2026？？6</span><span class="article-tag" data-i18n="blog.a3.tag">战略洞察</span><span class="article-source" data-i18n="blog.a3.source">文章来源：arXiv</span></span>
+                        <span class="accordion-title" data-i18n="blog.a3.h3">从流量思维到资产思维：GEO 3.0时代的价值转</span>
+                        <span class="accordion-teaser" data-i18n="blog.a3.intro">GEO的目标不是做一次曝光，而是沉淀能被AI持续理解和引用的品牌知识资产</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a3.p1">生成式答案改变了品牌被发现的路径。用户不再只看排名列表，而是在AI摘要、比较、追问和推荐中完成判断。因此，GEO优化对象也从“页面排名”延伸到“答案中是否被引用、如何被描述、是否被选中”</p>
+                        <div class="driver-cards">
+                            <div class="driver-card"><div class="driver-icon">01</div><h4 data-i18n="blog.a3.driver1.h4">把品牌事实资产化</h4><p data-i18n="blog.a3.driver1.p">先统一品牌事实，再扩展到官网、简介页、案例页、FAQ和第三方平台。事实一致性越高，AI拼接错误的概率越低</p></div>
+                            <div class="driver-card"><div class="driver-icon">02</div><h4 data-i18n="blog.a3.driver2.h4">把内容结构工程化</h4><p data-i18n="blog.a3.driver2.p">每篇内容都应有明确问题、短答案、证据来源、适用边界和下一步建议。结构稳定，才便于复用和监测</p></div>
+                            <div class="driver-card"><div class="driver-icon">03</div><h4 data-i18n="blog.a3.driver3.h4">把效果监测常态化</h4><p data-i18n="blog.a3.driver3.p">记录核心问法下的品牌出现率、描述准确性、引用来源、竞品占位和转化线索，按月复盘</p></div>
+                        </div>
+                        <div class="article-conclusion geo30-endgame"><p data-i18n="blog.a3.conclusion">GEO 3.0的重点不是“让AI说你一次”，而是让AI在相关问题中稳定、准确、有依据地理解你</p></div>
+                        <ul class="source-list">
+                            <li><a href="https://arxiv.org/abs/2311.09735" target="_blank" rel="noopener noreferrer">arXiv：GEO: Generative Engine Optimization</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a4.date">2026？？6</span><span class="article-tag" data-i18n="blog.a4.tag">平台洞察</span><span class="article-source" data-i18n="blog.a4.source">文章来源：OpenAI / Google Search Central</span></span>
+                        <span class="accordion-title" data-i18n="blog.a4.h3">各AI平台的GEO收录逻辑差异：一套内容打天下已成历史</span>
+                        <span class="accordion-teaser" data-i18n="blog.a4.intro">不同平台有不同抓取、索引和展示规则，企业应先确定目标平台，再做内容适配</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a4.p1">平台差异并不意味着要写互相矛盾的内容，而是同一事实用不同格式呈现：官网承载权威事实，FAQ承接问答，技术文档承接细节，案例页承接经验与边界</p>
+                        <div class="platform-compare-table-wrap">
+                            <table class="platform-compare-table">
+                                <thead><tr><th data-i18n="blog.a4.th.dim">维度</th><th data-i18n="blog.a4.th.google">Google AI功能</th><th data-i18n="blog.a4.th.openai">ChatGPT搜索</th><th data-i18n="blog.a4.th.general">通用GEO启示</th></tr></thead>
+                                <tbody>
+                                    <tr><td class="td-label"><strong data-i18n="blog.a4.r1.label">抓取入口</strong></td><td data-i18n="blog.a4.r1.google">沿用Google Search基础要求和Googlebot控制</td><td data-i18n="blog.a4.r1.openai">OAI-SearchBot用于搜索展示，GPTBot用于训练相关抓取</td><td data-i18n="blog.a4.r1.general">robots、索引、可见文本要分别检</td></tr>
+                                    <tr><td class="td-label"><strong data-i18n="blog.a4.r2.label">内容要求</strong></td><td data-i18n="blog.a4.r2.google">无特殊AI schema，强调有用内容与技术可访问</td><td data-i18n="blog.a4.r2.openai">允许搜索抓取才更可能进入ChatGPT搜索答案</td><td data-i18n="blog.a4.r2.general">不要把GEO简化为单一标签或文</td></tr>
+                                    <tr><td class="td-label"><strong data-i18n="blog.a4.r3.label">监测重点</strong></td><td data-i18n="blog.a4.r3.google">Search Console整体Web表现、索引和摘要控制</td><td data-i18n="blog.a4.r3.openai">robots配置、来源是否可访问、答案是否出</td><td data-i18n="blog.a4.r3.general">按平台记录问法、答案、引用与线索</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="article-conclusion"><p data-i18n="blog.a4.conclusion">实操建议：先？-3个最影响客户决策的平台做深度诊断，确认抓取、索引、问答展示和转化路径，再扩展内容矩阵</p></div>
+                        <ul class="source-list">
+                            <li><a href="https://developers.google.com/search/docs/appearance/ai-features" target="_blank" rel="noopener noreferrer">Google Search Central：AI features and your website</a></li>
+                            <li><a href="https://platform.openai.com/docs/bots" target="_blank" rel="noopener noreferrer">OpenAI：Overview of OpenAI crawlers</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a5.date">2026？？6</span><span class="article-tag" data-i18n="blog.a5.tag">避坑指南</span><span class="article-source" data-i18n="blog.a5.source">文章来源：Google Search Central</span></span>
+                        <span class="accordion-title" data-i18n="blog.a5.h3">GEO避坑指南：这5种做法正在毁掉你的AI搜索表现</span>
+                        <span class="accordion-teaser" data-i18n="blog.a5.intro">避坑的关键不是更激进，而是更真实、更一致、更可验证</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <div class="pitfall-list">
+                            <div class="pitfall-item"><div class="pitfall-header"><span class="pitfall-level" data-i18n="blog.a5.p1.num">误区 1</span><h4 data-i18n="blog.a5.p1.h4">用SEO思维做GEO——疯狂堆关键</h4></div><p data-i18n="blog.a5.p1.p">AI不是只匹配关键词，而是理解问题、来源和上下文。正确做法是围绕用户真实问题组织内容，让关键词自然出现在定义、场景、证据和结论中</p></div>
+                            <div class="pitfall-item"><div class="pitfall-header"><span class="pitfall-level" data-i18n="blog.a5.p2.num">误区 2</span><h4 data-i18n="blog.a5.p2.h4">一式多投——同一内容发遍全网</h4></div><p data-i18n="blog.a5.p2.p">同一事实可以多渠道呈现，但不应复制粘贴成低质分发。正确做法是保留核心事实一致，针对平台格式改写摘要、问答、表格或案例</p></div>
+                            <div class="pitfall-item"><div class="pitfall-header"><span class="pitfall-level" data-i18n="blog.a5.p3.num">误区 3</span><h4 data-i18n="blog.a5.p3.h4">忽视多源一致性——官网说一套，第三方页面写另一</h4></div><p data-i18n="blog.a5.p3.p">品牌名称、服务边界、资质、联系方式和案例口径若互相冲突，AI更容易跳过或错误拼接。正确做法是维护统一品牌事实表</p></div>
+                            <div class="pitfall-item"><div class="pitfall-header"><span class="pitfall-level" data-i18n="blog.a5.p4.num">误区 4</span><h4 data-i18n="blog.a5.p4.h4">只关注收录不关注转化</h4></div><p data-i18n="blog.a5.p4.p">被提及只是开始。还要检查AI如何描述你、是否给出准确联系方式、用户读完是否知道下一步。正确做法是把FAQ、案例和联系方式连接起来</p></div>
+                            <div class="pitfall-item"><div class="pitfall-header"><span class="pitfall-level" data-i18n="blog.a5.p5.num">误区 5</span><h4 data-i18n="blog.a5.p5.h4">做完就不管——缺乏持续监测机</h4></div><p data-i18n="blog.a5.p5.p">搜索和AI体验持续变化，竞品也会更新内容。正确做法是按月监测核心问法、答案截图、引用来源、描述准确度和线索变化</p></div>
+                        </div>
+                        <ul class="source-list">
+                            <li><a href="https://developers.google.com/search/docs/fundamentals/creating-helpful-content" target="_blank" rel="noopener noreferrer">Google Search Central：People-first content guidance</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a6.date">2026？？6</span><span class="article-tag" data-i18n="blog.a6.tag">Google AI</span><span class="article-source" data-i18n="blog.a6.source">文章来源：Google Search Central</span></span>
+                        <span class="accordion-title" data-i18n="blog.a6.h3">Google AI Overviews / AI Mode 对GEO的真实要</span>
+                        <span class="accordion-teaser" data-i18n="blog.a6.intro">Google明确说：AI功能没有额外特殊优化要求，基础SEO仍然适用</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a6.p1">Google Search Central 对站长的核心建议很清楚：AI Overviews ？AI Mode 仍然依赖Google Search的基础能力。页面需要可抓取、可索引、可展示摘要，并遵守搜索政策</p>
+                        <p data-i18n="blog.a6.p2">这对GEO的启示是：不要把“AI优化”包装成神秘技术。真正有效的动作包括允许抓取、做好内链、改善页面体验、让重要内容以文本出现、用高质量图片和视频辅助，并确保结构化数据与页面可见内容一致</p>
+                        <p data-i18n="blog.a6.p3">尤其要注意，Google明确表示不需要创建新的机器可读文件、AI文本文件或特殊Schema才能进入这些AI功能。llms.txt可以服务其他AI读取场景，但不应被承诺为Google AI展示的捷径</p>
+                        <ul class="source-list">
+                            <li><a href="https://developers.google.com/search/docs/appearance/ai-features" target="_blank" rel="noopener noreferrer">Google Search Central：AI features and your website</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a7.date">2026？？6</span><span class="article-tag" data-i18n="blog.a7.tag">E-E-A-T</span><span class="article-source" data-i18n="blog.a7.source">文章来源：Google Search Central</span></span>
+                        <span class="accordion-title" data-i18n="blog.a7.h3">E-E-A-T ？Who / How / Why 落地</span>
+                        <span class="accordion-teaser" data-i18n="blog.a7.intro">E-E-A-T不是一句口号，落地要回答谁写、怎么写、为什么写</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a7.p1">Google把Experience、Expertise、Authoritativeness、Trustworthiness作为评估有用内容的重要概念，其中Trust最重要。内容不一定每一项都同等强，但必须让读者有理由相信它</p>
+                        <p data-i18n="blog.a7.p2">Who：页面应清楚显示作者或组织，并能链接到作者背景。How：如果内容使用AI辅助、数据分析或项目复盘，要说明生产过程和验证方式。Why：内容首先应帮助用户解决问题，而不是为了操控排名或生成批量低价值页面</p>
+                        <p data-i18n="blog.a7.p3">GEO内容可以在每篇文章底部加入“来源与方法”：引用了哪些官方资料、哪些判断来自项目经验、哪些结论需要按行业诊断确认。这样既符合E-E-A-T，也方便AI系统识别内容边界</p>
+                        <ul class="source-list">
+                            <li><a href="https://developers.google.com/search/docs/fundamentals/creating-helpful-content" target="_blank" rel="noopener noreferrer">Google Search Central：Who, How, and Why</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a8.date">2026？？6</span><span class="article-tag" data-i18n="blog.a8.tag">结构化数</span><span class="article-source" data-i18n="blog.a8.source">文章来源：Google Search Central / Schema.org</span></span>
+                        <span class="accordion-title" data-i18n="blog.a8.h3">Schema.org ？JSON-LD：让AI读懂，但不替内容背书</span>
+                        <span class="accordion-teaser" data-i18n="blog.a8.intro">结构化数据是给页面含义的线索，不是隐藏的权威证明</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a8.p1">Google说明，结构化数据是标准化格式，用来提供页面信息并分类页面内容。它可以帮助搜索理解页面，但必须写在对应页面上，并描述用户可见内容</p>
+                        <p data-i18n="blog.a8.p2">对GEO而言，BlogPosting、Article、FAQPage、Organization、Person等类型可以帮助机器确认页面主题、作者、发布时间和问答关系。推荐使用JSON-LD，因为维护成本低、错误率更可控</p>
+                        <p data-i18n="blog.a8.p3">落地原则：先写清楚用户可见正文，再写JSON-LD；JSON-LD里的问题、答案、文章标题、日期和来源必须与页面一致。不要把不存在的奖项、资质、排名写进结构化数据</p>
+                        <ul class="source-list">
+                            <li><a href="https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data" target="_blank" rel="noopener noreferrer">Google Search Central：Structured data markup</a></li>
+                            <li><a href="https://schema.org/BlogPosting" target="_blank" rel="noopener noreferrer">Schema.org：BlogPosting</a></li>
+                            <li><a href="https://schema.org/FAQPage" target="_blank" rel="noopener noreferrer">Schema.org：FAQPage</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a9.date">2026？？6</span><span class="article-tag" data-i18n="blog.a9.tag">AI爬虫</span><span class="article-source" data-i18n="blog.a9.source">文章来源：OpenAI</span></span>
+                        <span class="accordion-title" data-i18n="blog.a9.h3">OAI-SearchBot、GPTBot ？robots.txt 边界</span>
+                        <span class="accordion-teaser" data-i18n="blog.a9.intro">搜索抓取和训练抓取不是一回事，robots.txt要按目标分别配置</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a9.p1">OpenAI文档把OAI-SearchBot和GPTBot区分得很明确：OAI-SearchBot用于ChatGPT搜索功能中展示网站；GPTBot用于抓取可能用于训练基础模型的内容</p>
+                        <p data-i18n="blog.a9.p2">因此，企业如果希望进入ChatGPT搜索答案，应允许OAI-SearchBot访问关键页面。如果企业不希望内容用于训练，则可以单独限制GPTBot。这两个设置彼此独立，不应混为一谈</p>
+                        <p data-i18n="blog.a9.p3">GEO实操中，robots.txt只能解决“是否允许抓取”的边界，不能保证被展示。页面仍需要可访问、内容清楚、来源可信，并和站点地图、canonical、结构化数据保持一致</p>
+                        <ul class="source-list">
+                            <li><a href="https://platform.openai.com/docs/bots" target="_blank" rel="noopener noreferrer">OpenAI：Overview of OpenAI crawlers</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a10.date">2026？？6</span><span class="article-tag" data-i18n="blog.a10.tag">合规边界</span><span class="article-source" data-i18n="blog.a10.source">文章来源：国家互联网信息办公</span></span>
+                        <span class="accordion-title" data-i18n="blog.a10.h3">中国生成式AI合规下的白帽GEO边界</span>
+                        <span class="accordion-teaser" data-i18n="blog.a10.intro">白帽GEO要提升准确性和可靠性，而不是制造虚假信号</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a10.p1">《生成式人工智能服务管理暂行办法》要求提供和使用生成式AI服务遵守法律、尊重知识产权、商业道德和他人合法权益，并提升生成内容的准确性和可靠性</p>
+                        <p data-i18n="blog.a10.p2">对应到GEO，白帽边界包括：不伪造权威来源、不冒用第三方背书、不发布虚假案例、不通过批量低质页面污染语料、不用误导性排名标题诱导用户</p>
+                        <p data-i18n="blog.a10.p3">合规做法是把真实业务、真实经验、真实来源整理成可解释内容。需要表达不确定性时，明确写“需诊断确认”“基于公开资料”“基于内部项目观察”，不要包装成全行业定论</p>
+                        <ul class="source-list">
+                            <li><a href="https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm" target="_blank" rel="noopener noreferrer">国家网信办：《生成式人工智能服务管理暂行办法</a></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="blog-article accordion-article">
+                    <summary class="accordion-summary">
+                        <span class="accordion-marker"></span>
+                        <span class="article-meta"><span class="article-date" data-i18n="blog.a11.date">2026？？6</span><span class="article-tag" data-i18n="blog.a11.tag">学术框架</span><span class="article-source" data-i18n="blog.a11.source">文章来源：arXiv</span></span>
+                        <span class="accordion-title" data-i18n="blog.a11.h3">GEO学术框架与生成式答案可见</span>
+                        <span class="accordion-teaser" data-i18n="blog.a11.intro">学术研究把GEO定义为提升生成式答案中内容可见度的黑盒优化问题</span>
+                    </summary>
+                    <div class="accordion-body article-body">
+                        <p data-i18n="blog.a11.p1">GEO原始论文指出，生成式引擎会从多个来源综合信息并生成答案，这让内容创作者面临新挑战：不是页面有没有排名，而是内容是否进入答案、是否被引用、是否被正确表达</p>
+                        <p data-i18n="blog.a11.p2">论文提出用黑盒评估方式衡量可见度，并通过GEO-bench测试不同领域、不同查询下的优化效果。研究也提醒：策略效果具有领域差异，不能把某一行业的模板直接套用到所有行业</p>
+                        <p data-i18n="blog.a11.p3">企业落地时，可以把学术框架转成三个动作：建立问题集、记录答案中的品牌可见度、按领域优化内容结构和证据来源。GEO不是玄学，而是可测试、可复盘的答案层实验</p>
+                        <ul class="source-list">
+                            <li><a href="https://arxiv.org/abs/2311.09735" target="_blank" rel="noopener noreferrer">arXiv：GEO: Generative Engine Optimization</a></li>
+                        </ul>
+                    </div>
+                </details>
+            </div>
+
+            <div class="blog-disclaimer">
+                <p data-i18n="blog.disclaimer">本文基于官方文档、Schema.org词汇与公开学术研究撰写；涉及项目经验的判断均作为实践观察，不替代具体行业诊断</p>
+                <p class="update-date" data-i18n="blog.update">更新于：2026？？6</p>
+            </div>
+
+            <div class="onemorething-block">
+                <div class="profile-onemorething">
+                    <div class="onemorething-label">ONE MORE THING</div>
+                    <h3 data-i18n="blog.onemorething.h3">GEO不是一笔费用，是一笔投</h3>
+                    <p data-i18n="blog.onemorething.p1">广告停了流量就断，GEO沉淀的是可被AI持续理解的品牌事实和信任网络</p>
+                    <p data-i18n="blog.onemorething.p2">越早建立真实、结构化、可验证的信息资产，后续每一次内容更新都能在原有信任基础上继续累积</p>
+                </div>
+            </div>
+
+            <div class="resources-section">
+                <h3 data-i18n="blog.resources.h3">专业资源下载</h3>
+                <div class="resources-intro">
+                    <p data-i18n="blog.resources.intro">为帮助企业更好地理解和实施GEO优化，我们整理了一系列专业资料供您参考</p>
+                </div>
+                <div class="resources-grid">
+                    <div class="resource-card"><div class="resource-icon">R01</div><h4 data-i18n="blog.resources.r1.h4">GEO优化实战白皮</h4><p data-i18n="blog.resources.r1.p">系统阐述GEO优化的核心原理、实施策略与效果评估方法，包含不同AI平台的差异化优化检查点</p><div class="resource-meta"><span data-i18n="blog.resources.r1.format">PDF格式</span></div><button class="resource-btn" data-i18n="blog.resources.btn" onclick="showContactInfo()">申请获取</button></div>
+                    <div class="resource-card"><div class="resource-icon">R02</div><h4 data-i18n="blog.resources.r2.h4">GEO效果评估指标体系</h4><p data-i18n="blog.resources.r2.p">包含可见度、准确度、竞争力和转化力四个维度的评估框架与记录方法</p><div class="resource-meta"><span data-i18n="blog.resources.r2.format1">Excel格式</span><span data-i18n="blog.resources.r2.format2">含计算公</span></div><button class="resource-btn" data-i18n="blog.resources.btn" onclick="showContactInfo()">申请获取</button></div>
+                    <div class="resource-card"><div class="resource-icon">R03</div><h4 data-i18n="blog.resources.r3.h4">GEO优化执行清单</h4><p data-i18n="blog.resources.r3.p">涵盖技术配置、内容优化、平台布局、来源标注与效果监测的执行步骤</p><div class="resource-meta"><span data-i18n="blog.resources.r3.format1">PDF格式</span><span data-i18n="blog.resources.r3.format2">可打印版</span></div><button class="resource-btn" data-i18n="blog.resources.btn" onclick="showContactInfo()">申请获取</button></div>
+                    <div class="resource-card"><div class="resource-icon">R04</div><h4 data-i18n="blog.resources.r4.h4">企业GEO诊断报告模板</h4><p data-i18n="blog.resources.r4.p">帮助企业自我诊断当前GEO状态，包含AI提及分析、内容质量与多源一致性评估</p><div class="resource-meta"><span data-i18n="blog.resources.r4.format1">Word格式</span><span data-i18n="blog.resources.r4.format2">可自定义编辑</span></div><button class="resource-btn" data-i18n="blog.resources.btn" onclick="showContactInfo()">申请获取</button></div>
+                </div>
+                <div class="resources-note">
+                    <div class="note-icon" aria-hidden="true" translate="no">i</div>
+                    <div class="note-content" data-i18n="blog.resources.note"><strong>温馨提示</strong>以上资源需联系炜佳导导进行获取，非直接下载。请通过“关于我”页面的联系方式咨询获取</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="footer-logo" data-i18n="footer.brand">炜佳导导 GEO优化</div><p data-i18n="footer.desc">专注GEO优化，用AI重塑企业流量架构</p></div>
+            <div class="footer-links">
+                <a href="../index.html" data-i18n="footer.home">首页</a>
+                <a href="../profile.html" data-i18n="footer.about">关于</a>
+                <a href="./" data-i18n="footer.blog">行业博客</a>
+                <a href="../insights.html" data-i18n="footer.cases">案例与见</a>
+                <a href="../support.html" data-i18n="footer.faq">常见问题</a>
+                <a href="../brand-facts.html">品牌事实</a>
+            </div>
+            <div class="footer-contact"><p data-i18n="footer.contact">微信：YiJie-AI | 电话？3539770556</p><p data-i18n="footer.social">抖音/视频？公众号：炜佳导导GEO</p></div>
+        </div>
+        <div class="footer-bottom">
+            <p data-i18n="footer.copyright">&copy; <span class="auto-year">2026</span> 炜佳导导 GEO优化. 保留所有权？</p>
+            <p>邮箱？914224955@qq.com | <span style="color: #999;">粤ICP？026018563</span></p>
+        </div>
+    </footer>
+
+    <script src="../i18n.js"></script>
+    <script src="../script.js"></script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    } else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+</body>
+</html>

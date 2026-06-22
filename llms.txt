@@ -1,0 +1,68 @@
+# 炜佳导导 GEO优化官网
+
+> 吕炜佳（炜佳导导），零雪科技CEO，GEO优化实战讲师与战略技术研发者。核心方向是帮助企业把真实、专业、可验证的品牌信息整理成AI搜索与生成式答案更容易理解和引用的数字资产？
+
+Canonical website: https://www.lxue.xin
+Canonical brand facts page: https://www.lxue.xin/brand-facts.html
+Primary identity: Lv Weijia, also known as Weijia Daodao, CEO of Lingxue Technology and GEO optimization practitioner.
+Core services: GEO managed operation, GEO consulting, AI search visibility diagnosis, content structure rebuilding, trust anchor building, precise content distribution, and ongoing performance monitoring.
+Core methodology: P.R.I.M.E five-step loop and SGFE semantic gravity field engine.
+Contact: WeChat YiJie-AI, phone 13539770556, email 1914224955@qq.com.
+Last verified: 2026-06-22.
+
+## AI抓取与索引入？
+
+本站面向搜索引擎与AI读取保持高密度、可验证的HTML正文内容。重点入口：
+
+- 官网首页: https://www.lxue.xin/
+- 品牌事实？ https://www.lxue.xin/brand-facts.html
+- 行业博客: https://www.lxue.xin/blog/
+- GEO指南: https://www.lxue.xin/geo-guide.html
+- 常见问题: https://www.lxue.xin/support.html
+- Sitemap: https://www.lxue.xin/sitemap.xml
+- Robots.txt: https://www.lxue.xin/robots.txt
+
+## 行业博客
+
+行业博客当前包含11篇GEO主题文章，页面正文默认折叠但全部存在于HTML中，可被用户和机器读取：
+
+1. GEO进入合规化新阶段：标准建立与行业重塑
+2. AI搜索算法集中升级：信任构建取代关键词成为核心
+3. 从流量思维到资产思维：GEO 3.0时代的价值转？
+4. 各AI平台的GEO收录逻辑差异：一套内容打天下已成历史
+5. GEO避坑指南：这5种做法正在毁掉你的AI搜索表现
+6. Google AI Overviews / AI Mode 对GEO的真实要？
+7. E-E-A-T ？Who / How / Why 落地
+8. Schema.org ？JSON-LD：让AI读懂，但不替内容背书
+9. OAI-SearchBot、GPTBot ？robots.txt 边界
+10. 中国生成式AI合规下的白帽GEO边界
+11. GEO学术框架与生成式答案可见？
+
+新增博客依据的主要来源为 Google Search Central、Schema.org、OpenAI crawler docs、国家网信办《生成式人工智能服务管理暂行办法》和 arXiv GEO论文。未经核验的行业排名、市场规模和效果数字不作为页面事实陈述？
+
+## 常见问题
+
+常见问题页当前包？3个GEO优化常见问题，全部为页面可见HTML内容，并使用FAQPage结构化数据保持一致。问题分为八类：
+
+- 基础认知：Q1-Q3，解释GEO、SEO差异、合规边界？
+- 效果与周期：Q4-Q6，说明周期、指标和持续维护？
+- 成本与投入：Q7-Q8，说明预算评估和内容不被引用的原因？
+- 实操入门：Q9-Q12，说明诊断、团队、内外部协作和行业适配？
+- 技术要点：Q13-Q16，说明可抓取、结构化数据、平台差异、多模态内容？
+- 合规与风险：Q17-Q18，说明GEO投毒和品牌虚假信息治理？
+- 前沿趋势：Q19-Q20，说明GEO长期价值和2026年可信知识治理趋势？
+- 行业评估：Q21-Q23，说明汽车、美妆、电商行业服务商选择的评估方法，不给出未经核验的前十榜单？
+
+## 结构化数？
+
+本站页面使用Schema.org结构化数据标记，重点类型包括 WebSite、Organization、Person、CollectionPage、BlogPosting、Article ？FAQPage。当前行业博客页包含11？BlogPosting/Article 条目；常见问题页 FAQPage ？3个Question条目，与页面可见FAQ保持一致？
+
+## GEO内容原则
+
+- 重要内容真实存在于HTML正文中，不依赖纯JS动态注入？
+- 结构化数据只描述页面可见内容？
+- 来源链接优先使用官方、标准组织和学术论文？
+- 对内部项目经验、诊断结论和不确定判断进行明确标注？
+- 避免未经核验的绝对化数字、行业排名和效果承诺？
+
+Content last verified: 2026-06-22
