@@ -747,7 +747,7 @@ i18n.translations.en = {
     'profile.prime.intro': 'P.R.I.M.E is a complete engine from diagnosis to monitoring. Each step independently solves a specific pain point, and when chained together, forms a systematic brand building solution across AI ecosystems. If traditional SEO competes for web page rankings, then GEO reconstructs the brand\'s position in AI\'s cognitive graph.',
     'profile.prime.th.step': 'Step',
     'profile.prime.th.module': 'Module',
-    'profile.prime.th.proposition': 'Core Proposition',
+    'profile.prime.th.proposition': 'Core Question',
     'profile.prime.th.content': 'Core Content',
     'profile.prime.td1.step': 'P',
     'profile.prime.td1.module': 'Perception Diagnosis —— Lighthouse',
