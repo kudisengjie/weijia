@@ -348,9 +348,9 @@ i18n.translations.zh = {
     'blog.a5.p5.h4': '做完就不管——缺乏持续监测机制',
     'blog.a5.p5.p': 'AI算法每周迭代，竞品持续动作，品牌位置每天漂移。一次优化后就放任不管，3个月后效果可能归零。正确做法：建立四级监测体系（可见度→准确度→竞争力→转化力），每月复盘迭代。',
 
-    'blog.onemorething.h3': 'GEO不是一笔费用，是一笔投资',
-    'blog.onemorething.p1': '广告停了流量就断，GEO停了流量还在。这不是修辞——这是GEO和广告投放的本质区别。GEO构建的是数字资产，一次建设长期生效，边际成本递减。',
-    'blog.onemorething.p2': '先发优势在AI引用网络中有复利效应——越早布局，信任锚点越深，后来者追赶成本越高。当竞品还在犹豫要不要做GEO的时候，你已经在AI搜索中占据了位置。',
+    'blog.onemorething.h3': '内容不是越多越好，是越对越好',
+    'blog.onemorething.p1': '很多企业陷入一个误区：以为写的内容越多，AI引用概率就越高。事实恰恰相反——在AI评估体系中，一百篇结构松散、信息密度低的文案，不如一篇结构正确、数据可验的深度内容。',
+    'blog.onemorething.p2': '内容策略的核心转变：从"量"转向"质"，从"写了什么"转向"AI能读懂什么"。先把结构搭对，再谈数量。',
 
     'guide.compare.h3': 'GEO vs SEO：本质区别与协同策略',
     'guide.compare.desc': '理解两者的根本差异，才能制定正确的投入策略',
@@ -944,9 +944,9 @@ i18n.translations.en = {
     'blog.a5.p5.h4': 'Set and forget — lacking continuous monitoring',
     'blog.a5.p5.p': 'AI algorithms iterate weekly, competitors keep acting, brand positions shift daily. After one optimization, leaving it unattended for 3 months may reset results to zero. Correct approach: Build a four-level monitoring system (visibility → accuracy → competitiveness → conversion), review and iterate monthly.',
 
-    'blog.onemorething.h3': 'GEO Is Not an Expense — It\'s an Investment',
-    'blog.onemorething.p1': 'Stop advertising and traffic stops; stop GEO and traffic persists. This isn\'t rhetoric — it\'s the fundamental difference between GEO and ad spending. GEO builds digital assets — build once, sustain long-term, with diminishing marginal costs.',
-    'blog.onemorething.p2': 'First-mover advantage has a compounding effect in AI citation networks — the earlier you build, the deeper your trust anchors, the higher the cost for latecomers to catch up. While competitors are still hesitating about GEO, you\'ve already secured your position in AI search.',
+    'blog.onemorething.h3': 'More Content Isn\'t Better — Better Content Is',
+    'blog.onemorething.p1': 'Many businesses fall into a trap: thinking more content equals higher AI citation probability. The opposite is true — in AI\'s evaluation system, 100 loosely-structured, low-density articles are worth less than one well-structured, data-verifiable deep piece.',
+    'blog.onemorething.p2': 'The core shift in content strategy: from "quantity" to "quality," from "what we wrote" to "what AI can understand." Get the structure right first, then worry about volume.',
 
     'guide.compare.h3': 'GEO vs SEO: Essential Differences & Synergy Strategies',
     'guide.compare.desc': 'Understanding the fundamental differences is the prerequisite for the right investment strategy',
