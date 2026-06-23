@@ -63,7 +63,7 @@ var observer = new IntersectionObserver(function(entries) {
     });
 }, observerOptions);
 
-document.querySelectorAll('.hub-card, .case-card, .pricing-card, .blog-post, .accordion-article, .resource-card, .faq-item, .ai-course-card, .profile-intro, .profile-quote, .cooperation-intro, .solutions-intro, .insights-intro, .contact-card, .contact-form-card').forEach(function(el) {
+document.querySelectorAll('.hub-card, .case-card, .pricing-card, .blog-post, .resource-card, .faq-item, .ai-course-card, .profile-intro, .profile-quote, .cooperation-intro, .solutions-intro, .insights-intro, .contact-card, .contact-form-card').forEach(function(el) {
     el.classList.add('animate-in');
     observer.observe(el);
 });
@@ -84,19 +84,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el.textContent = year;
         });
     } catch(e) {}
-
-    document.querySelectorAll('details.accordion-article, details.faq-item').forEach(function(details) {
-        var summary = details.querySelector('summary');
-        if (!summary) return;
-
-        summary.setAttribute('aria-expanded', details.open ? 'true' : 'false');
-        details.classList.toggle('is-open', details.open);
-
-        details.addEventListener('toggle', function() {
-            summary.setAttribute('aria-expanded', details.open ? 'true' : 'false');
-            details.classList.toggle('is-open', details.open);
-        });
-    });
 });
 
 var scrollObserver = new IntersectionObserver(function(entries) {
