@@ -1668,7 +1668,6 @@ body {
 
 @media (max-width: 768px) {
     .tech-table-wrap { overflow-x: auto; }
-}
     .logo { font-size: 1.05rem; }
     .logo::before { width: 28px; height: 28px; }
     .hero { padding-top: 100px; min-height: auto; }
