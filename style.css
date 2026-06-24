@@ -1661,8 +1661,15 @@ body {
     .checklist-grid { grid-template-columns: 1fr; gap: 14px; }
 }
 
-@media (max-width: 480px) {
-    .container { padding: 0 12px; }
+@media (max-width: 768px) {
+    .tech-table-wrap { overflow-x: visible; border: none; border-radius: 0; }
+    .tech-table { min-width: auto; font-size: 0.85rem; }
+    .tech-table thead { display: none; }
+    .tech-table tbody tr { display: block; margin-bottom: 16px; background: rgba(30, 58, 95, 0.05); border-radius: 12px; padding: 16px; border: 1px solid rgba(30, 58, 95, 0.1); }
+    .tech-table td { display: block; padding: 8px 0; border-bottom: none; }
+    .tech-table td:first-child { font-size: 1.8rem; font-weight: 700; color: #1e3a5f; padding-bottom: 12px; border-bottom: 2px solid rgba(30, 58, 95, 0.2); margin-bottom: 12px; }
+    .tech-table td:not(:first-child)::before { content: attr(data-label); font-weight: 600; color: #1e3a5f; display: block; font-size: 0.8rem; margin-bottom: 4px; }
+}
     .logo { font-size: 1.05rem; }
     .logo::before { width: 28px; height: 28px; }
     .hero { padding-top: 100px; min-height: auto; }
