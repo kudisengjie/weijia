@@ -313,6 +313,9 @@ body {
     box-shadow: 0 8px 30px rgba(30, 58, 95, 0.12);
     overflow: hidden;
     position: relative;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .ai-chat-header {
@@ -351,6 +354,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .ai-message {
@@ -1662,21 +1667,15 @@ body {
 }
 
 @media (max-width: 768px) {
-    .tech-table-wrap { overflow-x: hidden; border: none; border-radius: 0; }
-    .tech-table { min-width: auto; font-size: 0.85rem; }
-    .tech-table thead { display: none; }
-    .tech-table tbody tr { display: block; margin-bottom: 16px; background: rgba(30, 58, 95, 0.05); border-radius: 12px; padding: 16px; border: 1px solid rgba(30, 58, 95, 0.1); }
-    .tech-table td { display: block; padding: 8px 0; border-bottom: none; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; }
-    .tech-table td:first-child { font-size: 1.1rem; font-weight: 700; color: #1e3a5f; padding-bottom: 12px; border-bottom: 2px solid rgba(30, 58, 95, 0.2); margin-bottom: 12px; }
-    .tech-table td:not(:first-child)::before { content: attr(data-label); font-weight: 600; color: #1e3a5f; display: block; font-size: 0.8rem; margin-bottom: 4px; }
+    .tech-table-wrap { overflow-x: auto; }
 }
     .logo { font-size: 1.05rem; }
     .logo::before { width: 28px; height: 28px; }
     .hero { padding-top: 100px; min-height: auto; }
     .hero-container { flex-direction: column; padding: 0 16px; gap: 30px; }
     .hero-content { text-align: center; max-width: 100%; padding: 0; }
-    .hero-ai-demo { max-width: 100%; width: 100%; }
-    .ai-chat-window { max-width: 100%; }
+    .hero-ai-demo { max-width: 340px; width: 100%; align-self: center; }
+    .ai-chat-window { max-width: 100%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; }
     .ai-chat-body { padding: 14px; }
     .ai-message { gap: 10px; }
     .user-avatar, .ai-avatar { width: 32px; height: 32px; font-size: 0.8rem; }
@@ -2021,8 +2020,8 @@ body {
 
 @media (max-width: 768px) {
     .hero-content { text-align: center; max-width: 100%; padding: 0; }
-    .hero-ai-demo { max-width: 100%; width: 100%; }
-    .ai-chat-window { max-width: 100%; }
+    .hero-ai-demo { max-width: 340px; width: 100%; align-self: center; }
+    .ai-chat-window { max-width: 100%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; }
     .ai-chat-body { padding: 14px; }
     .ai-message { gap: 10px; }
     .user-avatar, .ai-avatar { width: 32px; height: 32px; font-size: 0.8rem; }
@@ -2271,6 +2270,9 @@ body {
         border-bottom: none;
         line-height: 1.55;
         color: var(--text-light);
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
     /* 步骤字母 - 左侧固定宽度 */
     .tech-table td:first-child {
@@ -2287,31 +2289,20 @@ body {
     .tech-table td:nth-child(3),
     .tech-table td:nth-child(4) {
         flex: 1;
-        min-width: 0; /* 允许截断 */
+        min-width: 0;
         font-size: 0.78rem;
     }
     .tech-table td:nth-child(2) {
         font-weight: 600;
         color: var(--primary-dark);
         margin-bottom: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
     .tech-table td:nth-child(3) {
         font-weight: 500;
         color: var(--text-dark);
         margin-bottom: 2px;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
     }
     .tech-table td:nth-child(4) {
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
     }
     .profile-content-block { padding: 16px 18px; }
     .prime-intro, .sgfe-intro { font-size: 0.88rem; }
