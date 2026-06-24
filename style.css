@@ -313,9 +313,6 @@ body {
     box-shadow: 0 8px 30px rgba(30, 58, 95, 0.12);
     overflow: hidden;
     position: relative;
-    aspect-ratio: 1 / 1;
-    display: flex;
-    flex-direction: column;
 }
 
 .ai-chat-header {
@@ -354,8 +351,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    flex: 1;
-    overflow-y: auto;
 }
 
 .ai-message {
@@ -2253,64 +2248,49 @@ body {
 @media (max-width: 768px) {
     .tech-table { display: block; font-size: 0.82rem; }
     .tech-table thead { display: none; }
-    .tech-table tbody { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .tech-table tbody { display: block; }
     .tech-table tr {
-        display: flex;
-        align-items: flex-start;
+        display: block;
         background: #fff;
         border-radius: 8px;
-        padding: 12px;
+        padding: 16px;
         border-left: 4px solid #1e3a5f;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-        width: 100%;
-        max-width: 480px;
+        margin-bottom: 12px;
     }
     .tech-table td {
         display: block;
-        padding: 0;
+        padding: 6px 0;
         border-bottom: none;
         line-height: 1.55;
-        color: var(--text-light);
+        color: var(--text-dark);
         white-space: normal;
         word-wrap: break-word;
         overflow-wrap: break-word;
     }
     .tech-table td:first-child {
-        flex: 0 0 auto;
-        font-size: 0.9rem;
+        font-size: 1.1rem;
         font-weight: 700;
-        color: var(--primary-dark);
-        min-width: auto;
-        margin-right: 12px;
-        line-height: 1.2;
-        white-space: nowrap;
+        color: #1e3a5f;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(30, 58, 95, 0.15);
+        margin-bottom: 8px;
     }
-    .tech-table td:nth-child(2),
-    .tech-table td:nth-child(3),
-    .tech-table td:nth-child(4) {
-        flex: 1;
-        min-width: 0;
-        font-size: 0.78rem;
-    }
-    .tech-table td:nth-child(2) {
+    .tech-table td:not(:first-child)::before {
+        content: attr(data-label);
         font-weight: 600;
-        color: var(--text-dark);
-        margin-bottom: 2px;
-    }
-    .tech-table td:nth-child(3) {
-        font-weight: 500;
-        color: var(--text-dark);
-        margin-bottom: 2px;
+        color: #1e3a5f;
+        font-size: 0.75rem;
+        display: block;
+        margin-bottom: 4px;
     }
     .profile-content-block { padding: 16px 18px; }
     .prime-intro, .sgfe-intro { font-size: 0.88rem; }
 }
 
 @media (max-width: 480px) {
-    .tech-table tr { padding: 10px; gap: 8px; }
-    .tech-table td:first-child { font-size: 0.85rem; margin-right: 10px; }
-    .tech-table td:nth-child(2),
-    .tech-table td:nth-child(3),
-    .tech-table td:nth-child(4) { font-size: 0.74rem; }
+    .tech-table tr { padding: 12px; }
+    .tech-table td:first-child { font-size: 1rem; }
+    .tech-table td { font-size: 0.78rem; }
     .tech-table-wrap { border-radius: 10px; }
 }
