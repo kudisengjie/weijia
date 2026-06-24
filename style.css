@@ -2253,7 +2253,7 @@ body {
 @media (max-width: 768px) {
     .tech-table { display: block; font-size: 0.82rem; }
     .tech-table thead { display: none; }
-    .tech-table tbody { display: flex; flex-direction: column; gap: 10px; }
+    .tech-table tbody { display: flex; flex-direction: column; gap: 10px; align-items: center; }
     .tech-table tr {
         display: flex;
         align-items: flex-start;
@@ -2262,6 +2262,8 @@ body {
         padding: 12px;
         border-left: 4px solid #1e3a5f;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        width: 100%;
+        max-width: 480px;
     }
     .tech-table td {
         display: block;
@@ -2273,17 +2275,16 @@ body {
         word-wrap: break-word;
         overflow-wrap: break-word;
     }
-    /* 步骤字母 - 左侧固定宽度 */
     .tech-table td:first-child {
-        flex: 0 0 36px;
-        font-size: 1.2rem;
+        flex: 0 0 auto;
+        font-size: 0.9rem;
         font-weight: 700;
-        color: var(--primary-color);
+        color: var(--primary-dark);
         min-width: auto;
-        margin-right: 10px;
-        line-height: 1;
+        margin-right: 12px;
+        line-height: 1.2;
+        white-space: nowrap;
     }
-    /* 右侧内容区 */
     .tech-table td:nth-child(2),
     .tech-table td:nth-child(3),
     .tech-table td:nth-child(4) {
@@ -2293,7 +2294,7 @@ body {
     }
     .tech-table td:nth-child(2) {
         font-weight: 600;
-        color: var(--primary-dark);
+        color: var(--text-dark);
         margin-bottom: 2px;
     }
     .tech-table td:nth-child(3) {
@@ -2301,15 +2302,13 @@ body {
         color: var(--text-dark);
         margin-bottom: 2px;
     }
-    .tech-table td:nth-child(4) {
-    }
     .profile-content-block { padding: 16px 18px; }
     .prime-intro, .sgfe-intro { font-size: 0.88rem; }
 }
 
 @media (max-width: 480px) {
     .tech-table tr { padding: 10px; gap: 8px; }
-    .tech-table td:first-child { flex: 0 0 30px; font-size: 1.05rem; }
+    .tech-table td:first-child { font-size: 0.85rem; margin-right: 10px; }
     .tech-table td:nth-child(2),
     .tech-table td:nth-child(3),
     .tech-table td:nth-child(4) { font-size: 0.74rem; }
