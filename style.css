@@ -2294,3 +2294,120 @@ body {
     .tech-table td { font-size: 0.78rem; }
     .tech-table-wrap { border-radius: 10px; }
 }
+
+
+/* ===== Recent Articles on FAQ ===== */
+.recent-articles-section { margin-top: 10px; }
+.recent-articles-section h3 {
+    position: relative;
+    max-width: 900px;
+    margin: 0 auto 24px;
+    padding-left: 18px;
+    text-align: left;
+}
+.recent-articles-section h3::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 5px;
+    height: 24px;
+    background: #1e3a5f;
+    border-radius: 2px;
+    transform: translateY(-50%);
+}
+.recent-article-list {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 28px;
+    background: #ffffff;
+    border: 1px solid rgba(30, 58, 95, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(30, 58, 95, 0.06);
+}
+.recent-article-item {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 64px;
+    align-items: center;
+    gap: 14px;
+    min-height: 44px;
+    text-decoration: none;
+    color: var(--text-dark);
+    border-bottom: 1px solid rgba(30, 58, 95, 0.06);
+}
+.recent-article-item:last-child { border-bottom: 0; }
+.recent-article-item:hover .recent-title { color: #1e3a5f; }
+.recent-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: #eceff3;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.92rem;
+}
+.recent-article-item:nth-child(-n+3) .recent-rank { background: #e60012; }
+.recent-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: #333333;
+    transition: color 0.2s ease;
+}
+.recent-date { color: #7b8491; font-size: 0.92rem; text-align: right; white-space: nowrap; }
+
+.article-detail-section { padding: 110px 0 70px; background: #f6f8fb; }
+.article-detail-container { max-width: 900px; }
+.article-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 22px;
+    color: #6b7280;
+    font-size: 0.92rem;
+}
+.article-breadcrumb a { color: #1e3a5f; text-decoration: none; }
+.article-detail {
+    background: #ffffff;
+    border: 1px solid rgba(30, 58, 95, 0.1);
+    border-radius: 14px;
+    padding: 34px 36px;
+    box-shadow: 0 10px 32px rgba(30, 58, 95, 0.08);
+}
+.article-detail-header { border-bottom: 1px solid rgba(30, 58, 95, 0.1); padding-bottom: 20px; margin-bottom: 28px; }
+.article-detail-kicker { color: #1e3a5f; font-size: 0.86rem; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 10px; text-transform: uppercase; }
+.article-detail h1 { font-size: 2rem; line-height: 1.35; color: #111827; margin: 0 0 14px; font-weight: 800; }
+.article-detail-meta { display: flex; flex-wrap: wrap; gap: 16px; color: #7b8491; font-size: 0.92rem; }
+.article-detail-body { color: #333333; }
+.article-detail-body h2 { font-size: 1.45rem; line-height: 1.45; margin: 34px 0 14px; color: #111827; text-align: left; }
+.article-detail-body h2::after { display: none; }
+.article-detail-body h3 { font-size: 1.16rem; line-height: 1.5; margin: 26px 0 10px; color: #1e3a5f; }
+.article-detail-body p { font-size: 1rem; line-height: 1.9; margin-bottom: 16px; }
+.article-detail-body ul { padding-left: 22px; margin: 0 0 18px; }
+.article-detail-body li { font-size: 0.98rem; line-height: 1.8; margin-bottom: 8px; }
+.article-table-wrap { overflow-x: auto; margin: 22px 0; border: 1px solid rgba(30, 58, 95, 0.14); border-radius: 10px; }
+.article-table { width: 100%; border-collapse: collapse; min-width: 640px; background: #ffffff; }
+.article-table th, .article-table td { padding: 12px 14px; border-bottom: 1px solid rgba(30, 58, 95, 0.1); vertical-align: top; line-height: 1.65; font-size: 0.92rem; }
+.article-table th { background: rgba(30, 58, 95, 0.06); color: #1e3a5f; font-weight: 700; }
+.article-table tr:last-child td { border-bottom: 0; }
+
+@media (max-width: 768px) {
+    .recent-article-list { padding: 18px 16px; border-radius: 10px; }
+    .recent-article-item { grid-template-columns: 36px minmax(0, 1fr) 52px; gap: 10px; min-height: 42px; }
+    .recent-rank { width: 28px; height: 28px; border-radius: 8px; font-size: 0.86rem; }
+    .recent-title { font-size: 0.92rem; }
+    .recent-date { font-size: 0.82rem; }
+    .article-detail-section { padding: 92px 0 46px; }
+    .article-detail { padding: 24px 18px; border-radius: 12px; }
+    .article-detail h1 { font-size: 1.45rem; }
+    .article-detail-body h2 { font-size: 1.22rem; }
+    .article-detail-body h3 { font-size: 1.05rem; }
+    .article-detail-body p, .article-detail-body li { font-size: 0.95rem; }
+}
