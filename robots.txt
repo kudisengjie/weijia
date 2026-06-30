@@ -6,69 +6,83 @@ Disallow: /npm-cache/
 Allow: /llms.txt
 Allow: /sitemap.xml
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 Sitemap: https://www.lxue.xin/sitemap.xml
 # AI-readable site summary: https://www.lxue.xin/llms.txt
+# GEO strategy center: https://www.lxue.xin/geo-guide.html
 
 User-agent: OAI-SearchBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: GPTBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: ChatGPT-User
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: ClaudeBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: Claude-SearchBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: Claude-User
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: PerplexityBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: Perplexity-User
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: Googlebot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: Google-Extended
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: Bingbot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: Baiduspider
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 Crawl-delay: 10
 
 User-agent: Baiduspider-image
@@ -86,6 +100,7 @@ User-agent: Doubao
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: TencentCrawl
 User-agent: TencentBot
@@ -94,6 +109,7 @@ User-agent: TencentYuanbaoBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: DeepSeek
 User-agent: DeepSeekBot
@@ -102,6 +118,7 @@ User-agent: DeepSeek-Crawler
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: QwenBot
 User-agent: Qwen
@@ -109,6 +126,7 @@ User-agent: AlibabaBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
+Allow: /geo-guide.html
 
 User-agent: CCBot
 Allow: /

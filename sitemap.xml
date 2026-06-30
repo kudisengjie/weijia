@@ -4,7 +4,7 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
     <url>
         <loc>https://www.lxue.xin/</loc>
-        <lastmod>2026-06-22</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
         <image:image>
@@ -15,7 +15,7 @@
     </url>
     <url>
         <loc>https://www.lxue.xin/profile.html</loc>
-        <lastmod>2026-06-22</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
         <image:image>
@@ -26,19 +26,19 @@
     </url>
     <url>
         <loc>https://www.lxue.xin/brand-facts.html</loc>
-        <lastmod>2026-06-22</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.95</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/blog/</loc>
-        <lastmod>2026-06-22</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/geo-guide.html</loc>
-        <lastmod>2026-06-22</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
@@ -50,79 +50,79 @@
     </url>
     <url>
         <loc>https://www.lxue.xin/support.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/what-is-geo-vs-seo.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/ai-search-2026-trends.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/geo-kpi-measurement.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/eeat-authority-building.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/six-ai-platform-strategies.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/schema-structured-data.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/geo-compliance-data-governance.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/ai-agent-content-strategy.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/entity-optimization-knowledge-graph.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/geo-vendor-selection.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/weijia-daodao-prime-sgfe.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://www.lxue.xin/articles/geo-commercial-closed-loop.html</loc>
-        <lastmod>2026-06-29</lastmod>
+        <lastmod>2026-06-30</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
