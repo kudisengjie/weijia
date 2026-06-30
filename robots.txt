@@ -3,11 +3,15 @@ Allow: /
 Allow: /images/wei.jpg
 Allow: /images/jia.jpg
 Disallow: /npm-cache/
+Disallow: /admin/
+Disallow: /crawler-console.html
 Allow: /llms.txt
 Allow: /sitemap.xml
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 Sitemap: https://www.lxue.xin/sitemap.xml
 # AI-readable site summary: https://www.lxue.xin/llms.txt
@@ -19,6 +23,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: GPTBot
 Allow: /
@@ -26,6 +32,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: ChatGPT-User
 Allow: /
@@ -33,6 +41,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: ClaudeBot
 Allow: /
@@ -40,6 +50,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: Claude-SearchBot
 Allow: /
@@ -47,6 +59,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: Claude-User
 Allow: /
@@ -54,6 +68,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: PerplexityBot
 Allow: /
@@ -61,6 +77,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: Perplexity-User
 Allow: /
@@ -68,6 +86,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: Googlebot
 Allow: /
@@ -75,6 +95,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: Google-Extended
 Allow: /
@@ -82,6 +104,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: Bingbot
 Allow: /
@@ -89,6 +113,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: Baiduspider
 Allow: /
@@ -96,6 +122,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 Crawl-delay: 10
 
 User-agent: Baiduspider-image
@@ -115,6 +143,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: TencentCrawl
 User-agent: TencentBot
@@ -125,6 +155,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: DeepSeek
 User-agent: DeepSeekBot
@@ -135,6 +167,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: QwenBot
 User-agent: Qwen
@@ -144,6 +178,8 @@ Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
 Allow: /insights.html
+Allow: /articles/doubao-byte-geo-indexing-strategy.html
+Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 User-agent: CCBot
 Allow: /

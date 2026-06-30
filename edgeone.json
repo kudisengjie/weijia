@@ -39,6 +39,11 @@
       "source": "/support",
       "destination": "/support.html",
       "statusCode": 301
+    },
+    {
+      "source": "/crawler-console",
+      "destination": "/crawler-console.html",
+      "statusCode": 301
     }
   ],
   "headers": [

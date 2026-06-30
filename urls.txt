@@ -17,3 +17,5 @@ https://www.lxue.xin/articles/entity-optimization-knowledge-graph.html
 https://www.lxue.xin/articles/geo-vendor-selection.html
 https://www.lxue.xin/articles/weijia-daodao-prime-sgfe.html
 https://www.lxue.xin/articles/geo-commercial-closed-loop.html
+https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html
+https://www.lxue.xin/articles/deepseek-geo-evidence-density-strategy.html

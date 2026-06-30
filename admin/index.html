@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>GEO优化平台 - 爬虫日志后台</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="admin-shell">
+        <section class="login-view" id="loginView">
+            <div class="login-stage">
+                <div class="platform-brand"><span class="leaf-mark"></span>GEO优化平台</div>
+                <div class="robot-zone">
+                    <img src="../images/yirui-robot-transparent.png" alt="奕蕊机器人" class="login-robot">
+                    <div class="robot-stand"></div>
+                </div>
+                <div class="hero-copy">
+                    <p>欢迎使用</p>
+                    <h1>GEO优化全链路平台</h1>
+                    <span>智能知识体积累 · 行业高频问生成 · GEO内容生态与优化</span>
+                </div>
+                <div class="scene-lines" aria-hidden="true">
+                    <span class="spark"></span>
+                    <span class="glass-card card-a"></span>
+                    <span class="glass-card card-b"></span>
+                    <span class="globe-ring ring-a"></span>
+                    <span class="globe-ring ring-b"></span>
+                </div>
+                <form class="login-card" id="loginForm">
+                    <h2>用户登录</h2>
+                    <label>
+                        <span>手机号 / 邮箱</span>
+                        <input name="username" autocomplete="username" value="13539770556" placeholder="请输入手机号或邮箱" required>
+                    </label>
+                    <label>
+                        <span>密码</span>
+                        <div class="password-field">
+                            <input id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="请输入密码" required>
+                            <button id="togglePassword" type="button" aria-label="显示密码">⌾</button>
+                        </div>
+                    </label>
+                    <div class="login-tools">
+                        <label class="remember-row"><input name="remember" type="checkbox"><span>记住我</span></label>
+                        <a href="#" aria-label="忘记密码">忘记密码?</a>
+                    </div>
+                    <button class="login-submit" type="submit">登录</button>
+                    <p class="register-hint">还没有账号？<span>仅限管理员访问</span></p>
+                    <p class="login-error" id="loginError" role="alert"></p>
+                </form>
+            </div>
+        </section>
+
+        <section class="dashboard-view hidden" id="dashboardView">
+            <header class="dashboard-header">
+                <div>
+                    <p class="eyebrow">Crawler Intelligence</p>
+                    <h1>AI爬虫抓取数据管理后台</h1>
+                    <p class="dashboard-subtitle">通过 EdgeOne / CLS 观察豆包、DeepSeek、元宝、百度等爬虫抓取官网页面的真实请求。</p>
+                </div>
+                <div class="header-actions">
+                    <select id="rangeSelect" aria-label="日志范围">
+                        <option value="24h">24小时</option>
+                        <option value="7d" selected>7天</option>
+                        <option value="30d">30天</option>
+                    </select>
+                    <button id="refreshBtn" type="button">刷新</button>
+                    <button id="logoutBtn" type="button" class="ghost">退出</button>
+                </div>
+            </header>
+
+            <div class="metric-grid">
+                <article class="metric-card"><span>今日抓取</span><strong id="metricToday">0</strong></article>
+                <article class="metric-card"><span>7天抓取</span><strong id="metricSeven">0</strong></article>
+                <article class="metric-card"><span>30天抓取</span><strong id="metricThirty">0</strong></article>
+                <article class="metric-card"><span>数据源</span><strong id="metricSource">CLS</strong></article>
+            </div>
+
+            <div class="dashboard-grid">
+                <section class="panel">
+                    <h2>爬虫分布</h2>
+                    <div id="crawlerList" class="crawler-list"></div>
+                </section>
+                <section class="panel">
+                    <h2>高频页面</h2>
+                    <div id="pathList" class="path-list"></div>
+                </section>
+            </div>
+
+            <section class="panel">
+                <h2>最近请求</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>时间</th><th>爬虫</th><th>状态</th><th>路径</th><th>IP哈希</th><th>缓存</th></tr>
+                        </thead>
+                        <tbody id="logRows"></tbody>
+                    </table>
+                </div>
+                <p class="empty-state" id="emptyState">暂无日志。请确认 EdgeOne 实时日志已投递到 CLS，并配置 TENCENT_CLS_TOPIC_ID。</p>
+            </section>
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>

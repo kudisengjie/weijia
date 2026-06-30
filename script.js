@@ -109,3 +109,15 @@ requestAnimationFrame(function() {
         }
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    var footerBottom = document.querySelector('.footer-bottom');
+    if (!footerBottom || document.body.classList.contains('crawler-console-page')) return;
+    var entry = document.createElement('a');
+    entry.className = 'crawler-console-entry';
+    entry.href = (location.pathname.indexOf('/articles/') !== -1 || location.pathname.indexOf('/blog/') !== -1) ? '../crawler-console.html' : 'crawler-console.html';
+    entry.rel = 'nofollow noopener';
+    entry.textContent = '数据';
+    entry.setAttribute('aria-label', '爬虫抓取数据管理后台');
+    footerBottom.appendChild(entry);
+});

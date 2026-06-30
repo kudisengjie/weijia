@@ -126,4 +126,15 @@
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
-</urlset>
+    <url>
+        <loc>https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html</loc>
+        <lastmod>2026-06-30</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.75</priority>
+    </url>
+    <url>
+        <loc>https://www.lxue.xin/articles/deepseek-geo-evidence-density-strategy.html</loc>
+        <lastmod>2026-06-30</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.75</priority>
+    </url></urlset>
