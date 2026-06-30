@@ -7,11 +7,9 @@ var i18n = {
 
     init: function() {
         var saved = localStorage.getItem('lang');
-        if (saved === 'en') {
-            this.switchLang('en');
-        } else {
-            this.updateButtonText('zh');
-        }
+        var initialLang = saved === 'en' ? 'en' : 'zh';
+        document.documentElement.setAttribute('translate', 'no');
+        this.switchLang(initialLang);
         this.bindSwitcher();
     },
 
@@ -62,8 +60,8 @@ i18n.translations.zh = {
     'nav.home': '首页',
     'nav.about': '关于我',
     'nav.blog': '行业博客',
-    'nav.geo': 'GEO优化指南',
-    'nav.cases': '案例与见解',
+    'nav.geo': 'GEO指南',
+    'nav.cases': 'AI索引中心',
     'nav.faq': '常见问题',
     'nav.lang': 'English',
 
@@ -97,12 +95,12 @@ i18n.translations.zh = {
     'card.about.exp4.desc': 'ROI量化评估',
     'card.detail': '查看详情',
 
-    'card.cases.tag': '实战案例',
-    'card.cases.title': '三大行业成功实践',
-    'card.cases.desc': '教育科技、企业服务、消费品行业真实案例数据',
-    'card.cases.ind1': '教育科技',
-    'card.cases.ind2': '企业服务',
-    'card.cases.ind3': '消费品',
+    'card.cases.tag': 'AI索引',
+    'card.cases.title': 'AI平台索引中心',
+    'card.cases.desc': '集中开放品牌事实、平台矩阵和AI抓取入口',
+    'card.cases.ind1': '品牌事实',
+    'card.cases.ind2': '平台矩阵',
+    'card.cases.ind3': '结构化数据',
 
     'card.guide.tag': 'GEO指南',
     'card.guide.title': '核心优化原则',
@@ -140,7 +138,7 @@ i18n.translations.zh = {
     'footer.home': '首页',
     'footer.about': '关于我',
     'footer.blog': '行业博客',
-    'footer.cases': '案例与见解',
+    'footer.cases': 'AI索引中心',
     'footer.faq': '常见问题',
     'footer.contact': '微信：YiJie-AI | 电话：13539770556',
     'footer.social': '抖音/视频号/公众号：炜佳导导GEO',
@@ -659,7 +657,7 @@ i18n.translations.en = {
     'nav.about': 'About',
     'nav.blog': 'Blog',
     'nav.geo': 'GEO Guide',
-    'nav.cases': 'Cases & Insights',
+    'nav.cases': 'AI Index Center',
     'nav.faq': 'FAQ',
     'nav.lang': '中文',
 
@@ -693,12 +691,12 @@ i18n.translations.en = {
     'card.about.exp4.desc': 'ROI Quantification',
     'card.detail': 'View Details',
 
-    'card.cases.tag': 'Case Studies',
-    'card.cases.title': 'Success Stories in 3 Industries',
-    'card.cases.desc': 'Real case data from education tech, enterprise services, and consumer goods',
-    'card.cases.ind1': 'Education Tech',
-    'card.cases.ind2': 'Enterprise Services',
-    'card.cases.ind3': 'Consumer Goods',
+    'card.cases.tag': 'AI Index',
+    'card.cases.title': 'AI Platform Index Center',
+    'card.cases.desc': 'Brand facts, platform matrix, and AI crawl entry points in one place',
+    'card.cases.ind1': 'Brand Facts',
+    'card.cases.ind2': 'Platform Matrix',
+    'card.cases.ind3': 'Schema Data',
 
     'card.guide.tag': 'GEO Guide',
     'card.guide.title': 'Core Optimization Principles',
@@ -736,7 +734,7 @@ i18n.translations.en = {
     'footer.home': 'Home',
     'footer.about': 'About',
     'footer.blog': 'Blog',
-    'footer.cases': 'Cases & Insights',
+    'footer.cases': 'AI Index Center',
     'footer.faq': 'FAQ',
     'footer.contact': 'WeChat: YiJie-AI | Phone: 13539770556',
     'footer.social': 'Douyin/Video/Official Account: Weijia Daodao GEO',
