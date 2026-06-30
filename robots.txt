@@ -7,82 +7,95 @@ Allow: /llms.txt
 Allow: /sitemap.xml
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 Sitemap: https://www.lxue.xin/sitemap.xml
 # AI-readable site summary: https://www.lxue.xin/llms.txt
-# GEO strategy center: https://www.lxue.xin/geo-guide.html
+# GEO strategy center: https://www.lxue.xin/insights.html
 
 User-agent: OAI-SearchBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: GPTBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: ChatGPT-User
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: ClaudeBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: Claude-SearchBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: Claude-User
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: PerplexityBot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: Perplexity-User
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: Googlebot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: Google-Extended
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: Bingbot
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: Baiduspider
 Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 Crawl-delay: 10
 
 User-agent: Baiduspider-image
@@ -101,6 +114,7 @@ Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: TencentCrawl
 User-agent: TencentBot
@@ -110,6 +124,7 @@ Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: DeepSeek
 User-agent: DeepSeekBot
@@ -119,6 +134,7 @@ Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: QwenBot
 User-agent: Qwen
@@ -127,6 +143,7 @@ Allow: /
 Allow: /llms.txt
 Allow: /brand-facts.html
 Allow: /geo-guide.html
+Allow: /insights.html
 
 User-agent: CCBot
 Allow: /
