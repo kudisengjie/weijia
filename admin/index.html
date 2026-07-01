@@ -11,15 +11,16 @@
     <main class="admin-shell">
         <section class="login-view" id="loginView">
             <div class="login-stage">
-                <div class="platform-brand"><span class="leaf-mark"></span>GEO优化平台</div>
+                <div class="platform-brand"><span class="leaf-mark"></span><span data-i18n="brand">GEO优化平台</span></div>
+                <button class="admin-lang-switch" type="button" data-admin-lang-switch aria-label="Switch language">English</button>
                 <div class="robot-zone">
                     <img src="../images/robot-login.png" alt="奕蕊机器人" class="login-robot">
-                    <div class="robot-stand"></div>
+                    <div class="robot-stand" aria-hidden="true"></div>
                 </div>
                 <div class="hero-copy">
-                    <p>欢迎使用</p>
-                    <h1>GEO优化全链路平台</h1>
-                    <span>智能知识体积累 · 行业高频问生成 · GEO内容生态与优化</span>
+                    <p data-i18n="login.hero.eyebrow">欢迎使用</p>
+                    <h1 data-i18n="login.hero.title">GEO优化全链路平台</h1>
+                    <span data-i18n="login.hero.subtitle">智能知识体积累 · 行业高频问生成 · GEO内容生态与优化</span>
                 </div>
                 <div class="scene-lines" aria-hidden="true">
                     <span class="spark"></span>
@@ -29,25 +30,25 @@
                     <span class="globe-ring ring-b"></span>
                 </div>
                 <form class="login-card" id="loginForm" autocomplete="off">
-                    <h2>用户登录</h2>
+                    <h2 data-i18n="login.title">用户登录</h2>
                     <label>
-                        <span>手机号 / 邮箱</span>
-                        <input name="username" autocomplete="off" placeholder="请输入手机号或邮箱" required>
+                        <span data-i18n="login.username.label">手机号 / 邮箱</span>
+                        <input name="username" autocomplete="off" data-i18n-placeholder="login.username.placeholder" placeholder="请输入手机号或邮箱" required>
                     </label>
                     <label>
-                        <span>密码</span>
+                        <span data-i18n="login.password.label">密码</span>
                         <div class="password-field">
-                            <input id="passwordInput" name="password" type="password" autocomplete="off" placeholder="请输入密码" required>
-                            <button id="togglePassword" type="button" aria-label="显示密码">⌾</button>
+                            <input id="passwordInput" name="password" type="password" autocomplete="off" data-i18n-placeholder="login.password.placeholder" placeholder="请输入密码" required>
+                            <button id="togglePassword" type="button" data-i18n-aria="login.password.show" aria-label="显示密码">◎</button>
                         </div>
                     </label>
                     <div class="login-tools">
-                        <label class="remember-row"><input name="remember" type="checkbox"><span>记住我</span></label>
-                        <a href="#" aria-label="忘记密码">忘记密码?</a>
+                        <label class="remember-row"><input name="remember" type="checkbox"><span data-i18n="login.remember">记住我</span></label>
+                        <a href="#" data-i18n="login.forgot" aria-label="忘记密码">忘记密码?</a>
                     </div>
-                    <button class="login-submit" type="submit">登录</button>
-                    <p class="register-hint">还没有账号？<span>仅限管理员访问</span></p>
-                    <p class="admin-open-help" id="adminOpenHelp">本地查看请先运行：node admin/server.mjs，然后打开 http://localhost:8787/admin/</p>
+                    <button class="login-submit" type="submit" data-i18n="login.submit">登录</button>
+                    <p class="register-hint"><span data-i18n="login.noAccount">还没有账号?</span><span data-i18n="login.adminOnly">仅限管理员访问</span></p>
+                    <p class="admin-open-help" id="adminOpenHelp" data-i18n="login.localHelp">本地查看请先运行：node admin/server.mjs，然后打开 http://localhost:8787/admin/</p>
                     <p class="login-error" id="loginError" role="alert"></p>
                 </form>
             </div>
@@ -57,50 +58,58 @@
             <header class="dashboard-header">
                 <div>
                     <p class="eyebrow">Crawler Intelligence</p>
-                    <h1>AI爬虫抓取数据管理后台</h1>
-                    <p class="dashboard-subtitle">通过 EdgeOne / CLS 观察豆包、DeepSeek、元宝、百度等爬虫抓取官网页面的真实请求。</p>
-                    <p class="dashboard-live" id="lastRefreshText">实时查询 CLS，登录后每 60 秒自动刷新。</p>
+                    <h1 data-i18n="dashboard.title">AI爬虫抓取数据管理后台</h1>
+                    <p class="dashboard-subtitle" data-i18n="dashboard.subtitle">通过 EdgeOne / CLS 观察豆包、DeepSeek、元宝、百度等爬虫抓取官网页面的真实请求。</p>
+                    <p class="dashboard-live" id="lastRefreshText" data-i18n="dashboard.live.initial">实时查询 CLS，登录后每 60 秒自动刷新。</p>
                 </div>
                 <div class="header-actions">
-                    <select id="rangeSelect" aria-label="日志范围">
-                        <option value="24h">24小时</option>
-                        <option value="7d" selected>7天</option>
-                        <option value="30d">30天</option>
+                    <select id="rangeSelect" aria-label="日志范围" data-i18n-aria="dashboard.rangeLabel">
+                        <option value="24h" data-i18n="range.24h">24小时</option>
+                        <option value="7d" selected data-i18n="range.7d">7天</option>
+                        <option value="30d" data-i18n="range.30d">30天</option>
                     </select>
-                    <button id="refreshBtn" type="button">刷新</button>
-                    <button id="logoutBtn" type="button" class="ghost">退出</button>
+                    <button id="refreshBtn" type="button" data-i18n="dashboard.refresh">刷新</button>
+                    <button id="logoutBtn" type="button" class="ghost" data-i18n="dashboard.logout">退出</button>
+                    <button class="ghost dashboard-lang-switch" type="button" data-admin-lang-switch aria-label="Switch language">English</button>
                 </div>
             </header>
 
             <div class="metric-grid">
-                <article class="metric-card"><span>今日抓取</span><strong id="metricToday">0</strong></article>
-                <article class="metric-card"><span>7天抓取</span><strong id="metricSeven">0</strong></article>
-                <article class="metric-card"><span>30天抓取</span><strong id="metricThirty">0</strong></article>
-                <article class="metric-card"><span>数据源</span><strong id="metricSource">CLS</strong></article>
+                <article class="metric-card"><span data-i18n="metric.today">今日抓取</span><strong id="metricToday">0</strong></article>
+                <article class="metric-card"><span data-i18n="metric.seven">7天抓取</span><strong id="metricSeven">0</strong></article>
+                <article class="metric-card"><span data-i18n="metric.thirty">30天抓取</span><strong id="metricThirty">0</strong></article>
+                <article class="metric-card"><span data-i18n="metric.source">数据源</span><strong id="metricSource">CLS</strong></article>
             </div>
 
             <div class="dashboard-grid">
                 <section class="panel">
-                    <h2>爬虫分布</h2>
+                    <h2 data-i18n="panel.crawlers">爬虫分布</h2>
                     <div id="crawlerList" class="crawler-list"></div>
                 </section>
                 <section class="panel">
-                    <h2>高频页面</h2>
+                    <h2 data-i18n="panel.paths">高频页面</h2>
                     <div id="pathList" class="path-list"></div>
                 </section>
             </div>
 
             <section class="panel">
-                <h2>最近请求</h2>
+                <h2 data-i18n="panel.recent">最近请求</h2>
                 <div class="table-wrap">
                     <table>
                         <thead>
-                            <tr><th>时间</th><th>爬虫</th><th>状态</th><th>路径</th><th>IP哈希</th><th>缓存</th></tr>
+                            <tr>
+                                <th data-i18n="table.time">时间</th>
+                                <th data-i18n="table.crawler">爬虫</th>
+                                <th data-i18n="table.status">状态</th>
+                                <th data-i18n="table.path">路径</th>
+                                <th data-i18n="table.ipHash">IP哈希</th>
+                                <th data-i18n="table.cache">缓存</th>
+                            </tr>
                         </thead>
                         <tbody id="logRows"></tbody>
                     </table>
                 </div>
-                <p class="empty-state" id="emptyState">暂无日志。请确认 EdgeOne 实时日志已投递到 CLS，并配置 TENCENT_CLS_TOPIC_ID。</p>
+                <p class="empty-state" id="emptyState" data-i18n="empty.noLogs">暂无日志。请确认 EdgeOne 实时日志已投递到 CLS，并配置 TENCENT_CLS_TOPIC_ID。</p>
             </section>
         </section>
     </main>
