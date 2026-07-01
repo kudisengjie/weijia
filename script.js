@@ -110,6 +110,17 @@ requestAnimationFrame(function() {
     });
 });
 
+function getSiteLang() {
+    return localStorage.getItem('lang') === 'en' || document.documentElement.lang === 'en' ? 'en' : 'zh';
+}
+
+function updateCrawlerConsoleEntry(entry) {
+    if (!entry) return;
+    var isEnglish = getSiteLang() === 'en';
+    entry.textContent = isEnglish ? 'Data' : '\u6570\u636e';
+    entry.setAttribute('aria-label', isEnglish ? 'Crawler data management admin' : '\u722c\u866b\u6293\u53d6\u6570\u636e\u7ba1\u7406\u540e\u53f0');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     var footerBottom = document.querySelector('.footer-bottom');
     if (!footerBottom || document.body.classList.contains('crawler-console-page')) return;
@@ -118,7 +129,16 @@ document.addEventListener('DOMContentLoaded', function() {
     var isNestedPage = location.pathname.indexOf('/articles/') !== -1 || location.pathname.indexOf('/blog/') !== -1;
     entry.href = location.protocol === 'file:' ? 'http://localhost:8787/admin/' : (isNestedPage ? '../admin/index.html' : 'admin/index.html');
     entry.rel = 'nofollow noopener';
-    entry.textContent = '数据';
-    entry.setAttribute('aria-label', '爬虫抓取数据管理后台');
+    updateCrawlerConsoleEntry(entry);
     footerBottom.appendChild(entry);
+
+    document.querySelectorAll('.lang-switch, .lang-switch-mobile').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            window.setTimeout(function() { updateCrawlerConsoleEntry(entry); }, 0);
+        });
+    });
+
+    window.addEventListener('storage', function(event) {
+        if (event.key === 'lang') updateCrawlerConsoleEntry(entry);
+    });
 });

@@ -21,6 +21,11 @@ const footerDesc = makeElement('footer.desc', '专注GEO优化，用AI重塑企�
 const navHome = makeElement('nav.home', '首页', false);
 const langButton = { textContent: 'English', addEventListener() {} };
 
+const script = fs.readFileSync('script.js', 'utf8');
+assert.ok(script.includes("entry.textContent = isEnglish ? 'Data' : '\\u6570\\u636e'"), 'crawler console entry should translate to Data in English and data in Chinese.');
+assert.ok(script.includes("localStorage.getItem('lang')"), 'crawler console entry should use the shared language key.');
+assert.ok(script.includes('updateCrawlerConsoleEntry'), 'script.js should update crawler console entry after language changes.');
+
 const context = {
   console,
   localStorage: { setItem() {}, getItem() { return null; } },
