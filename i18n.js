@@ -39,6 +39,7 @@ var i18n = {
         if (!dict) return;
 
         document.querySelectorAll('[data-i18n]').forEach(function(el) {
+            if (el.closest && el.closest('.footer')) return;
             var key = el.getAttribute('data-i18n');
             if (dict[key] !== undefined) {
                 el.textContent = dict[key];
@@ -46,6 +47,7 @@ var i18n = {
         });
 
         document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+            if (el.closest && el.closest('.footer')) return;
             var key = el.getAttribute('data-i18n-placeholder');
             if (dict[key] !== undefined) {
                 el.placeholder = dict[key];
