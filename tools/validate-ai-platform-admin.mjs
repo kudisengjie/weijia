@@ -80,9 +80,14 @@ for (const expected of [
   'ADMIN_PASSWORD_HASH',
   'TENCENT_CLS_TOPIC_ID',
   'SearchLog',
+  'QueryString',
+  'seconds * 1000',
   '/api/admin/crawler-logs'
 ]) {
   assert.ok(adminServer.includes(expected), `admin/server.mjs should include ${expected}.`);
 }
+const crawlerClassifier = read('admin/crawler-classifier.mjs');
+assert.ok(crawlerClassifier.includes('LogTime'), 'crawler-classifier should normalize CLS LogTime fields.');
+assert.ok(crawlerClassifier.includes('normalizeTime'), 'crawler-classifier should normalize second and millisecond timestamps.');
 
 console.log('AI platform topic and admin surface validation passed.');

@@ -91,6 +91,18 @@ function normalizePath(rawUrl) {
   }
 }
 
+function normalizeTime(rawTime) {
+  if (rawTime === undefined || rawTime === null || rawTime === '') return new Date().toISOString();
+  const numeric = Number(rawTime);
+  if (Number.isFinite(numeric)) {
+    const milliseconds = numeric < 100000000000 ? numeric * 1000 : numeric;
+    return new Date(milliseconds).toISOString();
+  }
+  const parsed = Date.parse(String(rawTime));
+  if (Number.isFinite(parsed)) return new Date(parsed).toISOString();
+  return String(rawTime);
+}
+
 export function normalizeEdgeOneLog(record = {}) {
   const userAgent = String(pick(record, ['RequestUA', 'UserAgent', 'userAgent', 'ua']));
   const crawler = classifyCrawler(userAgent);
@@ -99,7 +111,7 @@ export function normalizeEdgeOneLog(record = {}) {
   const clientIp = pick(record, ['ClientIP', 'ClientIp', 'RemoteAddr', 'ip'], '');
 
   return {
-    time: String(pick(record, ['RequestTime', 'Time', 'timestamp', 'time'], new Date().toISOString())),
+    time: normalizeTime(pick(record, ['LogTime', 'RequestTime', 'EventTime', 'Time', 'timestamp', 'time'], new Date().toISOString())),
     path: normalizePath(rawUrl),
     method: String(pick(record, ['RequestMethod', 'Method', 'method'], 'GET')).toUpperCase(),
     status: Number.isFinite(status) ? status : 0,

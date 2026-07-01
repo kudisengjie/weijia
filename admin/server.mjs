@@ -121,11 +121,12 @@ async function queryClsLogs(range = '7d') {
   }
 
   const seconds = range === '30d' ? 30 * 86400 : range === '24h' ? 86400 : 7 * 86400;
+  const now = Date.now();
   const payload = JSON.stringify({
     TopicId: topicId,
-    From: Math.floor(Date.now() / 1000) - seconds,
-    To: Math.floor(Date.now() / 1000),
-    Query: process.env.TENCENT_CLS_QUERY || 'RequestUA:*',
+    From: now - seconds * 1000,
+    To: now,
+    QueryString: process.env.TENCENT_CLS_QUERY || '*',
     Limit: Number(process.env.TENCENT_CLS_LIMIT || 200),
     Sort: 'desc'
   });
@@ -145,7 +146,26 @@ async function queryClsLogs(range = '7d') {
     throw new Error(data.Response?.Error?.Message || `CLS SearchLog failed with ${response.status}`);
   }
   const rows = data.Response?.Results || data.Response?.AnalysisRecords || [];
-  return rows.map((row) => normalizeEdgeOneLog(row.LogJson ? JSON.parse(row.LogJson) : row)).filter(Boolean);
+  return rows.map(parseClsRow).map((row) => normalizeEdgeOneLog(row)).filter(Boolean);
+}
+
+function parseClsRow(row) {
+  if (!row) return {};
+  if (typeof row === 'string') {
+    try {
+      return JSON.parse(row);
+    } catch {
+      return { message: row };
+    }
+  }
+  if (row.LogJson) {
+    try {
+      return JSON.parse(row.LogJson);
+    } catch {
+      return row;
+    }
+  }
+  return row;
 }
 
 async function queryJsonlLogs() {
