@@ -436,7 +436,7 @@ i18n.translations.zh = {
     'blog.resources.btn': '申请获取',
     'blog.resources.note': '温馨提示：以上资源需联系炜佳导导进行获取，非直接下载。请通过"关于我"页面的联系方式咨询获取。',
 
-    'insights.h2': '案例与见解',
+    'insights.h2': 'GEO策略中心',
     'insights.intro': '以下内容基于GEO实战项目经验整理，案例数据已做脱敏处理，保留方法论逻辑。',
     'insights.cases.h3': '实战案例',
     'insights.case1.tag': '教育科技',
