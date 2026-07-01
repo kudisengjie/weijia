@@ -2597,3 +2597,179 @@ body:not(.crawler-console-page) {
         grid-template-columns: 34px minmax(0, 1fr) 48px;
     }
 }
+/* ===== Unified Compact Scale ===== */
+:root {
+    --site-content-max: 1060px;
+    --site-article-max: 820px;
+}
+
+.container { max-width: var(--site-content-max); }
+.navbar .container { max-width: 1280px; }
+
+@media (min-width: 769px) {
+    .section { padding: 70px 0; }
+    .guide-section, .blog-section { padding: 70px 0 52px; }
+    .home-content { padding: 52px 0; }
+
+    .support-section-container,
+    .hub-grid,
+    .insights-intro,
+    .guide-intro,
+    .cooperation-intro,
+    .machine-facts,
+    .index-link-list,
+    .ai-index-hero,
+    .ai-platform-topics {
+        max-width: var(--site-content-max);
+    }
+
+    .profile-layout {
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 30px;
+    }
+
+    .profile-hero-header,
+    .profile-content-block,
+    .support-faq-card,
+    .support-help-card,
+    .blog-article,
+    .guide-section-block,
+    .reason-block,
+    .compare-block,
+    .transparent-block,
+    .ai-index-hero,
+    .ai-platform-topics {
+        padding: 24px 26px;
+    }
+
+    .home-grid-pro,
+    .blog-posts,
+    .cases-grid,
+    .resources-grid,
+    .hub-grid,
+    .value-grid,
+    .pricing-cards {
+        gap: 18px;
+    }
+
+    .home-card-pro,
+    .case-card,
+    .blog-post,
+    .resource-card,
+    .ai-course-card,
+    .platform-card {
+        padding: 22px;
+        border-radius: 12px;
+    }
+
+    .article-detail-container { max-width: var(--site-article-max); }
+    .article-detail { padding: 30px 32px; }
+    .article-detail h1 { font-size: 1.82rem; }
+    .article-detail-body p { font-size: 0.96rem; line-height: 1.82; }
+    .article-detail-body li { font-size: 0.94rem; line-height: 1.72; }
+
+    .recent-articles-section h3,
+    .recent-article-list {
+        max-width: var(--site-article-max);
+    }
+
+    .blog-recent-docx-articles,
+    .blog-recent-docx-articles h3,
+    .blog-recent-docx-articles .recent-article-list {
+        width: min(var(--site-content-max), calc(100vw - 48px));
+        max-width: var(--site-content-max);
+    }
+
+    .blog-recent-docx-articles .recent-article-list {
+        padding: 24px 30px;
+    }
+
+    .hero {
+        min-height: clamp(560px, 70vh, 680px);
+        padding: 72px 0 32px;
+    }
+
+    .hero-container {
+        max-width: 1060px;
+        padding: 0 24px;
+        gap: 38px;
+        transform: translateX(-18px);
+    }
+
+    .hero-content {
+        flex: 0 1 460px;
+        max-width: 460px;
+    }
+
+    .hero-title-wrapper {
+        padding: 14px 20px;
+        margin-bottom: 14px;
+    }
+
+    .hero h1 {
+        font-size: clamp(1.42rem, 3.5vw, 2.9rem);
+    }
+
+    .hero-ai-demo {
+        flex: 0 0 380px;
+        max-width: 380px;
+    }
+
+    .hero .ai-chat-window {
+        aspect-ratio: 1 / 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .hero .ai-chat-header {
+        flex: 0 0 48px;
+        padding: 10px 14px;
+    }
+
+    .hero .ai-chat-body {
+        flex: 1;
+        padding: 13px 14px 12px;
+        gap: 9px;
+    }
+
+    .hero .ai-message {
+        gap: 10px;
+    }
+
+    .hero .user-avatar,
+    .hero .ai-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.78rem;
+    }
+
+    .hero .message-content {
+        padding: 9px 12px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        line-height: 1.42;
+    }
+
+    .hero .ai-response .message-content > p:first-child { font-size: 0.86rem; line-height: 1.45; margin-bottom: 7px; }
+    .hero .ai-reason {
+        font-size: 0.7rem;
+        line-height: 1.36;
+        padding-left: 0;
+        margin-bottom: 4px;
+    }
+
+    .hero .ai-stats-card {
+        flex: 0 0 70px;
+        padding: 10px 14px;
+        gap: 14px;
+    }
+
+    .hero .stat-number { font-size: 1.32rem; }
+    .hero .stat-label { font-size: 0.72rem; margin-top: 3px; }
+}
+
+@media (max-width: 768px) {
+    .hero-container { transform: none; }
+    .hero-ai-demo { max-width: 320px; }
+    .hero .ai-chat-window { aspect-ratio: auto; }
+}

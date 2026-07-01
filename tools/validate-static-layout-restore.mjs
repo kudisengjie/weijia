@@ -36,7 +36,12 @@ assert.ok(css.includes('@media (max-width: 768px)'), 'mobile responsive CSS shou
 assert.ok(css.includes('.recent-article-list'), 'recent article layout should remain styled.');
 assert.ok(css.includes('.ai-platform-card::after'), 'original AI platform card visual should remain available.');
 assert.ok(css.includes('min-height: clamp(560px, 70vh, 680px);'), 'home hero should not occupy the full desktop viewport.');
-assert.ok(css.includes('.hero-ai-demo {\n    flex: 0 1 340px;'), 'home AI demo should stay compact on desktop.');
+assert.ok(css.includes('max-width: 1060px;'), 'home hero content should have room to move slightly left.');
+assert.ok(css.includes('font-size: clamp(1.42rem, 3.5vw, 2.9rem);'), 'home hero title should be slightly larger.');
+assert.ok(css.includes('.hero-ai-demo {\n        flex: 0 0 380px;'), 'home AI demo should be wider after the square-card adjustment.');
+assert.ok(css.includes('aspect-ratio: 1 / 1;'), 'home AI demo card should be square.');
+assert.ok(css.includes('.ai-response .message-content > p:first-child { font-size: 0.86rem;'), 'home AI recommendation title should keep its emphasis.');
+assert.ok(css.includes('.hero .ai-reason {\n        font-size: 0.7rem;'), 'home AI answer detail text should be smaller.');
 
 const indexHtml = fs.readFileSync('index.html', 'utf8');
 const i18n = fs.readFileSync('i18n.js', 'utf8');
@@ -65,4 +70,14 @@ assert.ok(adminCss.includes('width: min(1500px, 100%);'), 'admin login stage sho
 assert.ok(adminCss.includes('html[lang="en"] .hero-copy'), 'admin English login copy should have language-specific spacing.');
 assert.ok(adminCss.includes('overflow-wrap: break-word;'), 'admin English title should wrap before it touches the login card.');
 
+for (const compactRule of [
+  '/* ===== Unified Compact Scale ===== */',
+  '--site-content-max: 1060px;',
+  '--site-article-max: 820px;',
+  '.profile-layout {\n        grid-template-columns: minmax(0, 1fr) 340px;',
+  '.article-detail-container { max-width: var(--site-article-max); }',
+  'width: min(var(--site-content-max), calc(100vw - 48px));'
+]) {
+  assert.ok(css.includes(compactRule), `unified compact scale should include ${compactRule}`);
+}
 console.log('Static layout restore validation passed.');
