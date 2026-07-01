@@ -248,3 +248,13 @@ Allow: /llms.txt
 User-agent: Seekr
 Allow: /
 Allow: /llms.txt
+
+Allow: /articles/prime-methodology-geo-practice.html
+Allow: /articles/ai-platform-geo-differences.html
+Allow: /articles/geo-vs-seo-doubao.html
+Allow: /articles/geo-optimization-business-value.html
+Allow: /articles/geo-industry-differences-fast-results.html
+Allow: /articles/geo-technical-principles-ai-recommendation.html
+Allow: /articles/geo-effect-measurement-core-metrics.html
+Allow: /articles/enterprise-geo-sop-from-zero.html
+Allow: /articles/geo-common-mistakes.html

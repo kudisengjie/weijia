@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
@@ -7,6 +8,24 @@ import { fileURLToPath } from 'node:url';
 import { normalizeEdgeOneLog, summarizeCrawlerLogs } from './crawler-classifier.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+const siteRoot = path.resolve(root, '..');
+
+function loadLocalEnv() {
+  const candidates = [path.resolve(root, '..', '.env.local'), path.resolve(root, '.env.local')];
+  for (const file of candidates) {
+    if (!fsSync.existsSync(file)) continue;
+    const raw = fsSync.readFileSync(file, 'utf8');
+    for (const line of raw.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
+      const index = trimmed.indexOf('=');
+      const key = trimmed.slice(0, index).trim();
+      const value = trimmed.slice(index + 1).trim().replace(/^['"]|['"]$/g, '');
+      if (key && process.env[key] === undefined) process.env[key] = value;
+    }
+  }
+}
+loadLocalEnv();
 const port = Number(process.env.ADMIN_PORT || 8787);
 const sessionCookie = 'geo_admin_session';
 const sessionSecret = process.env.SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || '';
@@ -146,25 +165,48 @@ async function loadCrawlerLogs(range) {
   };
 }
 
-async function serveStatic(req, res) {
-  const url = new URL(req.url, 'http://localhost');
-  const file = url.pathname === '/admin/' || url.pathname === '/admin' ? 'index.html' : url.pathname.replace(/^\/admin\//, '');
-  const target = path.normalize(path.join(root, file));
-  if (!target.startsWith(root)) {
+function contentType(target) {
+  const ext = path.extname(target).toLowerCase();
+  if (ext === '.css') return 'text/css; charset=UTF-8';
+  if (ext === '.js' || ext === '.mjs') return 'application/javascript; charset=UTF-8';
+  if (ext === '.json') return 'application/json; charset=UTF-8';
+  if (ext === '.xml') return 'application/xml; charset=UTF-8';
+  if (ext === '.txt') return 'text/plain; charset=UTF-8';
+  if (ext === '.png') return 'image/png';
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  if (ext === '.ico') return 'image/x-icon';
+  return 'text/html; charset=UTF-8';
+}
+
+async function serveFile(res, target, baseRoot) {
+  const normalized = path.normalize(target);
+  if (!normalized.startsWith(baseRoot)) {
     res.writeHead(403);
     res.end('Forbidden');
     return;
   }
-  const ext = path.extname(target);
-  const type = ext === '.css' ? 'text/css; charset=UTF-8' : ext === '.js' ? 'application/javascript; charset=UTF-8' : 'text/html; charset=UTF-8';
   try {
-    const data = await fs.readFile(target);
-    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store' });
+    const data = await fs.readFile(normalized);
+    res.writeHead(200, { 'Content-Type': contentType(normalized), 'Cache-Control': 'no-store' });
     res.end(data);
   } catch {
     res.writeHead(404);
     res.end('Not found');
   }
+}
+
+async function serveStatic(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+  if (url.pathname === '/admin/' || url.pathname === '/admin') {
+    await serveFile(res, path.join(root, 'index.html'), root);
+    return;
+  }
+  if (url.pathname.startsWith('/admin/')) {
+    await serveFile(res, path.join(root, url.pathname.replace(/^\/admin\//, '')), root);
+    return;
+  }
+  const cleanPath = url.pathname === '/' ? 'crawler-console.html' : decodeURIComponent(url.pathname.replace(/^\//, ''));
+  await serveFile(res, path.join(siteRoot, cleanPath), siteRoot);
 }
 
 async function handle(req, res) {
@@ -209,7 +251,7 @@ async function handle(req, res) {
       return;
     }
 
-    if (url.pathname.startsWith('/admin')) {
+    if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/images/') || url.pathname === '/' || url.pathname === '/crawler-console.html' || url.pathname === '/favicon.ico') {
       await serveStatic(req, res);
       return;
     }
@@ -221,7 +263,7 @@ async function handle(req, res) {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (path.resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) {
   http.createServer(handle).listen(port, () => {
     console.log(`Crawler admin server listening on http://localhost:${port}/admin/`);
   });

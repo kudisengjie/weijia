@@ -115,7 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!footerBottom || document.body.classList.contains('crawler-console-page')) return;
     var entry = document.createElement('a');
     entry.className = 'crawler-console-entry';
-    entry.href = (location.pathname.indexOf('/articles/') !== -1 || location.pathname.indexOf('/blog/') !== -1) ? '../crawler-console.html' : 'crawler-console.html';
+    var isNestedPage = location.pathname.indexOf('/articles/') !== -1 || location.pathname.indexOf('/blog/') !== -1;
+    entry.href = location.protocol === 'file:' ? 'http://localhost:8787/admin/' : (isNestedPage ? '../admin/index.html' : 'admin/index.html');
     entry.rel = 'nofollow noopener';
     entry.textContent = '数据';
     entry.setAttribute('aria-label', '爬虫抓取数据管理后台');

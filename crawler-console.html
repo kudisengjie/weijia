@@ -7,10 +7,15 @@
     <title>爬虫抓取数据管理后台 | GEO优化平台</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="style.css">
+    <script>
+    if (location.protocol === 'file:') {
+        location.replace('http://localhost:8787/admin/');
+    }
+    </script>
 </head>
 <body class="crawler-console-page">
     <main class="crawler-console-shell">
-        <iframe src="admin/" title="爬虫抓取数据管理后台" loading="eager"></iframe>
+        <iframe src="admin/index.html" title="爬虫抓取数据管理后台" loading="eager"></iframe>
     </main>
 </body>
 </html>

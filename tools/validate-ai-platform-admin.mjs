@@ -25,7 +25,10 @@ for (const relPath of [
   'admin/server.mjs',
   'admin/crawler-classifier.mjs',
   'crawler-console.html',
-  'images/yirui-robot-transparent.png'
+  'images/robot-login.png',
+  'images/robot-neutral.png',
+  'images/robot-doubao.png',
+  'images/robot-deepseek.png'
 ]) {
   assert.ok(exists(relPath), `${relPath} should exist.`);
 }
@@ -33,9 +36,26 @@ for (const relPath of [
 const profile = read('profile.html');
 const script = read('script.js');
 const consolePage = read('crawler-console.html');
+const adminIndex = read('admin/index.html');
+const adminApp = read('admin/app.js');
+const adminStyle = read('admin/style.css');
 assert.ok(profile.includes('ai-platform-topics'), 'profile.html should include the AI platform topics module.');
 assert.ok(script.includes('crawler-console-entry'), 'script.js should inject the hidden crawler console entry.');
-assert.ok(consolePage.includes('admin/'), 'crawler-console.html should embed the admin route.');
+assert.ok(script.includes('admin/index.html'), 'script.js should link the hidden footer entry directly to the admin page.');
+assert.ok(consolePage.includes('admin/index.html'), 'crawler-console.html should embed the concrete admin page, not a directory index.');
+assert.ok(consolePage.includes('http://localhost:8787/admin/'), 'crawler-console.html should redirect local file previews directly to the admin server.');
+assert.ok(adminIndex.includes('../images/robot-login.png'), 'admin/index.html should use the clean login robot cutout.');
+assert.ok(adminIndex.includes('admin-open-help'), 'admin/index.html should include local server help for login.');
+assert.ok(!adminIndex.includes('value="13539770556"'), 'admin/index.html should not prefill the private account for other visitors.');
+assert.ok(adminIndex.includes('autocomplete="off"'), 'admin/index.html should turn off credential autofill hints.');
+assert.ok(adminStyle.includes('.admin-open-help { display: none;'), 'admin help should be hidden until the API is unavailable.');
+assert.ok(adminApp.includes('当前是静态文件预览'), 'admin/app.js should explain failed local file login.');
+assert.ok(adminApp.includes('adminOpenHelp') && adminApp.includes("classList.add('visible')"), 'admin/app.js should reveal local help only on connection failure.');
+assert.ok(adminApp.includes('window.setInterval(loadLogs, 60000)'), 'admin/app.js should auto-refresh live crawler data every 60 seconds.');
+assert.ok(adminApp.includes('&_=') && adminApp.includes('Date.now()'), 'admin/app.js should add a cache-busting timestamp for live log queries.');
+assert.ok(adminApp.includes("'Cache-Control': 'no-cache'"), 'admin/app.js should send no-cache requests for log data.');
+assert.ok(adminIndex.includes('lastRefreshText'), 'admin/index.html should show the last live refresh time.');
+assert.ok(profile.includes('images/robot-neutral.png'), 'profile.html should use the clean neutral robot cutout.');
 
 for (const slug of articleSlugs) {
   const href = `articles/${slug}.html`;

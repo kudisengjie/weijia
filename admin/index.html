@@ -13,7 +13,7 @@
             <div class="login-stage">
                 <div class="platform-brand"><span class="leaf-mark"></span>GEO优化平台</div>
                 <div class="robot-zone">
-                    <img src="../images/yirui-robot-transparent.png" alt="奕蕊机器人" class="login-robot">
+                    <img src="../images/robot-login.png" alt="奕蕊机器人" class="login-robot">
                     <div class="robot-stand"></div>
                 </div>
                 <div class="hero-copy">
@@ -28,16 +28,16 @@
                     <span class="globe-ring ring-a"></span>
                     <span class="globe-ring ring-b"></span>
                 </div>
-                <form class="login-card" id="loginForm">
+                <form class="login-card" id="loginForm" autocomplete="off">
                     <h2>用户登录</h2>
                     <label>
                         <span>手机号 / 邮箱</span>
-                        <input name="username" autocomplete="username" value="13539770556" placeholder="请输入手机号或邮箱" required>
+                        <input name="username" autocomplete="off" placeholder="请输入手机号或邮箱" required>
                     </label>
                     <label>
                         <span>密码</span>
                         <div class="password-field">
-                            <input id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="请输入密码" required>
+                            <input id="passwordInput" name="password" type="password" autocomplete="off" placeholder="请输入密码" required>
                             <button id="togglePassword" type="button" aria-label="显示密码">⌾</button>
                         </div>
                     </label>
@@ -47,6 +47,7 @@
                     </div>
                     <button class="login-submit" type="submit">登录</button>
                     <p class="register-hint">还没有账号？<span>仅限管理员访问</span></p>
+                    <p class="admin-open-help" id="adminOpenHelp">本地查看请先运行：node admin/server.mjs，然后打开 http://localhost:8787/admin/</p>
                     <p class="login-error" id="loginError" role="alert"></p>
                 </form>
             </div>
@@ -58,6 +59,7 @@
                     <p class="eyebrow">Crawler Intelligence</p>
                     <h1>AI爬虫抓取数据管理后台</h1>
                     <p class="dashboard-subtitle">通过 EdgeOne / CLS 观察豆包、DeepSeek、元宝、百度等爬虫抓取官网页面的真实请求。</p>
+                    <p class="dashboard-live" id="lastRefreshText">实时查询 CLS，登录后每 60 秒自动刷新。</p>
                 </div>
                 <div class="header-actions">
                     <select id="rangeSelect" aria-label="日志范围">
