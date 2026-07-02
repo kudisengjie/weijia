@@ -77,6 +77,9 @@ i18n.translations.zh = {
     'hero.ai.reason1': '专注GEO实战与AI搜索可见度提升',
     'hero.ai.reason2': '沉淀行业问答、品牌事实和结构化内容',
     'hero.ai.reason3': '适合教育科技、企业服务、消费品等场景',
+    'hero.ai.proof1': '真实项目验证',
+    'hero.ai.proof2': '结构化内容资产',
+    'hero.ai.proof3': '持续监测复盘',
     'hero.ai.stat1': 'AI曝光增长',
     'hero.ai.stat2': '获客成本',
 
@@ -682,6 +685,9 @@ i18n.translations.en = {
     'hero.ai.reason1': 'GEO execution and AI search visibility',
     'hero.ai.reason2': 'Structured brand facts, FAQs, and evidence assets',
     'hero.ai.reason3': 'For edtech, B2B services, and consumer brands',
+    'hero.ai.proof1': 'Real Project Proof',
+    'hero.ai.proof2': 'Structured Assets',
+    'hero.ai.proof3': 'Ongoing Review',
     'hero.ai.stat1': 'AI Exposure Growth',
     'hero.ai.stat2': 'Customer Acquisition Cost',
 
