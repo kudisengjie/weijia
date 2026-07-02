@@ -46,6 +46,12 @@ for (let index = 0; index < articles.length; index += 1) {
   assert(article.includes('<article class="article-detail"'), `${articlePath} is missing article detail markup.`);
   assert(article.includes('炜佳导导'), `${articlePath} should keep the site author/brand visible.`);
   assert(article.includes('2026-06-29'), `${articlePath} should use the current iteration date.`);
+  const breadcrumbMatch = article.match(/<div class="article-breadcrumb">([\s\S]*?)<\/div>/);
+  assert(breadcrumbMatch, `${articlePath} is missing a visible breadcrumb.`);
+  assert(!breadcrumbMatch[1].includes('blog/index.html'), `${articlePath} breadcrumb should not route recent articles through the blog.`);
+  assert(!breadcrumbMatch[1].includes('\u884c\u4e1a\u535a\u5ba2'), `${articlePath} breadcrumb should use the neutral recent-article path, not industry blog.`);
+  assert(breadcrumbMatch[1].includes('\u8fd1\u671f\u6587\u7ae0'), `${articlePath} breadcrumb should identify the page as a recent article.`);
+  assert(!article.includes('<a href="../blog/index.html" class="active">\u884c\u4e1a\u535a\u5ba2</a>'), `${articlePath} should not highlight the blog nav for support recent articles.`);
 }
 
 const sitemap = read('sitemap.xml');
