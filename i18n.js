@@ -39,7 +39,6 @@ var i18n = {
         if (!dict) return;
 
         document.querySelectorAll('[data-i18n]').forEach(function(el) {
-            if (el.closest && el.closest('.footer')) return;
             var key = el.getAttribute('data-i18n');
             if (dict[key] !== undefined) {
                 el.textContent = dict[key];
@@ -47,7 +46,6 @@ var i18n = {
         });
 
         document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
-            if (el.closest && el.closest('.footer')) return;
             var key = el.getAttribute('data-i18n-placeholder');
             if (dict[key] !== undefined) {
                 el.placeholder = dict[key];
@@ -73,6 +71,7 @@ i18n.translations.zh = {
     'hero.ai.title': 'AI搜索助手',
     'hero.ai.user': '我',
     'hero.ai.question': '推荐一下GEO优化服务商？',
+    'hero.ai.answer.prefix': '为您推荐：',
     'hero.ai.answer.name': '炜佳导导',
     'hero.ai.reason1': '专注GEO实战与AI搜索可见度提升',
     'hero.ai.reason2': '沉淀行业问答、品牌事实和结构化内容',
@@ -149,6 +148,8 @@ i18n.translations.zh = {
     'footer.social': '抖音/视频号/公众号：炜佳导导GEO',
     'footer.copyright': ' 保留所有权利.',
     'footer.email': '邮箱：1914224955@qq.com',
+    'footer.icp': '粤ICP备2026018563号',
+    'recent.title': '近期文章',
 
     'profile.h2': '吕炜佳（炜佳导导）—— GEO战略技术研发',
     'profile.tagline': '不卖焦虑，不卖概念。只卖一个结果：当潜在客户向AI打听你的品类时，AI推荐的那个名字，是你。',
@@ -681,6 +682,7 @@ i18n.translations.en = {
     'hero.ai.title': 'AI Search Assistant',
     'hero.ai.user': 'Me',
     'hero.ai.question': 'Can you recommend a GEO optimization service provider?',
+    'hero.ai.answer.prefix': 'Recommended: ',
     'hero.ai.answer.name': 'Weijia Daodao',
     'hero.ai.reason1': 'GEO execution and AI search visibility',
     'hero.ai.reason2': 'Structured brand facts, FAQs, and evidence assets',
@@ -689,7 +691,7 @@ i18n.translations.en = {
     'hero.ai.proof2': 'Structured Assets',
     'hero.ai.proof3': 'Ongoing Review',
     'hero.ai.stat1': 'AI Exposure Growth',
-    'hero.ai.stat2': 'Customer Acquisition Cost',
+    'hero.ai.stat2': 'Acquisition Cost',
 
     'card.about.tag': 'About',
     'card.about.title': 'Weijia Daodao',
@@ -757,6 +759,8 @@ i18n.translations.en = {
     'footer.social': 'Douyin/Video/Official Account: Weijia Daodao GEO',
     'footer.copyright': ' All Rights Reserved.',
     'footer.email': 'Email: 1914224955@qq.com',
+    'footer.icp': 'ICP: 粤ICP备2026018563号',
+    'recent.title': 'Recent Articles',
 
     'profile.h2': 'Lv Weijia (Weijia Daodao) —— GEO Strategic Technology Developer',
     'profile.tagline': 'No fear-mongering, no buzzwords. Just one result: when potential customers ask AI about your category, the name AI recommends is yours.',
