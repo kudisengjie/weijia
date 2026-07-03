@@ -7,10 +7,7 @@ Disallow: /admin/
 Disallow: /crawler-console.html
 Allow: /llms.txt
 Allow: /sitemap.xml
-Allow: /sitemap-pages.xml
 Allow: /sitemap-articles.xml
-Allow: /sitemap-ai.xml
-Allow: /sitemap-index.xml
 Allow: /articles/
 Allow: /brand-facts.html
 Allow: /geo-guide.html
@@ -19,10 +16,7 @@ Allow: /articles/doubao-byte-geo-indexing-strategy.html
 Allow: /articles/deepseek-geo-evidence-density-strategy.html
 
 Sitemap: https://www.lxue.xin/sitemap.xml
-Sitemap: https://www.lxue.xin/sitemap-index.xml
-Sitemap: https://www.lxue.xin/sitemap-ai.xml
 Sitemap: https://www.lxue.xin/sitemap-articles.xml
-Sitemap: https://www.lxue.xin/sitemap-pages.xml
 # AI-readable site summary: https://www.lxue.xin/llms.txt
 # GEO strategy center: https://www.lxue.xin/insights.html
 

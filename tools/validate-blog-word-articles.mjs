@@ -42,12 +42,12 @@ for (let index = 0; index < articles.length; index += 1) {
   assert.ok(article.includes('2026-06-30'), `${articlePath} should use the current article date.`);
 }
 
-const sitemap = read('sitemap.xml');
+const sitemap = read('sitemap-articles.xml');
 const urls = read('urls.txt');
 const llms = read('llms.txt');
 for (const slug of articles) {
   const loc = `https://www.lxue.xin/articles/${slug}.html`;
-  assert.ok(sitemap.includes(loc), `sitemap.xml is missing ${loc}.`);
+  assert.ok(sitemap.includes(loc), `sitemap-articles.xml is missing ${loc}.`);
   assert.ok(urls.includes(loc), `urls.txt is missing ${loc}.`);
   assert.ok(llms.includes(`/articles/${slug}.html`), `llms.txt is missing ${slug}.`);
 }

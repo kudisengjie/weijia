@@ -66,13 +66,44 @@ for (const file of articleFiles) {
   assert(html.includes('BreadcrumbList'), `articles/tools/validate-requested-fixes.mjs should include BreadcrumbList schema.`);
 }
 
-for (const sitemap of ['sitemap-pages.xml', 'sitemap-articles.xml', 'sitemap-ai.xml', 'sitemap-index.xml']) {
-  assert(exists(sitemap), `${sitemap} should exist.`);
-  assert(robots.includes(`Sitemap: https://www.lxue.xin/${sitemap}`), `robots.txt should expose ${sitemap}.`);
-  assert(llms.includes(`https://www.lxue.xin/${sitemap}`), `llms.txt should expose ${sitemap}.`);
-  const headerRule = edgeone.headers.find((entry) => entry.source === `/${sitemap}`);
-  assert(headerRule, `edgeone.json should declare headers for ${sitemap}.`);
-  assert(headerRule.headers.some((header) => header.key === 'Content-Type' && header.value === 'application/xml; charset=UTF-8'), `${sitemap} should be served as UTF-8 XML.`);
+const sitemapFiles = fs.readdirSync(root).filter((file) => /^sitemap.*\.xml$/.test(file)).sort();
+assert.deepEqual(sitemapFiles, ['sitemap-articles.xml', 'sitemap.xml'], 'root should expose only sitemap.xml and sitemap-articles.xml.');
+
+const mainSitemap = read('sitemap.xml');
+const articleSitemap = read('sitemap-articles.xml');
+const getLocs = (xml) => [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+const mainSitemapUrls = getLocs(mainSitemap);
+const articleSitemapUrls = getLocs(articleSitemap);
+
+assert.equal(mainSitemapUrls.filter((url) => url.includes('/articles/')).length, 0, 'main sitemap should not include article URLs.');
+assert.deepEqual(mainSitemapUrls, [
+  'https://www.lxue.xin/',
+  'https://www.lxue.xin/profile.html',
+  'https://www.lxue.xin/brand-facts.html',
+  'https://www.lxue.xin/blog/',
+  'https://www.lxue.xin/geo-guide.html',
+  'https://www.lxue.xin/insights.html',
+  'https://www.lxue.xin/support.html'
+], 'main sitemap should contain only the primary pages.');
+
+assert.equal(articleSitemapUrls.length, 22, 'article sitemap should contain the 22 recent article URLs.');
+assert(articleSitemapUrls.every((url) => url.startsWith('https://www.lxue.xin/articles/')), 'article sitemap should contain only article URLs.');
+assert(!articleSitemapUrls.some((url) => url.includes('doubao-byte-geo-indexing-strategy.html')), 'article sitemap should not include the non-recent Doubao ecosystem page.');
+
+for (const sitemap of ['sitemap.xml', 'sitemap-articles.xml']) {
+  assert(exists(sitemap), sitemap + ' should exist.');
+  assert(robots.includes('Sitemap: https://www.lxue.xin/' + sitemap), 'robots.txt should expose ' + sitemap + '.');
+  assert(llms.includes('https://www.lxue.xin/' + sitemap), 'llms.txt should expose ' + sitemap + '.');
+  const headerRule = edgeone.headers.find((entry) => entry.source === '/' + sitemap);
+  assert(headerRule, 'edgeone.json should declare headers for ' + sitemap + '.');
+  assert(headerRule.headers.some((header) => header.key === 'Content-Type' && header.value === 'application/xml; charset=UTF-8'), sitemap + ' should be served as UTF-8 XML.');
+}
+
+for (const removedSitemap of ['sitemap-pages.xml', 'sitemap-ai.xml', 'sitemap-index.xml']) {
+  assert(!exists(removedSitemap), removedSitemap + ' should be removed.');
+  assert(!robots.includes(removedSitemap), 'robots.txt should not reference ' + removedSitemap + '.');
+  assert(!llms.includes(removedSitemap), 'llms.txt should not reference ' + removedSitemap + '.');
+  assert(!edgeone.headers.some((entry) => entry.source === '/' + removedSitemap), 'edgeone.json should not declare headers for ' + removedSitemap + '.');
 }
 
 

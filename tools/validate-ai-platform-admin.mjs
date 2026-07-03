@@ -72,8 +72,13 @@ assert.ok(profile.includes('images/robot-neutral.png'), 'profile.html should use
 for (const slug of articleSlugs) {
   const href = `articles/${slug}.html`;
   assert.ok(profile.includes(href), `profile.html should link to ${href}.`);
-  assert.ok(read('sitemap.xml').includes(`https://www.lxue.xin/${href}`), `sitemap.xml should include ${href}.`);
-  assert.ok(read('llms.txt').includes(`/${href}`), `llms.txt should include ${href}.`);
+  const articleSitemap = read('sitemap-articles.xml');
+  if (slug === 'deepseek-geo-evidence-density-strategy') {
+    assert.ok(articleSitemap.includes(`https://www.lxue.xin/${href}`), `sitemap-articles.xml should include ${href}.`);
+    assert.ok(read('llms.txt').includes(`/${href}`), `llms.txt should include ${href}.`);
+  } else {
+    assert.ok(!articleSitemap.includes(`https://www.lxue.xin/${href}`), `sitemap-articles.xml should not include non-recent ${href}.`);
+  }
   assert.ok(read('robots.txt').includes(`/${href}`), `robots.txt should explicitly allow ${href}.`);
 
   const html = read(href);

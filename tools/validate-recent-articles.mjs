@@ -54,11 +54,11 @@ for (let index = 0; index < articles.length; index += 1) {
   assert(!article.includes('<a href="../blog/index.html" class="active">\u884c\u4e1a\u535a\u5ba2</a>'), `${articlePath} should not highlight the blog nav for support recent articles.`);
 }
 
-const sitemap = read('sitemap.xml');
+const sitemap = read('sitemap-articles.xml');
 const urls = read('urls.txt');
 for (const slug of articles) {
   const loc = `https://www.lxue.xin/articles/${slug}.html`;
-  assert(sitemap.includes(loc), `sitemap.xml is missing ${loc}.`);
+  assert(sitemap.includes(loc), `sitemap-articles.xml is missing ${loc}.`);
   assert(urls.includes(loc), `urls.txt is missing ${loc}.`);
 }
 
