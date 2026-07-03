@@ -23,6 +23,13 @@ assert(!css.includes('aspect-ratio: 1 / 1'), 'home AI card should not crop longe
 assert(!/\.hero \.ai-stats-card\s*\{[^}]*flex(?:-basis)?:\s*(?:0 0|[0-9])/s.test(css), 'home AI stats should not use a fixed flex height that clips labels.');
 assert(/\.footer-links,\s*\.footer-contact,\s*\.footer-brand\s*\{[^}]*justify-self:\s*center/s.test(css), 'mobile footer columns should center the actual footer-links element.');
 assert(/\.footer-links\s*\{[^}]*justify-self:\s*center/s.test(css), 'desktop footer should center the actual footer-links element.');
+assert(css.includes('Compact visual scale refinement'), 'CSS should include the compact visual scale refinement block.');
+assert(css.includes('--site-content-max: 1120px;'), 'desktop content should be narrowed to a calmer 1120px scale.');
+assert(css.includes('--site-article-max: 860px;'), 'article/detail content should be narrowed to a calmer 860px scale.');
+assert(css.includes('padding-top: 96px !important;'), 'inner pages should sit below the nav without filling the first viewport.');
+assert(css.includes('max-width: 1120px;'), 'home hero should use a narrower centered desktop frame.');
+assert(css.includes('max-width: 330px;'), 'home AI demo should be reduced from the previous oversized desktop width.');
+assert(css.includes('min-height: 360px;'), 'home AI card should be reduced from the previous oversized desktop height.');
 
 const supportRecentHrefs = [...support.matchAll(/<a class="recent-article-item" href="([^"]+)"/g)].map((match) => match[1]);
 assert.equal(supportRecentHrefs.length, 12, 'FAQ page should expose the 12 recent article links.');
