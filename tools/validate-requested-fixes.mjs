@@ -7,6 +7,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const exists = (file) => fs.existsSync(path.join(root, file));
 
 const css = read('style.css');
+const index = read('index.html');
 const support = read('support.html');
 const script = read('script.js');
 const robots = read('robots.txt');
@@ -30,6 +31,11 @@ assert(css.includes('padding-top: 96px !important;'), 'inner pages should sit be
 assert(css.includes('max-width: 1120px;'), 'home hero should use a narrower centered desktop frame.');
 assert(css.includes('max-width: 330px;'), 'home AI demo should be reduced from the previous oversized desktop width.');
 assert(css.includes('min-height: 360px;'), 'home AI card should be reduced from the previous oversized desktop height.');
+assert(index.includes('<span class="hero-highlight">AIGC</span>'), 'home hero highlight should use AIGC, not AIGE.');
+assert(!index.includes('AIGE'), 'home hero should not contain the AIGE typo.');
+assert(css.includes('Footer center alignment correction'), 'CSS should include the footer center alignment correction block.');
+assert(css.includes('.support-section .recent-articles-section { margin-bottom: 0; }'), 'FAQ recent articles should not leave a large blank gap before the footer.');
+assert(/\.footer-inner\s*\{[^}]*grid-template-columns:\s*minmax\(220px, 1fr\) auto minmax\(260px, 1fr\);[^}]*place-items:\s*center;[^}]*padding:\s*0;[^}]*min-height:\s*78px;/s.test(css), 'desktop footer inner grid should be centered without extra padding or oversized height.');
 
 const supportRecentHrefs = [...support.matchAll(/<a class="recent-article-item" href="([^"]+)"/g)].map((match) => match[1]);
 assert.equal(supportRecentHrefs.length, 12, 'FAQ page should expose the 12 recent article links.');
