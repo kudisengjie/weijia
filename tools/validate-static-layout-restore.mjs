@@ -39,7 +39,7 @@ assert.ok(css.includes('min-height: clamp(560px, 70vh, 680px);'), 'home hero sho
 assert.ok(css.includes('max-width: 1060px;'), 'home hero content should have room to move slightly left.');
 assert.ok(css.includes('font-size: clamp(1.42rem, 3.5vw, 2.9rem);'), 'home hero title should be slightly larger.');
 assert.ok(css.includes('.hero-ai-demo {\n        flex: 0 0 380px;'), 'home AI demo should be wider after the square-card adjustment.');
-assert.ok(css.includes('aspect-ratio: 1 / 1;'), 'home AI demo card should be square.');
+assert.ok(!css.includes('aspect-ratio: 1 / 1;'), 'home AI demo card should avoid fixed-square clipping.');
 assert.ok(css.includes('.ai-response .message-content > p:first-child { font-size: 0.86rem;'), 'home AI recommendation title should keep its emphasis.');
 assert.ok(css.includes('.hero .ai-reason {\n        font-size: 0.7rem;'), 'home AI answer detail text should be smaller.');
 

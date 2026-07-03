@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = process.cwd();
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const exists = (file) => fs.existsSync(path.join(root, file));
+
+const css = read('style.css');
+const support = read('support.html');
+const script = read('script.js');
+const robots = read('robots.txt');
+const llms = read('llms.txt');
+const edgeone = JSON.parse(read('edgeone.json'));
+
+for (const file of ['style.css', 'script.js', 'support.html', 'robots.txt', 'llms.txt', 'sitemap.xml']) {
+  assert(!read(file).includes('\uFFFD'), `${file} should not contain replacement characters.`);
+}
+
+assert(css.includes('min-height: min(75vh, calc(100vh - 72px));'), 'home hero should occupy about 3/4 of the viewport.');
+assert(!/\.hero-container\s*\{[^}]*transform:\s*translateX/s.test(css), 'home hero content should not be offset horizontally.');
+assert(!css.includes('aspect-ratio: 1 / 1'), 'home AI card should not crop longer English copy with a fixed square ratio.');
+assert(!/\.hero \.ai-stats-card\s*\{[^}]*flex(?:-basis)?:\s*(?:0 0|[0-9])/s.test(css), 'home AI stats should not use a fixed flex height that clips labels.');
+assert(/\.footer-links,\s*\.footer-contact,\s*\.footer-brand\s*\{[^}]*justify-self:\s*center/s.test(css), 'mobile footer columns should center the actual footer-links element.');
+assert(/\.footer-links\s*\{[^}]*justify-self:\s*center/s.test(css), 'desktop footer should center the actual footer-links element.');
+
+const supportRecentHrefs = [...support.matchAll(/<a class="recent-article-item" href="([^"]+)"/g)].map((match) => match[1]);
+assert.equal(supportRecentHrefs.length, 12, 'FAQ page should expose the 12 recent article links.');
+for (const href of supportRecentHrefs) {
+  assert(href.includes('?from=faq'), `${href} should preserve FAQ source for breadcrumbs.`);
+}
+assert(script.includes('updateArticleBreadcrumbSource'), 'article pages should update breadcrumbs when opened from FAQ recent articles.');
+
+const htmlFiles = [];
+function collectHtmlFiles(dir) {
+  for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+    if (entry.name === '.git' || entry.name === 'node_modules') continue;
+    const rel = path.join(dir, entry.name);
+    if (entry.isDirectory()) collectHtmlFiles(rel);
+    else if (entry.name.endsWith('.html')) htmlFiles.push(rel);
+  }
+}
+collectHtmlFiles('');
+for (const file of htmlFiles) {
+  const html = read(file);
+  if (html.includes('noindex')) continue;
+  assert(html.includes('https://schema.org'), `tools/validate-requested-fixes.mjs should include schema.org JSON-LD.`);
+}
+
+const articleFiles = fs.readdirSync(path.join(root, 'articles')).filter((file) => file.endsWith('.html'));
+for (const file of articleFiles) {
+  const html = read(path.join('articles', file));
+  assert(html.includes('BreadcrumbList'), `articles/tools/validate-requested-fixes.mjs should include BreadcrumbList schema.`);
+}
+
+for (const sitemap of ['sitemap-pages.xml', 'sitemap-articles.xml', 'sitemap-ai.xml', 'sitemap-index.xml']) {
+  assert(exists(sitemap), `${sitemap} should exist.`);
+  assert(robots.includes(`Sitemap: https://www.lxue.xin/${sitemap}`), `robots.txt should expose ${sitemap}.`);
+  assert(llms.includes(`https://www.lxue.xin/${sitemap}`), `llms.txt should expose ${sitemap}.`);
+  const headerRule = edgeone.headers.find((entry) => entry.source === `/${sitemap}`);
+  assert(headerRule, `edgeone.json should declare headers for ${sitemap}.`);
+  assert(headerRule.headers.some((header) => header.key === 'Content-Type' && header.value === 'application/xml; charset=UTF-8'), `${sitemap} should be served as UTF-8 XML.`);
+}
+
+
+console.log('Requested fixes validation passed.');

@@ -142,3 +142,33 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.key === 'lang') updateCrawlerConsoleEntry(entry);
     });
 });
+
+function updateArticleBreadcrumbSource() {
+    var breadcrumb = document.querySelector(".article-breadcrumb");
+    if (!breadcrumb) return;
+    var fromFaq = false;
+    try {
+        var params = new URLSearchParams(window.location.search);
+        fromFaq = params.get("from") === "faq";
+    } catch (e) {}
+    if (!fromFaq && document.referrer) {
+        fromFaq = document.referrer.indexOf("/support.html") !== -1;
+    }
+    if (!fromFaq) return;
+
+    breadcrumb.textContent = "";
+    appendBreadcrumbNode(breadcrumb, "\u9996\u9875", "../index.html");
+    appendBreadcrumbNode(breadcrumb, ">");
+    appendBreadcrumbNode(breadcrumb, "\u5e38\u89c1\u95ee\u9898", "../support.html");
+    appendBreadcrumbNode(breadcrumb, ">");
+    appendBreadcrumbNode(breadcrumb, "\u8fd1\u671f\u6587\u7ae0", "../support.html#recent-articles");
+}
+
+function appendBreadcrumbNode(parent, text, href) {
+    var node = href ? document.createElement("a") : document.createElement("span");
+    node.textContent = text;
+    if (href) node.href = href;
+    parent.appendChild(node);
+}
+
+document.addEventListener("DOMContentLoaded", updateArticleBreadcrumbSource);

@@ -174,3 +174,13 @@ GEO策略中心: https://www.lxue.xin/insights.html 。这是本站面向企业�
 - /articles/geo-effect-measurement-core-metrics.html：GEO优化效果量化评估：行业公认的核心考核指标全解析。拆解GEO优化效果量化评估的四大维度和核心考核指标。
 - /articles/enterprise-geo-sop-from-zero.html：企业从零开始落地GEO优化，完整的标准操作流程是什么？。给企业从零开始落地GEO优化的一套标准操作流程。
 - /articles/geo-common-mistakes.html：GEO优化最容易踩的7个误区：为什么很多企业做了没效果？。复盘企业做GEO优化最容易踩的误区，以及为什么很多项目没效果。
+
+## Sitemap入口
+
+- 主站完整Sitemap: https://www.lxue.xin/sitemap.xml
+- 核心页面Sitemap: https://www.lxue.xin/sitemap-pages.xml
+- 近期文章Sitemap: https://www.lxue.xin/sitemap-articles.xml
+- AI抓取入口Sitemap: https://www.lxue.xin/sitemap-ai.xml
+- Sitemap索引: https://www.lxue.xin/sitemap-index.xml
+
+AI爬虫优先抓取建议：先读取 sitemap-index.xml，再抓取 sitemap-articles.xml 中的近期文章 URL；文章页均包含 Article 与 BreadcrumbList schema.org 标记。
