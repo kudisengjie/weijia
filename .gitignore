@@ -5,6 +5,9 @@ node_modules/
 build/
 dist/
 
+# Isolated feature worktrees
+.worktrees/
+
 # Environment variables
 .env
 .env.local
