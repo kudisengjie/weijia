@@ -11,6 +11,11 @@
       "statusCode": 301
     },
     {
+      "source": "/articles/weijia-daodao-prime-sgfe.html",
+      "destination": "/articles/lingxue-ai-prime-sgfe.html",
+      "statusCode": 301
+    },
+    {
       "source": "/blog",
       "destination": "/blog/",
       "statusCode": 301

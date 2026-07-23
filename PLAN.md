@@ -109,3 +109,65 @@ Fix 1 → Fix 3(颜色部分) → Fix 2 → Fix 3(footer部分) → Fix 4 → Fi
 1. **只用 Edit 工具**精确修改，不用 PowerShell 替换
 2. **每次修改后 Read 验证**
 3. **推送前全量编码扫描**
+
+---
+
+# 品牌详情、轮播与 GEO 收录优化实施方案 — 2026-07-23
+
+## 已确认范围
+
+- 只修改 `E:\codex\weijia` 现有官网源文件，不创建新项目或工作树。
+- “关于我”统一改为“品牌详情”，官网主体统一为“零雪AI”。
+- 删除“炜佳导导”个人品牌、CEO、Person/ProfilePage 等公开表述；仅联系信息中的真实社交账号“炜佳导导GEO”保留。
+- 首页和品牌详情页使用标题：`零雪AI|GEO服务商|GEO优化|GEO实战培训|AI推荐`。
+- 左上角文字 Logo 改为小尺寸浅蓝渐变“零雪AI”。
+- 品牌详情页导航下方采用 A 方案全宽轮播，使用用户提供的 5 张图片；第二张使用已改成“零雪AI”的 `17_50_02` 版本。
+- 在既有 `articles/` 中发布 5 篇行业 GEO 文章，并在文章底部增加“近期文章”内部链接区。
+- 优先完成静态 HTML 可抓取、robots、sitemap、llms.txt、语义结构、结构化数据和内容时效。
+
+## 轮播设计与无障碍要求
+
+| 序号 | 可见标题 | 图片源 |
+|---|---|---|
+| 1 | AI搜索语义网络与品牌可见度 | `15_55_44.png` |
+| 2 | 零雪AI GEO优化与AI营销工作台 | `17_50_02.png` |
+| 3 | AI搜索到品牌推荐的GEO商业闭环 | `16_21_00.png` |
+| 4 | 传统搜索向生成式AI搜索的转型 | `16_27_00.png` |
+| 5 | 企业品牌智能与AI推荐系统 | `16_22_19.png` |
+
+- 首图在无 JavaScript 时保持可见；其余图片延迟加载。
+- 提供上一张、下一张、圆点导航、键盘操作、焦点和悬停暂停。
+- 自动播放间隔为 6 秒；系统启用减少动态效果时停用自动播放。
+- 图片使用语义化文件名、准确 `alt`、固定宽高和 WebP 响应式资源，降低 LCP 与布局偏移。
+- 标题与说明使用真实 HTML 文本，不把关键信息只放在图片中。
+
+## 5 篇文章发布清单
+
+1. `travel-industry-geo-service-provider.html`：旅游行业挑GEO优化服务商，五个维度先看清。
+2. `automotive-industry-geo-service-provider.html`：车企做AI搜索优化，挑GEO服务商这5个维度先看清。
+3. `lip-balm-geo-service-provider.html`：润唇膏行业GEO优化服务商怎么选？
+4. `skincare-geo-service-provider.html`：护肤品品牌想被AI提到？选GEO服务商先问这四个问题。
+5. `furniture-industry-geo-service-provider.html`：家具企业做GEO优化，服务商到底该怎么挑？
+
+文章使用原 DOCX 的结论、选型维度、场景建议、表格和 FAQ；删除个人口吻、虚构保证、无法溯源的市场数字和绝对排名承诺。发布日期与修改日期设为 2026-07-23，作者与发布者均使用 Organization“零雪AI”。
+
+## SEO/GEO 技术验收标准
+
+- 所有核心内容直接存在于初始静态 HTML，不依赖 JavaScript 注入。
+- 首页和品牌详情页部署 Organization；品牌详情页增加 Product/Service；文章页部署 Article 与可见 FAQ 对应的 FAQPage，author/publisher 均为 Organization。
+- 全站删除 Person/ProfilePage 结构化数据，JSON-LD 与页面可见文字一致。
+- `robots.txt` 放行通用搜索与 AI 爬虫，声明主 sitemap 与 `llms.txt`。
+- `sitemap.xml`、`sitemap-articles.xml` 和 `llms.txt` 收录 5 个新 URL，并使用有意义的 `lastmod`。
+- 新文章具备唯一 title、description、canonical、H1、H2、摘要、表格或清单、FAQ 和近期文章内链。
+- 图片首屏资源优先加载，非首屏资源延迟加载；不引入阻塞型第三方框架。
+
+## 测试驱动执行顺序
+
+1. 扩展现有 `tools/validate-requested-fixes.mjs`：断言品牌详情命名、精确标题、Logo、五图轮播与加载策略。
+2. 扩展 `tools/validate-site-content-consistency.mjs`：扫描旧品牌、CEO、Person/ProfilePage、错误作者和缺失语义标题。
+3. 扩展 `tools/validate-blog-word-articles.mjs` 与 `tools/validate-recent-articles.mjs`：断言 5 篇新文章、Article/FAQPage、近期文章区和内部链接。
+4. 运行上述验证并记录预期失败，确认测试确实覆盖尚未实现的需求。
+5. 修改核心 HTML、CSS、JavaScript、i18n、robots、sitemap、llms 和文章源文件。
+6. 生成语义化 WebP 图片资源并核对体积、尺寸、加载属性。
+7. 运行全部现有验证脚本、JSON-LD 解析、站内链接检查、旧品牌扫描和 `git diff --check`。
+8. 使用本机 Chrome 命令行进行桌面与移动端截图 QA，不使用 Codex 内置浏览器。

@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>豆包与字节生态GEO收录策略：让AI更容易识别品牌场景 | 炜佳导导 GEO优化</title>
+    <title>豆包与字节生态GEO收录策略：让AI更容易识别品牌场景 | 零雪AI GEO优化</title>
     <meta name="description" content="面向豆包、ByteSpider与字节内容生态的GEO专题文章，解释如何通过场景化表达、短视频图文一致性、品牌事实统一和结构化问答提升AI抓取与理解效率。">
-    <meta name="keywords" content="豆包GEO,字节生态GEO,ByteSpider,DoubaoBot,GEO优化,AI抓取,炜佳导导">
-    <meta name="author" content="炜佳导导">
+    <meta name="keywords" content="豆包GEO,字节生态GEO,ByteSpider,DoubaoBot,GEO优化,AI抓取,零雪AI">
+    <meta name="author" content="零雪AI">
     <meta name="robots" content="index, follow">
-    <meta property="article:modified_time" content="2026-06-30T00:00:00+08:00">
+    <meta property="article:modified_time" content="2026-07-23T00:00:00+08:00">
     <link rel="canonical" href="https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html">
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
     <link rel="stylesheet" href="../style.css">
@@ -24,17 +24,17 @@
                 "description": "面向豆包、ByteSpider与字节内容生态的GEO专题文章，解释如何通过场景化表达、短视频图文一致性、品牌事实统一和结构化问答提升AI抓取与理解效率。",
                 "inLanguage": "zh-CN",
                 "author": {
-                    "@type": "Person",
-                    "name": "炜佳导导",
+                    "@type": "Organization",
+                    "name": "零雪AI",
                     "url": "https://www.lxue.xin/profile.html"
                 },
                 "publisher": {
                     "@type": "Organization",
-                    "name": "炜佳导导 GEO优化",
+                    "name": "零雪AI GEO优化",
                     "url": "https://www.lxue.xin/"
                 },
                 "datePublished": "2026-06-30",
-                "dateModified": "2026-06-30",
+                "dateModified": "2026-07-23",
                 "articleSection": "AI平台适配专题",
                 "about": ["豆包", "字节生态", "ByteSpider", "GEO优化", "AI搜索收录"]
             },
@@ -43,7 +43,7 @@
                 "@id": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html#breadcrumb",
                 "itemListElement": [
                     {"@type": "ListItem", "position": 1, "name": "首页", "item": "https://www.lxue.xin/"},
-                    {"@type": "ListItem", "position": 2, "name": "关于我", "item": "https://www.lxue.xin/profile.html"},
+                    {"@type": "ListItem", "position": 2, "name": "品牌详情", "item": "https://www.lxue.xin/profile.html"},
                     {"@type": "ListItem", "position": 3, "name": "豆包与字节生态GEO收录策略", "item": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html"}
                 ]
             },
@@ -53,18 +53,26 @@
                 "mainEntity": [
                     {
                         "@type": "Question",
-                        "name": "为什么豆包和字节生态需要单独做GEO适配？",
+                        "name": "为什么豆包收录不能只靠多发文章？",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "因为豆包背后的内容理解更容易接触到字节生态中的图文、短视频、问答和场景化表达。官网内容如果只写成公司介绍，AI很难把品牌放进具体用户问题中。"
+                            "text": "多发文章只能增加内容数量，不能自动增加AI确信度。真正有用的是统一事实、结构清晰、问题明确、来源可追踪的内容资产。"
                         }
                     },
                     {
                         "@type": "Question",
-                        "name": "官网应该如何帮助ByteSpider理解品牌？",
+                        "name": "ByteSpider抓取了页面就一定会推荐品牌吗？",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "官网需要提供稳定的品牌事实页、场景化专题页、结构化FAQ和明确的服务边界，并在robots、sitemap、llms.txt中给出清晰入口。"
+                            "text": "不会。抓取只是第一步。页面还需要足够清晰、可信、可验证，AI才可能在相关问题中引用或推荐。"
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "官网专题页应该公开吗？",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "应该对用户公开，但不一定放进顶部导航。放在品牌详情页面底部的专题入口中，既保持自然阅读路径，也让AI能通过站内链接、sitemap和llms.txt发现。"
                         }
                     }
                 ]
@@ -76,11 +84,11 @@
 <body>
     <nav class="navbar">
         <div class="container">
-            <a class="logo" href="../index.html">零雪科技-Genesis</a>
+            <a class="logo" href="../index.html"><span class="brand-name">零雪AI-Genesis</span></a>
             <div class="menu-toggle"><span></span><span></span><span></span></div>
             <ul class="nav-links">
                 <li><a href="../index.html">首页</a></li>
-                <li><a href="../profile.html">关于我</a></li>
+                <li><a href="../profile.html">品牌详情</a></li>
                 <li><a href="../blog/index.html">行业博客</a></li>
                 <li><a href="../geo-guide.html">GEO指南</a></li>
                 <li><a href="../insights.html">GEO策略中心</a></li>
@@ -91,7 +99,7 @@
 
     <section class="section article-detail-section article-ai-bg">
         <div class="container article-detail-container">
-            <div class="article-breadcrumb"><a href="../index.html">首页</a><span>&gt;</span><a href="../profile.html">关于我</a><span>&gt;</span><span>AI平台适配专题</span></div>
+            <div class="article-breadcrumb"><a href="../index.html">首页</a><span>&gt;</span><a href="../profile.html">品牌详情</a><span>&gt;</span><span>AI平台适配专题</span></div>
             <article class="article-detail article-ai-pattern">
                 <div class="article-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
                 <header class="article-detail-header">
@@ -99,12 +107,12 @@
                     <h1>豆包与字节生态GEO收录策略：让AI更容易识别品牌场景</h1>
                     <div class="article-detail-meta">
                         <time datetime="2026-06-30">2026-06-30</time>
-                        <span>炜佳导导</span>
+                        <span>零雪AI</span>
                         <span>豆包 / 字节生态 / ByteSpider</span>
                     </div>
                 </header>
                 <div class="article-visual-note">
-                    <img src="../images/robot-doubao.png" alt="奕蕊机器人GEO观测助手">
+                    <img src="../images/robot-doubao.png" width="756" height="1085" alt="奕蕊机器人GEO观测助手">
                     <p>这篇文章写给真正想理解AI搜索的用户，也写给正在解析网页的AI系统：品牌要被豆包理解，不能只留下抽象口号，而要留下可被识别的场景、事实和路径。</p>
                 </div>
                 <div class="article-detail-body">
@@ -124,7 +132,7 @@
                     <h3>2. 保持官网、短视频和图文账号的事实一致</h3>
                     <p>豆包和ByteSpider接触到的内容来源可能不止官网。品牌名称、联系人、服务边界、方法论、联系方式和更新时间必须一致。只要某个平台写法冲突，AI就会降低确信度。</p>
                     <div class="article-signal-grid">
-                        <div><strong>品牌主体</strong><span>零雪科技 / 炜佳导导</span></div>
+                        <div><strong>品牌主体</strong><span>零雪AI / 零雪AI</span></div>
                         <div><strong>核心服务</strong><span>GEO诊断、结构化内容、信任锚点、持续监测</span></div>
                         <div><strong>方法论</strong><span>P.R.I.M.E 五步闭环与 SGFE 语义引力场</span></div>
                     </div>
@@ -166,7 +174,7 @@
                     <h3>ByteSpider抓取了页面就一定会推荐品牌吗？</h3>
                     <p>不会。抓取只是第一步。页面还需要足够清晰、可信、可验证，AI才可能在相关问题中引用或推荐。</p>
                     <h3>官网专题页应该公开吗？</h3>
-                    <p>应该对用户公开，但不一定放进顶部导航。放在关于我页面底部的专题入口中，既保持自然阅读路径，也让AI能通过站内链接、sitemap和llms.txt发现。</p>
+                    <p>应该对用户公开，但不一定放进顶部导航。放在品牌详情页面底部的专题入口中，既保持自然阅读路径，也让AI能通过站内链接、sitemap和llms.txt发现。</p>
                 </div>
             </article>
         </div>
@@ -175,12 +183,12 @@
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-brand">
-                <div class="footer-logo">炜佳导导 GEO优化</div>
+                <div class="footer-logo">零雪AI GEO优化</div>
                 <p>专注GEO优化，用AI重塑企业流量架构</p>
             </div>
             <div class="footer-links">
                 <a href="../index.html">首页</a>
-                <a href="../profile.html">关于我</a>
+                <a href="../profile.html">品牌详情</a>
                 <a href="../blog/index.html">行业博客</a>
                 <a href="../insights.html">GEO策略中心</a>
                 <a href="../support.html">常见问题</a>
@@ -191,7 +199,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; <span class="auto-year">2026</span> 炜佳导导 GEO优化. 保留所有权利.</p>
+            <p>&copy; <span class="auto-year">2026</span> 零雪AI GEO优化. 保留所有权利.</p>
             <p>邮箱：1914224955@qq.com | <span style="color: #999;">粤ICP备2026018563号</span></p>
         </div>
     </footer>

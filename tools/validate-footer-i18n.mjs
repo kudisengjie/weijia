@@ -16,7 +16,7 @@ function makeElement(key, text, inFooter = false) {
   };
 }
 
-const footerBrand = makeElement('footer.brand', '炜佳导导 GEO优化', true);
+const footerBrand = makeElement('footer.brand', '零雪AI GEO优化', true);
 const footerDesc = makeElement('footer.desc', '专注GEO优化，用AI重塑企业流量架构', true);
 const footerIcp = makeElement('footer.icp', '粤ICP备2026018563号', true);
 const recentTitle = makeElement('recent.title', '近期文章', false);
@@ -49,7 +49,7 @@ vm.runInContext(fs.readFileSync('i18n.js', 'utf8'), context);
 context.i18n.switchLang('en');
 
 assert.equal(navHome.textContent, 'Home', 'navigation should translate to English.');
-assert.equal(footerBrand.textContent, 'Weijia Daodao GEO Optimization', 'footer brand should translate to English.');
+assert.equal(footerBrand.textContent, 'Lingxue AI GEO Optimization', 'footer brand should translate to English.');
 assert.equal(footerDesc.textContent, 'Focused on GEO optimization, rebuilding enterprise traffic with AI', 'footer description should translate to English.');
 assert.equal(footerIcp.textContent, 'ICP: 粤ICP备2026018563号', 'ICP label should translate in English mode.');
 assert.equal(recentTitle.textContent, 'Recent Articles', 'recent article heading should translate to English.');

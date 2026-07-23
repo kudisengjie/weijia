@@ -172,3 +172,50 @@ function appendBreadcrumbNode(parent, text, href) {
 }
 
 document.addEventListener("DOMContentLoaded", updateArticleBreadcrumbSource);
+
+function initBrandCarousel() {
+    var carousel = document.querySelector('[data-brand-carousel]');
+    if (!carousel) return;
+
+    var slides = Array.prototype.slice.call(carousel.querySelectorAll('[data-carousel-slide]'));
+    var dots = Array.prototype.slice.call(carousel.querySelectorAll('.brand-carousel__dots button'));
+    var previous = carousel.querySelector('.brand-carousel__control--prev');
+    var next = carousel.querySelector('.brand-carousel__control--next');
+    var current = 0;
+
+    function render(index, shouldFocus) {
+        current = (index + slides.length) % slides.length;
+        slides.forEach(function(slide, slideIndex) {
+            var active = slideIndex === current;
+            slide.classList.toggle('is-active', active);
+            slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+        });
+        dots.forEach(function(dot, dotIndex) {
+            var active = dotIndex === current;
+            dot.classList.toggle('is-active', active);
+            dot.setAttribute('aria-selected', active ? 'true' : 'false');
+            dot.setAttribute('tabindex', active ? '0' : '-1');
+        });
+        if (shouldFocus && dots[current]) dots[current].focus();
+    }
+
+    previous.addEventListener('click', function() { render(current - 1, false); });
+    next.addEventListener('click', function() { render(current + 1, false); });
+    dots.forEach(function(dot, index) {
+        dot.addEventListener('click', function() { render(index, true); });
+    });
+
+    carousel.addEventListener('keydown', function(event) {
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            render(current - 1, false);
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            render(current + 1, false);
+        }
+    });
+
+    render(0, false);
+}
+
+document.addEventListener('DOMContentLoaded', initBrandCarousel);

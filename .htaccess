@@ -1,6 +1,7 @@
 RewriteEngine On
 
-RewriteRule ^Blog\.html$ /blog/ [L,R=301]
+RewriteRule ^blog\.html$ /blog/ [L,R=301,NC]
+RewriteRule ^articles/weijia-daodao-prime-sgfe\.html$ /articles/lingxue-ai-prime-sgfe.html [L,R=301]
 
 RewriteCond %{HTTP_HOST} ^lxue\.xin$ [NC]
 RewriteRule ^(.*)$ https://www.lxue.xin/$1 [L,R=301]

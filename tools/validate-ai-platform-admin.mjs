@@ -73,13 +73,9 @@ for (const slug of articleSlugs) {
   const href = `articles/${slug}.html`;
   assert.ok(profile.includes(href), `profile.html should link to ${href}.`);
   const articleSitemap = read('sitemap-articles.xml');
-  if (slug === 'deepseek-geo-evidence-density-strategy') {
-    assert.ok(articleSitemap.includes(`https://www.lxue.xin/${href}`), `sitemap-articles.xml should include ${href}.`);
-    assert.ok(read('llms.txt').includes(`/${href}`), `llms.txt should include ${href}.`);
-  } else {
-    assert.ok(!articleSitemap.includes(`https://www.lxue.xin/${href}`), `sitemap-articles.xml should not include non-recent ${href}.`);
-  }
-  assert.ok(read('robots.txt').includes(`/${href}`), `robots.txt should explicitly allow ${href}.`);
+  assert.ok(articleSitemap.includes(`https://www.lxue.xin/${href}`), `sitemap-articles.xml should include ${href}.`);
+  assert.ok(read('llms.txt').includes(`/${href}`), `llms.txt should include ${href}.`);
+  assert.ok(/User-agent:\s*\*[\s\S]*Allow:\s*\//.test(read('robots.txt')), 'robots.txt should allow public articles through its wildcard group.');
 
   const html = read(href);
   assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, `${href} should have exactly one h1.`);
