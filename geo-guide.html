@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEO优化指南|零雪AI|GEO优化|GEO战略技术研发</title>
+    <meta name="description" content="2026年7月更新的GEO优化指南：覆盖可抓取技术底座、结构化内容、可信来源、平台适配、时效治理与效果监测。">
+    <meta name="keywords" content="GEO优化,生成式引擎优化,GEO指南,AI搜索优化,白帽GEO,E-E-A-T">
+    <meta name="author" content="零雪AI">
+    <meta name="robots" content="index, follow">
+    <meta name="baidu-site-verification" content="codeva-dkxhxBZyY5" />
+    <meta name="applicable-device" content="pc,mobile">
+    <meta property="article:modified_time" content="2026-07-26T00:00:00+08:00">
+    <link rel="canonical" href="https://www.lxue.xin/geo-guide.html">
+    <link rel="alternate" type="text/plain" href="https://www.lxue.xin/llms.txt">
+    <link rel="sitemap" type="application/xml" href="https://www.lxue.xin/sitemap.xml">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="images/logo.png">
+    <link rel="stylesheet" href="style.css?v=20260728">
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "Article",
+            "@id": "https://www.lxue.xin/geo-guide.html#article",
+            "headline": "GEO优化指南",
+            "description": "2026年7月更新的GEO优化指南，覆盖可抓取技术底座、结构化内容、可信来源、平台适配、时效治理与效果监测。",
+            "author": {
+                "@id": "https://www.lxue.xin/#organization"
+            },
+            "publisher": {
+                "@id": "https://www.lxue.xin/#organization"
+            },
+            "inLanguage": "zh-CN",
+            "url": "https://www.lxue.xin/geo-guide.html",
+            "mainEntityOfPage": "https://www.lxue.xin/geo-guide.html",
+            "image": "https://www.lxue.xin/images/wei.jpg",
+            "about": [
+                "GEO优化",
+                "生成式引擎优化",
+                "AI搜索",
+                "内容时效",
+                "Schema.org"
+            ],
+            "datePublished": "2026-06-22",
+            "dateModified": "2026-07-26",
+            "temporalCoverage": "2026-07"
+        }
+    ]
+}
+    </script>
+</head>
+<body class="premium-page page-guide">
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo"><span class="brand-name">零雪AI-Genesis</span></div>
+            <div class="menu-toggle"><span></span><span></span><span></span></div>
+            <ul class="nav-links">
+                <li><a href="index.html" data-i18n="nav.home">首页</a></li>
+                <li><a href="profile.html" data-i18n="nav.about">品牌详情</a></li>
+                <li><a href="blog/index.html" data-i18n="nav.blog">行业博客</a></li>
+                <li><a href="geo-guide.html" class="active" data-i18n="nav.geo">GEO指南</a></li>
+                <li><a href="insights.html" data-i18n="nav.cases">GEO策略</a></li>
+                <li><a href="support.html" data-i18n="nav.faq">AI问答</a></li>
+                <li><a href="#" class="lang-switch-mobile" data-i18n="nav.lang">English</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="#" class="lang-switch" data-i18n="nav.lang">English</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section guide-section">
+        <div class="container">
+            <h1 class="page-title" data-i18n="guide.h2">GEO优化指南</h1>
+
+            <div class="guide-intro">
+                <div class="intro-highlight">
+                    <p data-i18n="guide.intro.highlight">GEO（Generative Engine Optimization，生成式引擎优化）是一套帮助生成式AI稳定发现、理解并核验品牌公开信息的内容与技术方法。</p>
+                </div>
+                <p data-i18n="guide.intro.core"><strong>核心理念</strong>：SEO解决网页发现、索引与搜索结果呈现；GEO在同一技术底座上，进一步整理品牌实体、用户问句、直接答案和可验证来源。两者应协同维护，不能用隐藏文本或操控输出替代真实内容。</p>
+                <div class="guide-principles">
+                    <div class="principle-item">
+                        <div class="principle-icon">EXP</div>
+                        <div class="principle-content">
+                            <h4 data-i18n="guide.principle.exp.h4">实战经验</h4>
+                            <p data-i18n="guide.principle.exp.p">展示真实项目过程、适用条件和复盘记录，帮助用户与机器判断内容来自实践还是通用改写。数据和案例应标注口径与日期。</p>
+                        </div>
+                    </div>
+                    <div class="principle-item">
+                        <div class="principle-icon">PRO</div>
+                        <div class="principle-content">
+                            <h4 data-i18n="guide.principle.pro.h4">专业深度</h4>
+                            <p data-i18n="guide.principle.pro.p">专业内容需要提供定义、步骤、对比维度和来源说明。每个结论都应能在正文或公开来源中找到依据，避免模板化判断。</p>
+                        </div>
+                    </div>
+                    <div class="principle-item">
+                        <div class="principle-icon">AUT</div>
+                        <div class="principle-content">
+                            <h4 data-i18n="guide.principle.aut.h4">权威背书</h4>
+                            <p data-i18n="guide.principle.aut.p">权威性来自可识别的作者或组织、公开资质、原始资料和一致的第三方记录。官网应清楚说明谁发布、何时更新、依据是什么。</p>
+                        </div>
+                    </div>
+                    <div class="principle-item">
+                        <div class="principle-icon">TRU</div>
+                        <div class="principle-content">
+                            <h4 data-i18n="guide.principle.tru.h4">可信可验</h4>
+                            <p data-i18n="guide.principle.tru.p">品牌名称、服务范围、联系方式和关键数据要真实可追溯。任何变化都应同步正文、结构化数据和公开渠道，减少版本冲突。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="guide-stats">
+                    <div class="guide-stat-item">
+                        <strong data-i18n="guide.stat1.num">6项</strong>
+                        <span data-i18n="guide.stat1.label">可爬取技术底座</span>
+                    </div>
+                    <div class="guide-stat-item">
+                        <strong data-i18n="guide.stat2.num">5类</strong>
+                        <span data-i18n="guide.stat2.label">核心Schema类型</span>
+                    </div>
+                    <div class="guide-stat-item">
+                        <strong data-i18n="guide.stat3.num">1–3个月</strong>
+                        <span data-i18n="guide.stat3.label">常规内容核验窗口</span>
+                    </div>
+                    <div class="guide-stat-item">
+                        <strong data-i18n="guide.stat4.num">5个</strong>
+                        <span data-i18n="guide.stat4.label">持续监测指标</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="guide-section-block">
+                <h3 data-i18n="guide.value.h3">GEO的核心价值</h3>
+                <p class="section-desc" data-i18n="guide.value.desc">让AI成为品牌的"信息代言人"</p>
+                <p data-i18n="guide.value.p">当潜在客户使用AI了解品类时，官网需要提供与问题相关、可公开读取并可核验的品牌事实。GEO的价值应从三个方面评估：是否更容易被发现、事实是否一致、内容资产是否便于持续维护。</p>
+                <div class="value-cards">
+                    <div class="value-card">
+                        <div class="value-icon">VIS</div>
+                        <h4 data-i18n="guide.value.vis.h4">品牌可见度</h4>
+                        <p data-i18n="guide.value.vis.p">清晰的实体名称、服务边界、问答标题和内部链接能降低检索系统定位品牌信息的成本；是否进入实际答案仍需用固定问句复测。</p>
+                    </div>
+                    <div class="value-card">
+                        <div class="value-icon">TRU</div>
+                        <h4 data-i18n="guide.value.tru.h4">信任传递</h4>
+                        <p data-i18n="guide.value.tru.p">AI答案可能成为用户的决策输入，但它不等同于第三方背书。关键判断应链接到原始资料或独立公开来源，转化效果要与广告、自然搜索等渠道分别归因。</p>
+                    </div>
+                    <div class="value-card">
+                        <div class="value-icon">AST</div>
+                        <h4 data-i18n="guide.value.ast.h4">资产积累</h4>
+                        <p data-i18n="guide.value.ast.p">一次构建的内容结构可以长期复用，但页面仍需随产品、来源和平台变化持续维护；是否产生曝光要通过固定问句和业务数据复测。</p>
+                    </div>
+                </div>
+                <div class="suitable-note centered-callout"><strong data-i18n="guide.value.suitable.label">适合测试GEO的企业：</strong><span data-i18n="guide.value.suitable.text">目标客户会使用AI问答了解、比较或选型，且企业能够持续维护公开、准确、可核验的品牌和产品信息。</span></div>
+            </div>
+
+            <div class="guide-section-block">
+                <h3 data-i18n="guide.principle.h3">GEO优化核心原则</h3>
+                <div class="principle-list">
+                    <div class="principle-item">
+                        <div class="principle-number">01</div>
+                        <div class="principle-content">
+                            <h4 data-i18n="guide.p1.h4">原则一：结构化优先</h4>
+                            <p data-i18n="guide.p1.p">AI和搜索爬虫需要先读取页面。核心检查包括唯一H1、连续的标题层级、语义化HTML、可见正文、canonical、图片alt与尺寸，以及与正文一致的Schema.org结构化数据。验收时还应确认正文无需交互即可读取，真实URL返回正常状态，并逐项核对页面标题、内部链接和机器标记是否指向同一版本。</p>
+                        </div>
+                    </div>
+                    <div class="principle-item">
+                        <div class="principle-number">02</div>
+                        <div class="principle-content">
+                            <h4 data-i18n="guide.p2.h4">原则二：信息密度驱动</h4>
+                            <p data-i18n="guide.p2.p">高信息密度不等于堆数字。每个段落应提供清晰定义、可操作步骤、适用条件、对比维度或可核验来源，删掉无法验证的比例和泛化结论。一个合格模块应让读者知道结论是什么、为什么成立、何时适用以及下一步如何核验，而不是只留下宣传口号。</p>
+                        </div>
+                    </div>
+                    <div class="principle-item">
+                        <div class="principle-number">03</div>
+                        <div class="principle-content">
+                            <h4 data-i18n="guide.p3.h4">原则三：多源一致性治理</h4>
+                            <p data-i18n="guide.p3.p">品牌在官网、企业公开信息、社交账号和结构化数据中的名称、定位、服务范围与联系方式应保持一致。变更时按统一台账同步，避免长期保留多个版本。治理时应为每项核心事实指定负责页面、更新时间和复核人，发现冲突先修正事实源，再同步其他渠道。</p>
+                        </div>
+                    </div>
+                    <div class="principle-item">
+                        <div class="principle-number">04</div>
+                        <div class="principle-content">
+                            <h4 data-i18n="guide.p4.h4">原则四：权威锚定构建</h4>
+                            <p data-i18n="guide.p4.p">引用原始资料、官方页面和可追溯公开来源，并明确作者、发布组织、发布日期和修改日期。品牌自述与第三方事实应分开表达。引用链接要指向能直接支持结论的具体页面，同时说明资料的适用范围，避免用品牌介绍页替代真正的证据。</p>
+                        </div>
+                    </div>
+                    <div class="principle-item">
+                        <div class="principle-number">05</div>
+                        <div class="principle-content">
+                            <h4 data-i18n="guide.p5.h4">原则五：E-E-A-T贯穿始终</h4>
+                            <div class="eeat-grid">
+                                <div class="eeat-item">
+                                    <strong data-i18n="guide.p5.exp">经验（Experience）</strong>
+                                    <p data-i18n="guide.p5.exp.p">说明参与角色、业务场景、执行过程、测试口径和复盘日期，让读者能够区分一手实践、公开资料整理与方法建议。</p>
+                                </div>
+                                <div class="eeat-item">
+                                    <strong data-i18n="guide.p5.expert">专业度（Expertise）</strong>
+                                    <p data-i18n="guide.p5.expert.p">用定义、方法、适用边界、对比维度和来源构成完整论证，避免只给结论、重复概念或堆砌相似句子。</p>
+                                </div>
+                                <div class="eeat-item">
+                                    <strong data-i18n="guide.p5.auth">权威性（Authoritativeness）</strong>
+                                    <p data-i18n="guide.p5.auth.p">标明作者与发布组织，优先引用官方或原始资料，并写清资料日期、数据口径和仍然适用的业务范围。</p>
+                                </div>
+                                <div class="eeat-item">
+                                    <strong data-i18n="guide.p5.trust">信任度（Trustworthiness）</strong>
+                                    <p data-i18n="guide.p5.trust.p">品牌事实、服务边界、联系方式和数据口径跨页面保持一致；发生变化时同步正文、Schema、Sitemap与公开渠道。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="guide-section-block">
+                <h3 data-i18n="guide.path.h3">GEO优化实施路径</h3>
+                <div class="path-steps">
+                    <div class="path-step">
+                        <div class="step-header">
+                            <div class="step-number" data-i18n="guide.path1.num">第一步</div>
+                            <h4 data-i18n="guide.path1.h4">AI可见度诊断</h4>
+                        </div>
+                        <p data-i18n="guide.path1.p">固定一组品牌词、品类词和决策问句，记录不同AI平台是否提及品牌、描述是否准确、引用了哪些公开页面，并保存测试日期与截图。先建立基线，再比较后续变化。</p>
+                    </div>
+                    <div class="path-step">
+                        <div class="step-header">
+                            <div class="step-number" data-i18n="guide.path2.num">第二步</div>
+                            <h4 data-i18n="guide.path2.h4">内容结构化重建</h4>
+                        </div>
+                        <p data-i18n="guide.path2.p">把分散信息整理为统一事实表，并映射到官网页面：定义页回答是什么，指南页回答怎么做，FAQ回答具体问句，品牌事实页统一实体和联系方式。正文优先，Schema只表达同一内容。</p>
+                    </div>
+                    <div class="path-step">
+                        <div class="step-header">
+                            <div class="step-number" data-i18n="guide.path3.num">第三步</div>
+                            <h4 data-i18n="guide.path3.h4">信任锚点建设</h4>
+                        </div>
+                        <p data-i18n="guide.path3.p">补齐作者、组织、资质、原始数据、公开案例和引用链接。每个重要结论都要能追溯到页面内证据或公开来源，避免使用无法核验的榜单和比例。</p>
+                    </div>
+                    <div class="path-step">
+                        <div class="step-header">
+                            <div class="step-number" data-i18n="guide.path4.num">第四步</div>
+                            <h4 data-i18n="guide.path4.h4">精准分发布局</h4>
+                        </div>
+                        <p data-i18n="guide.path4.p">保持品牌事实一致，再按平台和场景调整标题、摘要、表格与问答结构。每次发布记录URL、版本、发布时间和下次复核日期，避免同一事实出现多个旧版本。</p>
+                    </div>
+                    <div class="path-step">
+                        <div class="step-header">
+                            <div class="step-number" data-i18n="guide.path5.num">第五步</div>
+                            <h4 data-i18n="guide.path5.h4">持续效果监测</h4>
+                        </div>
+                        <p data-i18n="guide.path5.p">按月复测固定问句，观察品牌可见度、答案准确率、引用来源质量、目标问句覆盖率和有效咨询。产品、价格、政策或联系方式变化时立即更新正文、Schema和Sitemap。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="guide-section-block">
+                <h3 data-i18n="guide.benchmark.h3">更新节奏与监测预期</h3>
+                <div class="benchmark-grid">
+                    <div class="benchmark-card">
+                        <strong data-i18n="guide.bm1.num">0–4周</strong>
+                        <span data-i18n="guide.bm1.label">完成基线、抓取与结构检查</span>
+                    </div>
+                    <div class="benchmark-card">
+                        <strong data-i18n="guide.bm2.num">1–3个月</strong>
+                        <span data-i18n="guide.bm2.label">观察内容更新后的可见度变化</span>
+                    </div>
+                    <div class="benchmark-card">
+                        <strong data-i18n="guide.bm3.num">5项</strong>
+                        <span data-i18n="guide.bm3.label">可见度、准确率、来源、覆盖与转化</span>
+                    </div>
+                    <div class="benchmark-card">
+                        <strong data-i18n="guide.bm4.num">每月</strong>
+                        <span data-i18n="guide.bm4.label">固定问句复测与内容复核</span>
+                    </div>
+                </div>
+                <div class="benchmark-note centered-callout">
+                    <p data-i18n="guide.benchmark.note">时间线用于安排检查，不承诺固定收录或推荐结果。实际变化会受到网站基础、行业公开信息量、平台抓取节奏、内容质量与竞争环境影响；因此每个阶段都应保存测试问句、日期、答案与来源，再以连续记录判断趋势。</p>
+                </div>
+            </div>
+
+            <div class="guide-section-block">
+    <h3 data-i18n="guide.compare.h3">GEO vs SEO：本质区别与协同策略</h3>
+    <p class="section-desc" data-i18n="guide.compare.desc">理解两者的根本差异，才能制定正确的投入策略</p>
+
+    <div class="compare-table-wrap">
+        <table class="compare-detail-table">
+            <thead>
+                <tr>
+                    <th data-i18n="guide.compare.th.dim">对比维度</th>
+                    <th data-i18n="guide.compare.th.seo">传统 SEO</th>
+                    <th data-i18n="guide.compare.th.geo">GEO（生成式引擎优化）</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="td-label"><strong data-i18n="guide.compare.r1.label">目标位置</strong></td>
+                    <td data-i18n="guide.compare.r1.seo">搜索结果页面的链接列表排名</td>
+                    <td data-i18n="guide.compare.r1.geo">AI综合答案中的引用和推荐</td>
+                </tr>
+                <tr>
+                    <td class="td-label"><strong data-i18n="guide.compare.r2.label">用户行为</strong></td>
+                    <td data-i18n="guide.compare.r2.seo">用户浏览多个链接，自行判断点击</td>
+                    <td data-i18n="guide.compare.r2.geo">用户阅读AI生成的综合答案，被动接收推荐</td>
+                </tr>
+                <tr>
+                    <td class="td-label"><strong data-i18n="guide.compare.r3.label">核心指标</strong></td>
+                    <td data-i18n="guide.compare.r3.seo">关键词排名、点击率(CTR)、流量</td>
+                    <td data-i18n="guide.compare.r3.geo">AI引用率、品牌提及准确度、推荐顺位</td>
+                </tr>
+                <tr>
+                    <td class="td-label"><strong data-i18n="guide.compare.r4.label">优化重点</strong></td>
+                    <td data-i18n="guide.compare.r4.seo">关键词布局、外链建设、页面加载速度</td>
+                    <td data-i18n="guide.compare.r4.geo">内容结构化、信息密度、多源一致性、E-E-A-T</td>
+                </tr>
+                <tr>
+                    <td class="td-label"><strong data-i18n="guide.compare.r5.label">生效周期</strong></td>
+                    <td data-i18n="guide.compare.r5.seo">抓取、索引和排名变化取决于站点与竞争环境</td>
+                    <td data-i18n="guide.compare.r5.geo">答案变化取决于抓取、来源与平台更新周期</td>
+                </tr>
+                <tr>
+                    <td class="td-label"><strong data-i18n="guide.compare.r6.label">成本模式</strong></td>
+                    <td data-i18n="guide.compare.r6.seo">持续维护技术、内容和站点权威</td>
+                    <td data-i18n="guide.compare.r6.geo">持续维护事实、问句、来源和监测记录</td>
+                </tr>
+                <tr>
+                    <td class="td-label"><strong data-i18n="guide.compare.r7.label">竞争壁垒</strong></td>
+                    <td data-i18n="guide.compare.r7.seo">站点质量、内容覆盖与外部引用积累</td>
+                    <td data-i18n="guide.compare.r7.geo">实体一致性、证据质量与场景覆盖积累</td>
+                </tr>
+                <tr>
+                    <td class="td-label"><strong data-i18n="guide.compare.r8.label">数据关系</strong></td>
+                    <td data-i18n="guide.compare.r8.seo">关键词、页面、点击与转化数据</td>
+                    <td data-i18n="guide.compare.r8.geo">问句、实体、答案、来源与转化数据</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="synergy-cards">
+        <h4 style="font-size:1.15rem;color:var(--text-dark);margin-bottom:16px;font-weight:600;" data-i18n="guide.synergy.h4">SEO与GEO的最佳协同方式</h4>
+        <div class="synergy-grid">
+            <div class="synergy-card">
+                <div class="synergy-icon">01</div>
+                <h5 data-i18n="guide.synergy.c1.h5">基础层：SEO保底</h5>
+                <p data-i18n="guide.synergy.c1.p">先维护SEO共同底座：有效状态码、HTTPS、移动端体验、语义HTML、canonical、robots、Sitemap和清晰内链。这些条件帮助通用爬虫稳定读取页面，但不代表任何AI平台会按固定权重采用内容。</p>
+            </div>
+            <div class="synergy-card">
+                <div class="synergy-icon">02</div>
+                <h5 data-i18n="guide.synergy.c2.h5">增长层：GEO突破</h5>
+                <p data-i18n="guide.synergy.c2.p">将增量资源投入用户高频问句、直接答案、事实页和来源建设，并用固定问句持续复测。投入顺序应由基线缺口决定，不能用统一周期或收益比例承诺结果。</p>
+            </div>
+            <div class="synergy-card">
+                <div class="synergy-icon">03</div>
+                <h5 data-i18n="guide.synergy.c3.h5">融合层：数据互通</h5>
+                <p data-i18n="guide.synergy.c3.p">SEO的关键词数据可以反哺GEO的场景规划；GEO的引用监测可以发现新的长尾机会。两者数据打通形成闭环。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="guide-section-block">
+    <h3 data-i18n="guide.tips.h3">GEO实操干货</h3>
+    <p class="section-desc" data-i18n="guide.tips.desc">可直接落地的GEO优化技巧，按优先级排列</p>
+
+    <div class="geo-tips-list">
+        <div class="geo-tip-item">
+            <div class="geo-tip-header">
+                <span class="geo-tip-num">01</span>
+                <h4 data-i18n="guide.tips.t1.h4">建立品牌事实台账并按变更同步</h4>
+            </div>
+            <p data-i18n="guide.tips.t1.p">统一品牌名称、核心定位、服务范围、联系方式、资质和更新时间。每次变更按渠道清单同步官网、公开平台和结构化数据，并保留负责人和完成状态。</p>
+        </div>
+        <div class="geo-tip-item">
+            <div class="geo-tip-header">
+                <span class="geo-tip-num">02</span>
+                <h4 data-i18n="guide.tips.t2.h4">按核心业务场景建设完整答案页</h4>
+            </div>
+            <p data-i18n="guide.tips.t2.p">每个页面围绕一个主要问句展开，包含问题定义、直接答案、实施步骤、适用条件、常见误区和来源说明。篇幅由问题复杂度决定，不用固定字数填充。</p>
+        </div>
+        <div class="geo-tip-item">
+            <div class="geo-tip-header">
+                <span class="geo-tip-num">03</span>
+                <h4 data-i18n="guide.tips.t3.h4">把关键结论写成可独立理解的句子</h4>
+            </div>
+            <p data-i18n="guide.tips.t3.p">总结句应包含明确主语、结论和条件，离开上下文也不产生歧义。重要判断旁边提供数据口径、来源或适用范围，避免只写宣传口号。</p>
+        </div>
+        <div class="geo-tip-item">
+            <div class="geo-tip-header">
+                <span class="geo-tip-num">04</span>
+                <h4 data-i18n="guide.tips.t4.h4">用可见问答覆盖真实追问</h4>
+            </div>
+            <p data-i18n="guide.tips.t4.p">收集销售、客服和搜索记录中的真实问题，用清晰标题与直接答案组织页面。只有正文中存在完整问答时才部署FAQPage或Question结构化数据。</p>
+        </div>
+        <div class="geo-tip-item">
+            <div class="geo-tip-header">
+                <span class="geo-tip-num">05</span>
+                <h4 data-i18n="guide.tips.t5.h4">用llms.txt补充官方内容说明</h4>
+            </div>
+            <p data-i18n="guide.tips.t5.p">llms.txt可集中列出品牌事实和关键页面，但它不能替代可抓取HTML、robots、Sitemap、canonical与页面正文。文件中的URL和结论必须与官网保持一致。</p>
+        </div>
+        <div class="geo-tip-item">
+            <div class="geo-tip-header">
+                <span class="geo-tip-num">06</span>
+                <h4 data-i18n="guide.tips.t6.h4">每月复测固定问句并记录来源</h4>
+            </div>
+            <p data-i18n="guide.tips.t6.p">在豆包、千问、DeepSeek、文心一言等目标平台使用同一组问句，记录品牌是否出现、描述是否准确、引用页面和测试日期。遇到事实变化时即时更新，不等下次月度复核。</p>
+        </div>
+    </div>
+
+    <div class="onemorething-block">
+        <div class="profile-onemorething">
+            <div class="onemorething-label">ONE MORE THING</div>
+            <h3 data-i18n="guide.onemorething.h3">GEO需要持续维护，不需要制造时效焦虑</h3>
+            <p data-i18n="guide.onemorething.p1">先完成可抓取技术底座、品牌事实统一和核心问句页面，再根据监测记录逐步扩展。每次更新都应说明修改了什么，以及下次何时复核。</p>
+            <p data-i18n="guide.onemorething.p2">稳定的版本管理比短期铺量更重要。正文、Schema、llms.txt与Sitemap使用同一更新时间线，才能让用户和爬虫读取同一版本。</p>
+        </div>
+    </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="footer-logo" data-i18n="footer.brand">零雪AI GEO优化</div>
+                <p data-i18n="footer.desc">专注GEO优化，用AI重塑企业流量架构</p>
+            </div>
+            <div class="footer-links">
+                <a href="index.html" data-i18n="footer.home">首页</a>
+                <a href="profile.html" data-i18n="footer.about">品牌详情</a>
+                <a href="blog/index.html" data-i18n="footer.blog">行业博客</a>
+                <a href="insights.html" data-i18n="footer.cases">GEO策略</a>
+                <a href="support.html" data-i18n="footer.faq">AI问答</a>
+            </div>
+            <div class="footer-contact">
+                <p data-i18n="footer.contact">微信：YiJie-AI | 电话：13539770556</p>
+                <p data-i18n="footer.social">抖音/视频号/公众号：炜佳导导GEO</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span class="auto-year">2026</span> <span data-i18n="footer.brand">零雪AI GEO优化</span>. <span data-i18n="footer.copyright">保留所有权利.</span></p>
+            <p><span data-i18n="footer.email">邮箱：1914224955@qq.com</span> | <span data-i18n="footer.icp" style="color: #999;">粤ICP备2026018563号</span></p>
+        </div>
+    </footer>
+
+    <script src="i18n.js?v=20260728"></script>
+    <script src="script.js?v=20260728"></script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    } else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+</body>
+</html>

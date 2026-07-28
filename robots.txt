@@ -1,0 +1,10 @@
+# 零雪AI公开站点抓取规则
+# 单一通用规则组适用于遵循 robots.txt 的搜索与AI抓取器。
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /crawler-console.html
+Disallow: /npm-cache/
+
+Sitemap: https://www.lxue.xin/sitemap.xml
+Sitemap: https://www.lxue.xin/sitemap-articles.xml

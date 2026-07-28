@@ -1,0 +1,14 @@
+# Set default behavior to automatically normalize line endings.
+* text=auto
+
+# CSS files should be UTF-8 without BOM
+*.css text eol=lf
+
+# HTML files should be UTF-8 without BOM  
+*.html text eol=lf
+
+# JavaScript files should be UTF-8 without BOM
+*.js text eol=lf
+
+# JSON files should be UTF-8 without BOM
+*.json text eol=lf
