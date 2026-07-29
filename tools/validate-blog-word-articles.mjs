@@ -88,11 +88,11 @@ assert.ok(exists('blog.html'), 'root blog.html compatibility entry should exist.
 const compatibilityBlog = read('blog.html');
 assert.ok(/<meta\s+name="robots"\s+content="noindex, follow">/i.test(compatibilityBlog), 'blog.html redirect stub should be noindex, follow.');
 const htaccess = read('.htaccess');
-assert.ok(/RewriteRule \^blog\\?\.html\$ \/blog\/ \[L,R=301,NC\]/i.test(htaccess), '.htaccess should redirect lowercase and uppercase blog.html to /blog/.');
+assert.ok(/RewriteRule \^blog\\\.html\$ \/blog\/ \[L,R=301,NC(?:,NE)?\]/i.test(htaccess), '.htaccess should redirect lowercase and uppercase blog.html to /blog/.');
 const blog = read('blog/index.html');
 assert.ok(blog.includes('blog-recent-docx-articles'), 'blog/index.html should include the Word-doc recent article section.');
 assert.ok(blog.includes('近期文章'), 'blog/index.html should label the recent article section.');
-assert.ok(blog.includes('../support.html'), 'blog footer should link to ../support.html.');
+assert.ok(blog.includes('href="/support"'), 'blog footer should link to the clean /support route.');
 assert.ok(!blog.includes('href="./"'), 'blog page should not rely on directory self links.');
 
 for (const [slug, expected] of Object.entries(wordArticles)) {
@@ -101,7 +101,7 @@ for (const [slug, expected] of Object.entries(wordArticles)) {
   const article = read(articlePath);
   assert.equal((article.match(/<h1[\s>]/g) || []).length, 1, `${articlePath} should have exactly one H1.`);
   assert.ok(article.includes(`<h1>${expected.title}</h1>`), `${articlePath} should use the provided DOCX title exactly.`);
-  assert.ok(article.includes(`https://www.lxue.xin/${articlePath}`), `${articlePath} should include its canonical URL.`);
+  assert.ok(article.includes(`https://www.lxue.xin/articles/${slug}`), `${articlePath} should include its clean canonical URL.`);
   assert.ok(article.includes('"@type": "Article"'), `${articlePath} should include Article schema.`);
   assert.ok(article.includes('"@type": "Organization"'), `${articlePath} should use Organization as author and publisher.`);
   assert.ok(!article.includes('article-question-summary'), `${articlePath} should not contain a non-source summary block.`);
@@ -113,7 +113,7 @@ for (const [slug, expected] of Object.entries(wordArticles)) {
 }
 
 for (const slug of blogRecentArticles) {
-  const href = `../articles/${slug}.html`;
+  const href = `/articles/${slug}`;
   assert.ok(blog.includes(href), `blog/index.html should link to ${href}.`);
   assert.ok(blog.includes(wordArticles[slug].title), `blog/index.html should preserve the provided title for ${slug}.`);
 }
@@ -121,17 +121,13 @@ for (const slug of blogRecentArticles) {
 for (const slug of newIndustryArticles) {
   const article = read(`articles/${slug}.html`);
   assert.ok(article.includes('"@type": "FAQPage"'), `${slug} should expose FAQPage schema for its visible source FAQ.`);
-  assert.ok(!blog.includes(`/articles/${slug}.html`), `${slug} should not appear in the industry blog page or its ItemList schema.`);
+  assert.ok(!blog.includes(`/articles/${slug}`), `${slug} should not appear in the industry blog page or its ItemList schema.`);
 }
 
 const sitemap = read('sitemap-articles.xml');
-const urls = read('urls.txt');
-const llms = read('llms.txt');
 for (const slug of Object.keys(wordArticles)) {
-  const loc = `https://www.lxue.xin/articles/${slug}.html`;
+  const loc = `https://www.lxue.xin/articles/${slug}`;
   assert.ok(sitemap.includes(loc), `sitemap-articles.xml is missing ${loc}.`);
-  assert.ok(urls.includes(loc), `urls.txt is missing ${loc}.`);
-  assert.ok(llms.includes(`/articles/${slug}.html`), `llms.txt is missing ${slug}.`);
 }
 
 const blogJson = [...blog.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/g)]

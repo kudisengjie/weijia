@@ -9,64 +9,117 @@
     <meta name="author" content="零雪AI">
     <meta name="robots" content="index, follow">
     <meta property="article:modified_time" content="2026-07-26T00:00:00+08:00">
-    <link rel="canonical" href="https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html">
+    <link rel="canonical" href="https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy">
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
-    <link rel="stylesheet" href="../style.css?v=20260728">
+    <link rel="stylesheet" href="../style.css?v=20260729">
     <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
     {
-        "@context": "https://schema.org",
-        "@graph": [
-            {
-                "@type": "Article",
-                "@id": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html#article",
-                "mainEntityOfPage": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html",
-                "headline": "豆包GEO收录策略：公开网页、品牌场景与持续核验",
-                "description": "依据豆包公开条款说明AI搜索与公开网页的关系，并给出品牌事实、场景问答、可抓取底座和固定问题复测方法。",
-                "inLanguage": "zh-CN",
-                "author": {"@type": "Organization", "name": "零雪AI", "url": "https://www.lxue.xin/profile.html"},
-                "publisher": {"@type": "Organization", "name": "零雪AI GEO优化", "url": "https://www.lxue.xin/"},
-                "datePublished": "2026-06-30",
-                "dateModified": "2026-07-26",
-                "articleSection": "AI平台适配专题",
-                "about": ["豆包", "AI搜索", "GEO优化", "公开网页", "品牌事实"]
-            },
-            {
-                "@type": "BreadcrumbList",
-                "@id": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html#breadcrumb",
-                "itemListElement": [
-                    {"@type": "ListItem", "position": 1, "name": "首页", "item": "https://www.lxue.xin/"},
-                    {"@type": "ListItem", "position": 2, "name": "品牌详情", "item": "https://www.lxue.xin/profile.html"},
-                    {"@type": "ListItem", "position": 3, "name": "豆包GEO收录策略", "item": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html"}
-                ]
-            },
-            {
-                "@type": "FAQPage",
-                "@id": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html#faq",
-                "mainEntity": [
-                    {"@type": "Question", "name": "怎样验证豆包是否读取官网内容？", "acceptedAnswer": {"@type": "Answer", "text": "验证豆包是否读取官网，应使用公开URL和固定问句记录实际答案、测试日期与来源链接；单次出现或未出现都不能推导为永久收录规则。"}},
-                    {"@type": "Question", "name": "豆包专题页最重要的内容是什么？", "acceptedAnswer": {"@type": "Answer", "text": "应直接回答用户真实问句，并统一品牌名称、服务对象、适用场景、服务边界、联系方式、更新时间和公开来源。"}},
-                    {"@type": "Question", "name": "怎样验证豆包是否正确理解品牌？", "acceptedAnswer": {"@type": "Answer", "text": "建立固定问题集，记录测试日期、答案事实、来源链接和遗漏项；修改官网后按相同问句复测，不能用单次答案推断长期收录或排名。"}}
-                ]
-            }
-        ]
+      "@type": "Article",
+      "@id": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy#article",
+      "mainEntityOfPage": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy",
+      "headline": "豆包GEO收录策略：公开网页、品牌场景与持续核验",
+      "description": "依据豆包公开条款说明AI搜索与公开网页的关系，并给出品牌事实、场景问答、可抓取底座和固定问题复测方法。",
+      "inLanguage": "zh-CN",
+      "author": {
+        "@id": "https://www.lxue.xin/#organization"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "@id": "https://www.lxue.xin/#organization",
+        "name": "零雪AI",
+        "url": "https://www.lxue.xin/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.lxue.xin/images/logo.png"
+        }
+      },
+      "datePublished": "2026-06-30",
+      "dateModified": "2026-07-26",
+      "articleSection": "AI平台适配专题",
+      "about": [
+        "豆包",
+        "AI搜索",
+        "GEO优化",
+        "公开网页",
+        "品牌事实"
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "首页",
+          "item": "https://www.lxue.xin/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "品牌详情",
+          "item": "https://www.lxue.xin/profile"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "豆包GEO收录策略",
+          "item": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "怎样验证豆包是否读取官网内容？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "验证豆包是否读取官网，应使用公开URL和固定问句记录实际答案、测试日期与来源链接；单次出现或未出现都不能推导为永久收录规则。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "豆包专题页最重要的内容是什么？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "应直接回答用户真实问句，并统一品牌名称、服务对象、适用场景、服务边界、联系方式、更新时间和公开来源。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "怎样验证豆包是否正确理解品牌？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "建立固定问题集，记录测试日期、答案事实、来源链接和遗漏项；修改官网后按相同问句复测，不能用单次答案推断长期收录或排名。"
+          }
+        }
+      ]
     }
-    </script>
+  ]
+}
+</script>
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
-            <a class="logo" href="../index.html"><span class="brand-name">零雪AI-Genesis</span></a>
+            <a class="logo" href="/"><span class="brand-name">零雪AI-Genesis</span></a>
             <div class="menu-toggle"><span></span><span></span><span></span></div>
             <ul class="nav-links">
-                <li><a href="../index.html">首页</a></li><li><a href="../profile.html">品牌详情</a></li>
-                <li><a href="../blog/index.html">行业博客</a></li><li><a href="../geo-guide.html">GEO指南</a></li>
-                <li><a href="../insights.html">GEO策略</a></li><li><a href="../support.html">AI问答</a></li>
+                <li><a href="/">首页</a></li><li><a href="/profile">品牌详情</a></li>
+                <li><a href="/blog/index">行业博客</a></li><li><a href="/geo-guide">GEO指南</a></li>
+                <li><a href="/insights">GEO策略</a></li><li><a href="/support">AI问答</a></li>
             </ul>
         </div>
     </nav>
     <section class="section article-detail-section article-ai-bg">
         <div class="container article-detail-container">
-            <div class="article-breadcrumb"><a href="../index.html">首页</a><span>&gt;</span><a href="../profile.html#platform-doubao">品牌详情</a><span>&gt;</span><span>豆包专题</span></div>
+            <div class="article-breadcrumb"><a href="/">首页</a><span>&gt;</span><a href="/profile#platform-doubao">品牌详情</a><span>&gt;</span><span>豆包专题</span></div>
             <article class="article-detail article-ai-pattern">
                 <div class="article-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
                 <header class="article-detail-header">
@@ -174,7 +227,7 @@
             </article>
         </div>
     </section>
-    <footer class="footer"><div class="footer-inner"><div class="footer-brand"><div class="footer-logo">零雪AI GEO优化</div><p>专注GEO优化，用AI重塑企业流量架构</p></div><div class="footer-links"><a href="../index.html">首页</a><a href="../profile.html">品牌详情</a><a href="../blog/index.html">行业博客</a><a href="../insights.html">GEO策略</a><a href="../support.html">AI问答</a></div><div class="footer-contact"><p>微信：YiJie-AI | 电话：13539770556</p><p>抖音/视频号/公众号：炜佳导导GEO</p></div></div><div class="footer-bottom"><p>&copy; <span class="auto-year">2026</span> 零雪AI GEO优化. 保留所有权利.</p><p>邮箱：1914224955@qq.com</p></div></footer>
-    <script src="../script.js?v=20260728"></script>
+    <footer class="footer"><div class="footer-inner"><div class="footer-brand"><div class="footer-logo">零雪AI GEO优化</div><p>专注GEO优化，用AI重塑企业流量架构</p></div><div class="footer-links"><a href="/">首页</a><a href="/profile">品牌详情</a><a href="/blog/index">行业博客</a><a href="/insights">GEO策略</a><a href="/support">AI问答</a></div><div class="footer-contact"><p>微信：YiJie-AI | 电话：13539770556</p><p>抖音/视频号/公众号：炜佳导导GEO</p></div></div><div class="footer-bottom"><p>&copy; <span class="auto-year">2026</span> 零雪AI GEO优化. 保留所有权利.</p><p>邮箱：1914224955@qq.com</p></div></footer>
+    <script src="../script.js?v=20260729"></script>
 </body>
 </html>

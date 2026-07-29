@@ -49,10 +49,10 @@ assert(graph.some((entry) => entry['@type'] === 'Service' && entry.name.includes
 assert(!graph.some((entry) => entry['@type'] === 'FAQPage'), 'insights should not expose hidden FAQ schema');
 assert(!graph.some((entry) => entry['@type'] === 'ItemList'), 'recent articles should remain centralized on the blog page');
 
-assert(llms.includes('GEO策略: https://www.lxue.xin/insights.html'), 'llms.txt should expose the strategy/index page once');
-assert(llms.includes('豆包、DeepSeek、腾讯元宝、通义千问、文心一言与Kimi'), 'llms.txt should summarize priority AI platforms');
-assert(llms.indexOf('## 近期文章（优先抓取）') < llms.indexOf('## 核心页面'), 'llms.txt should prioritize recent articles');
-assert(sitemap.includes('<loc>https://www.lxue.xin/insights.html</loc>'), 'sitemap should keep the canonical URL');
+assert(llms.includes('### 2.2 P.R.I.M.E 五步方法') && llms.includes('平台差异与持续复测'), 'llms.txt should explain the GEO strategy framework');
+for (const platform of ['豆包', 'DeepSeek', '腾讯元宝', '通义千问', '文心一言', 'Kimi']) assert(llms.includes(platform), `llms.txt should explain the ${platform} public-content scope`);
+assert(llms.includes('https://www.lxue.xin/sitemap-articles.xml'), 'llms.txt should delegate article discovery to the article sitemap');
+assert(sitemap.includes('<loc>https://www.lxue.xin/insights</loc>'), 'sitemap should keep the clean canonical URL');
 assert(sitemap.includes('<lastmod>2026-07-26</lastmod>'), 'sitemap should use the real current source update');
 assert(sitemap.includes('<priority>0.95</priority>'), 'sitemap should keep the strategy center among high-priority discovery URLs');
 

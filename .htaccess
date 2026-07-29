@@ -1,14 +1,25 @@
 RewriteEngine On
 
-RewriteRule ^blog\.html$ /blog/ [L,R=301,NC]
-RewriteRule ^articles/weijia-daodao-prime-sgfe\.html$ /articles/lingxue-ai-prime-sgfe.html [L,R=301]
-
 RewriteCond %{HTTP_HOST} ^lxue\.xin$ [NC]
 RewriteRule ^(.*)$ https://www.lxue.xin/$1 [L,R=301]
 
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# 旧公开地址统一到无 .html 的规范 URL；THE_REQUEST 防止内部重写形成循环。
+RewriteCond %{THE_REQUEST} \s/+index\.html(?:[?\s]) [NC]
+RewriteRule ^index\.html$ / [L,R=301,NE]
+
+RewriteCond %{THE_REQUEST} \s/+blog\.html(?:[?\s]) [NC]
+RewriteRule ^blog\.html$ /blog/ [L,R=301,NC,NE]
+
+RewriteCond %{THE_REQUEST} \s/+articles/weijia-daodao-prime-sgfe\.html(?:[?\s]) [NC]
+RewriteRule ^articles/weijia-daodao-prime-sgfe\.html$ /articles/lingxue-ai-prime-sgfe [L,R=301,NE]
+
+RewriteCond %{THE_REQUEST} \s/+(.+?)\.html(?:[?\s]) [NC]
+RewriteRule ^(.+)\.html$ /$1 [L,R=301,NE]
+
+# 无后缀公开 URL 仍由现有静态 HTML 文件提供。
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^([^\.]+)$ $1.html [NC,L]
@@ -57,5 +68,3 @@ RewriteRule ^([^\.]+)$ $1.html [NC,L]
     AddType text/css .css
     AddType application/javascript .js
 </IfModule>
-
-ErrorDocument 404 /index.html

@@ -45,8 +45,9 @@ const adminApp = read('admin/app.js');
 const adminStyle = read('admin/style.css');
 assert.ok(profile.includes('ai-platform-topics'), 'profile.html should include the AI platform topics module.');
 assert.ok(script.includes('crawler-console-entry'), 'script.js should inject the hidden crawler console entry.');
-assert.ok(script.includes('admin/index.html'), 'script.js should link the hidden footer entry directly to the admin page.');
-assert.ok(consolePage.includes('admin/index.html'), 'crawler-console.html should embed the concrete admin page, not a directory index.');
+assert.ok(script.includes("'/admin/'"), 'script.js should link the hidden footer entry to the clean private admin route.');
+assert.ok(consolePage.includes('src="/admin/"'), 'crawler-console.html should embed the clean private admin route.');
+assert.ok(!consolePage.includes('src="admin/index.html"'), 'crawler-console.html must not expose the legacy admin index filename.');
 assert.ok(consolePage.includes('http://localhost:8787/admin/'), 'crawler-console.html should redirect local file previews directly to the admin server.');
 assert.ok(adminIndex.includes('../images/robot-login.png'), 'admin/index.html should use the clean login robot cutout.');
 assert.ok(adminIndex.includes('admin-open-help'), 'admin/index.html should include local server help for login.');
@@ -74,21 +75,21 @@ assert.ok(adminIndex.includes('lastRefreshText'), 'admin/index.html should show 
 assert.ok(profile.includes('images/yirui-robot-wave-cutout.png'), 'profile.html should use the approved transparent waving robot cutout.');
 
 for (const slug of articleSlugs) {
-  const href = `articles/${slug}.html`;
-  assert.ok(profile.includes(href), `profile.html should link to ${href}.`);
+  const sourceFile = `articles/${slug}.html`;
+  const cleanRoute = `/articles/${slug}`;
+  assert.ok(profile.includes(`href="${cleanRoute}"`), `profile.html should link to ${cleanRoute}.`);
   const articleSitemap = read('sitemap-articles.xml');
-  assert.ok(articleSitemap.includes(`https://www.lxue.xin/${href}`), `sitemap-articles.xml should include ${href}.`);
-  assert.ok(read('llms.txt').includes(`/${href}`), `llms.txt should include ${href}.`);
+  assert.ok(articleSitemap.includes(`https://www.lxue.xin${cleanRoute}`), `sitemap-articles.xml should include ${cleanRoute}.`);
   assert.ok(/User-agent:\s*\*[\s\S]*Allow:\s*\//.test(read('robots.txt')), 'robots.txt should allow public articles through its wildcard group.');
 
-  const html = read(href);
-  assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, `${href} should have exactly one h1.`);
-  assert.ok(html.includes(`https://www.lxue.xin/${href}`), `${href} should have a canonical absolute URL.`);
-  assert.ok(html.includes('"@type": "Article"'), `${href} should include Article schema.`);
-  assert.ok(html.includes('"@type": "BreadcrumbList"'), `${href} should include BreadcrumbList schema.`);
-  assert.ok(html.includes('"@type": "FAQPage"'), `${href} should include FAQPage schema.`);
-  assert.ok(html.includes('article-ai-pattern'), `${href} should include AI visual pattern styling hook.`);
-  assert.ok(!html.includes('display:none') && !html.includes('visibility:hidden'), `${href} should not hide text from users.`);
+  const html = read(sourceFile);
+  assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, `${sourceFile} should have exactly one h1.`);
+  assert.ok(html.includes(`https://www.lxue.xin${cleanRoute}`), `${sourceFile} should have a clean canonical absolute URL.`);
+  assert.ok(html.includes('"@type": "Article"'), `${sourceFile} should include Article schema.`);
+  assert.ok(html.includes('"@type": "BreadcrumbList"'), `${sourceFile} should include BreadcrumbList schema.`);
+  assert.ok(html.includes('"@type": "FAQPage"'), `${sourceFile} should include FAQPage schema.`);
+  assert.ok(html.includes('article-ai-pattern'), `${sourceFile} should include AI visual pattern styling hook.`);
+  assert.ok(!html.includes('display:none') && !html.includes('visibility:hidden'), `${sourceFile} should not hide text from users.`);
 }
 
 const adminServer = read('admin/server.mjs');

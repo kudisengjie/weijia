@@ -7,13 +7,13 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.lxue.xin/profile.html</loc>
+    <loc>https://www.lxue.xin/profile</loc>
     <lastmod>2026-07-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://www.lxue.xin/brand-facts.html</loc>
+    <loc>https://www.lxue.xin/brand-facts</loc>
     <lastmod>2026-07-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
@@ -25,19 +25,19 @@
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://www.lxue.xin/geo-guide.html</loc>
+    <loc>https://www.lxue.xin/geo-guide</loc>
     <lastmod>2026-07-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://www.lxue.xin/insights.html</loc>
+    <loc>https://www.lxue.xin/insights</loc>
     <lastmod>2026-07-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://www.lxue.xin/support.html</loc>
+    <loc>https://www.lxue.xin/support</loc>
     <lastmod>2026-07-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>

@@ -41,7 +41,7 @@ assert.equal(logoPng.readUInt32BE(20), 256, 'header logo should use a proportion
 assert([4, 6].includes(logoPng[25]), 'header logo should retain transparency.');
 assert(index.includes('<link rel="apple-touch-icon" href="images/logo.png">'), 'home page should use the replacement logo for touch icons.');
 assert(fs.statSync(path.join(root, 'favicon.ico')).size > 2000, 'favicon should be regenerated from the replacement logo at multiple sizes.');
-assert(css.includes("url('images/logo.png?v=20260728')"), 'header logo URL should be versioned to invalidate retired immutable browser caches.');
+assert(css.includes("url('images/logo.png?v=20260729')"), 'header logo URL should be versioned to invalidate retired immutable browser caches.');
 assert(i18n.includes("'card.about.value2': 'Queries'"), 'English translation should cover the visible capability value.');
 assert(i18n.includes("'card.about.stat2': 'Platform Query Retesting'"), 'English translation should preserve the platform-query retest meaning.');
 
@@ -76,9 +76,9 @@ const platformArticleRoutes = {
   kimi: 'kimi-geo-ecosystem-guide'
 };
 for (const [platform, slug] of Object.entries(platformArticleRoutes)) {
-  assert(index.includes(`href="articles/${slug}.html"`), `home ${platform} card should enter its independent article.`);
+  assert(index.includes(`href="/articles/${slug}"`), `home ${platform} card should enter its independent article.`);
   assert(profile.includes(`id="platform-${platform}"`), `brand detail should expose a stable ${platform} topic anchor.`);
-  assert(profile.includes(`href="articles/${slug}.html"`), `brand detail ${platform} card should enter its independent article.`);
+  assert(profile.includes(`href="/articles/${slug}"`), `brand detail ${platform} card should enter its independent article.`);
 }
 assert.equal((index.match(/class="ai-platform-item"[^>]+target="_blank"/g) || []).length, 0, 'home platform cards should remain internal links.');
 assert(!index.includes('ai-platform-item--primary'), 'home platform cards should not expose a primary state.');
@@ -255,11 +255,11 @@ assert(!/220亿美元|122%|8\.2亿|380%|57%|15%-25%|3倍以上/.test(guide), 'GE
 for (const html of [blog, guide]) {
   const json = JSON.parse(html.match(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/)[1]);
   const graph = Array.isArray(json['@graph']) ? json['@graph'] : [json];
-  const dated = graph.filter((entry) => ['Article', 'BlogPosting', 'CollectionPage'].includes(entry['@type']));
+  const dated = graph.filter((entry) => ['Article', 'TechArticle', 'BlogPosting', 'CollectionPage'].includes(entry['@type']));
   assert(dated.length > 0, 'updated editorial pages should expose dated Schema.org entities.');
   assert(dated.every((entry) => entry.dateModified === '2026-07-26'), 'updated editorial Schema.org entities should use the real 2026-07-26 modification date.');
 }
-assert(llms.includes('行业博客与GEO指南于2026-07-26完成内容时效复核'), 'llms.txt should declare the latest editorial freshness review.');
+assert(llms.includes('## 4. 内容类型与解释规则') && llms.includes('## 6. 问句与直接答案'), 'llms.txt should operate as a structured model-facing manual.');
 
 const htmlFiles = [];
 function collectHtmlFiles(dir) {
@@ -276,13 +276,13 @@ for (const file of htmlFiles) {
   if (html.includes('noindex')) continue;
   assert(html.includes('https://schema.org'), `tools/validate-requested-fixes.mjs should include schema.org JSON-LD.`);
   if (/(?:\.\.\/)*style\.css(?:["'])/.test(html)) {
-    assert(/(?:\.\.\/)*style\.css\?v=20260728(?:["'])/.test(html), `${file} should version the shared stylesheet.`);
+    assert(/(?:\.\.\/)*style\.css\?v=20260729(?:["'])/.test(html), `${file} should version the shared stylesheet.`);
   }
   if (/(?:\.\.\/)*i18n\.js(?:["'])/.test(html)) {
-    assert(/(?:\.\.\/)*i18n\.js\?v=20260728(?:["'])/.test(html), `${file} should version the translation bundle.`);
+    assert(/(?:\.\.\/)*i18n\.js\?v=20260729(?:["'])/.test(html), `${file} should version the translation bundle.`);
   }
   if (/(?:\.\.\/)*script\.js(?:["'])/.test(html)) {
-    assert(/(?:\.\.\/)*script\.js\?v=20260728(?:["'])/.test(html), `${file} should version the shared interaction bundle.`);
+    assert(/(?:\.\.\/)*script\.js\?v=20260729(?:["'])/.test(html), `${file} should version the shared interaction bundle.`);
   }
 }
 
@@ -319,23 +319,22 @@ const articleSitemap = read('sitemap-articles.xml');
 const getLocs = (xml) => [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
 const mainSitemapUrls = getLocs(mainSitemap);
 const articleSitemapUrls = getLocs(articleSitemap);
-assert(llms.includes('https://www.lxue.xin/articles/doubao-byte-geo-indexing-strategy.html'), 'llms.txt should expose the Doubao indexing strategy page.');
 assert.equal((robots.match(/^User-agent:/gm) || []).length, 1, 'robots.txt should use one non-conflicting crawler rule group.');
 assert(robots.includes('User-agent: *') && robots.includes('Allow: /'), 'robots.txt should allow general and AI crawlers.');
-assert(robots.includes('Disallow: /admin/') && robots.includes('Disallow: /crawler-console.html'), 'robots.txt should keep private surfaces out of crawl traffic.');
+assert(robots.includes('Disallow: /admin/') && robots.includes('Disallow: /crawler-console'), 'robots.txt should keep private surfaces out of crawl traffic.');
 const llmsSiteUrls = [...llms.matchAll(/https:\/\/www\.lxue\.xin\/[^\s，。)]+/g)].map((match) => match[0].replace(/[：:;,]+$/, ''));
 assert.equal(new Set(llmsSiteUrls).size, llmsSiteUrls.length, 'llms.txt should not repeat the same canonical site URL.');
-assert(llms.indexOf('## 近期文章（优先抓取）') < llms.indexOf('## 核心页面'), 'llms.txt should put recent articles before general core pages.');
+assert(llmsSiteUrls.length <= 12, 'llms.txt should remain a concise manual rather than duplicating the sitemap URL inventory.');
 
 assert.equal(mainSitemapUrls.filter((url) => url.includes('/articles/')).length, 0, 'main sitemap should not include article URLs.');
 assert.deepEqual(mainSitemapUrls, [
   'https://www.lxue.xin/',
-  'https://www.lxue.xin/profile.html',
-  'https://www.lxue.xin/brand-facts.html',
+  'https://www.lxue.xin/profile',
+  'https://www.lxue.xin/brand-facts',
   'https://www.lxue.xin/blog/',
-  'https://www.lxue.xin/geo-guide.html',
-  'https://www.lxue.xin/insights.html',
-  'https://www.lxue.xin/support.html'
+  'https://www.lxue.xin/geo-guide',
+  'https://www.lxue.xin/insights',
+  'https://www.lxue.xin/support'
 ], 'main sitemap should contain only the primary pages.');
 
 assert.equal(articleSitemapUrls.length, 32, 'article sitemap should contain the existing set plus four independent platform articles.');
@@ -350,19 +349,19 @@ const platformOfficialUrls = {
 };
 for (const [platform, slug] of Object.entries(platformArticleRoutes)) {
   const rel = `articles/${slug}.html`;
-  const canonical = `https://www.lxue.xin/${rel}`;
+  const cleanRoute = `articles/${slug}`;
+  const canonical = `https://www.lxue.xin/${cleanRoute}`;
   assert(exists(rel), `${rel} should exist.`);
   assert(articleSitemapUrls.includes(canonical), `article sitemap should include ${canonical}.`);
-  assert(llms.includes(canonical), `llms.txt should expose ${canonical}.`);
   const html = read(rel);
   const logo = platform === 'doubao' ? 'platform-doubao.png' : `platform-${platform}.png`;
   assert(html.includes(`class="platform-article-logo-link" href="${platformOfficialUrls[platform]}" target="_blank" rel="noopener noreferrer"`), `${rel} should link its logo safely to the official platform.`);
   assert(html.includes(`src="../images/${logo}"`), `${rel} should use its corresponding platform logo.`);
   assert(!html.includes('yirui-robot'), `${rel} should not use the generic robot in its platform callout.`);
-  assert(!blog.includes(rel), `${rel} should remain outside the industry blog recent-article list.`);
+  assert(!blog.includes(rel) && !blog.includes(cleanRoute), `${rel} should remain outside the industry blog recent-article list.`);
 }
-const submittedUrls = read('urls.txt').split(/\r?\n/).map((line) => line.trim()).filter((line) => line.startsWith('https://www.lxue.xin/'));
-assert.deepEqual(new Set([...mainSitemapUrls, ...articleSitemapUrls]), new Set(submittedUrls), 'urls.txt should exactly match the union of both sitemaps.');
+assert(!exists('urls.txt'), 'urls.txt should not duplicate the two canonical sitemap URL inventories.');
+assert(edgeone.redirects.some((entry) => entry.source === '/urls.txt' && entry.destination === '/sitemap.xml'), 'legacy /urls.txt requests should redirect to the primary sitemap.');
 
 for (const sitemap of ['sitemap.xml', 'sitemap-articles.xml']) {
   assert(exists(sitemap), sitemap + ' should exist.');
@@ -427,7 +426,7 @@ for (const file of publicHtmlFiles) {
     const graph = Array.isArray(json['@graph']) ? json['@graph'] : [json];
     for (const entry of graph) {
       const types = Array.isArray(entry['@type']) ? entry['@type'] : [entry['@type']];
-      if (types.includes('Article') || types.includes('BlogPosting')) {
+      if (types.includes('Article') || types.includes('TechArticle') || types.includes('BlogPosting')) {
         assert(entry.headline && entry.author && entry.publisher && entry.datePublished && entry.dateModified && entry.mainEntityOfPage, `${file} Article schema should expose headline, author, publisher, dates and mainEntityOfPage.`);
       }
       const questions = types.includes('FAQPage')
@@ -452,18 +451,16 @@ for (const file of publicHtmlFiles) {
 const sitemapUnion = [...mainSitemapUrls, ...articleSitemapUrls];
 assert.deepEqual(new Set(indexableCanonicals), new Set(sitemapUnion), 'sitemaps should exactly cover all indexable canonical pages.');
 assert.equal(new Set(indexableCanonicals).size, indexableCanonicals.length, 'indexable pages should not share duplicate canonical URLs.');
-for (const canonical of indexableCanonicals) {
-  assert(llms.includes(canonical), `llms.txt should expose indexable canonical URL ${canonical}.`);
-}
+assert(llms.includes('https://www.lxue.xin/sitemap.xml') && llms.includes('https://www.lxue.xin/sitemap-articles.xml'), 'llms.txt should delegate URL discovery to both sitemaps.');
 for (const sitemapText of [mainSitemap, articleSitemap]) {
   for (const match of sitemapText.matchAll(/<url>[\s\S]*?<lastmod>([^<]+)<\/lastmod>[\s\S]*?<priority>([^<]+)<\/priority>[\s\S]*?<\/url>/g)) {
-    assert(/^\d{4}-\d{2}-\d{2}$/.test(match[1]) && match[1] <= '2026-07-26', `sitemap lastmod should be a real, non-future date: ${match[1]}`);
+    assert(/^\d{4}-\d{2}-\d{2}$/.test(match[1]) && match[1] <= '2026-07-29', `sitemap lastmod should be a real, non-future date: ${match[1]}`);
     const priority = Number(match[2]);
     assert(Number.isFinite(priority) && priority >= 0 && priority <= 1, `sitemap priority should be between 0 and 1: ${match[2]}`);
   }
 }
 for (const slug of ['travel-industry-geo-service-provider', 'automotive-industry-geo-service-provider', 'lip-balm-geo-service-provider', 'skincare-geo-service-provider', 'furniture-industry-geo-service-provider']) {
-  assert(new RegExp(`<loc>https://www\\.lxue\\.xin/articles/${slug}\\.html</loc>[\\s\\S]*?<priority>1\\.0</priority>`).test(articleSitemap), `${slug} should keep sitemap priority 1.0.`);
+  assert(new RegExp(`<loc>https://www\\.lxue\\.xin/articles/${slug}</loc>[\\s\\S]*?<priority>1\\.0</priority>`).test(articleSitemap), `${slug} should keep sitemap priority 1.0.`);
 }
 
 const redesignPages = {

@@ -67,8 +67,8 @@ assert(guide.includes('<h1 class="page-title" data-i18n="guide.h2">GEO优化指�
 for (const section of ['GEO的核心价值', 'GEO优化核心原则', 'GEO优化实施路径', 'GEO vs SEO：本质区别与协同策略']) {
   assert(guide.includes(section), `geo guide should visibly include ${section}`);
 }
-assert(llms.includes('23个可见问答'), 'llms.txt should state the visible FAQ count');
+assert(llms.includes('## 6. 问句与直接答案') && llms.includes('FAQPage'), 'llms.txt should explain the visible question and FAQ schema contract');
 assert(!llms.includes('11篇GEO主题文章'), 'llms.txt should not retain the obsolete article count');
-assert(/<loc>https:\/\/www\.lxue\.xin\/geo-guide\.html<\/loc>\s*<lastmod>2026-07-26<\/lastmod>/.test(sitemap), 'sitemap should use the real current source date for the GEO guide');
+assert(/<loc>https:\/\/www\.lxue\.xin\/geo-guide<\/loc>\s*<lastmod>2026-07-26<\/lastmod>/.test(sitemap), 'sitemap should use the clean GEO guide URL and real current source date');
 
 console.log('Current GEO content validation passed');

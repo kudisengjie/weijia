@@ -207,7 +207,7 @@ body {
     display: inline-block;
     width: 38px;
     height: 38px;
-    background: url('images/logo.png?v=20260728') no-repeat center center;
+    background: url('images/logo.png?v=20260729') no-repeat center center;
     background-size: contain;
     flex-shrink: 0;
 }

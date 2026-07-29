@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var entry = document.createElement('a');
     entry.className = 'crawler-console-entry';
     var isNestedPage = location.pathname.indexOf('/articles/') !== -1 || location.pathname.indexOf('/blog/') !== -1;
-    entry.href = location.protocol === 'file:' ? 'http://localhost:8787/admin/' : (isNestedPage ? '../admin/index.html' : 'admin/index.html');
+    entry.href = location.protocol === 'file:' ? 'http://localhost:8787/admin/' : '/admin/';
     entry.rel = 'nofollow noopener';
     updateCrawlerConsoleEntry(entry);
     footerBottom.appendChild(entry);
@@ -152,16 +152,16 @@ function updateArticleBreadcrumbSource() {
         fromFaq = params.get("from") === "faq";
     } catch (e) {}
     if (!fromFaq && document.referrer) {
-        fromFaq = document.referrer.indexOf("/support.html") !== -1;
+        fromFaq = document.referrer.indexOf("/support") !== -1;
     }
     if (!fromFaq) return;
 
     breadcrumb.textContent = "";
-    appendBreadcrumbNode(breadcrumb, "\u9996\u9875", "../index.html");
+    appendBreadcrumbNode(breadcrumb, "\u9996\u9875", "/");
     appendBreadcrumbNode(breadcrumb, ">");
-    appendBreadcrumbNode(breadcrumb, "\u5e38\u89c1\u95ee\u9898", "../support.html");
+    appendBreadcrumbNode(breadcrumb, "\u5e38\u89c1\u95ee\u9898", "/support");
     appendBreadcrumbNode(breadcrumb, ">");
-    appendBreadcrumbNode(breadcrumb, "\u8fd1\u671f\u6587\u7ae0", "../support.html#recent-articles");
+    appendBreadcrumbNode(breadcrumb, "\u8fd1\u671f\u6587\u7ae0", "/support#recent-articles");
 }
 
 function appendBreadcrumbNode(parent, text, href) {

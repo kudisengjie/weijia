@@ -6,13 +6,18 @@
       "statusCode": 301
     },
     {
+      "source": "/index.html",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
       "source": "/Blog.html",
       "destination": "/blog/",
       "statusCode": 301
     },
     {
-      "source": "/articles/weijia-daodao-prime-sgfe.html",
-      "destination": "/articles/lingxue-ai-prime-sgfe.html",
+      "source": "/blog.html",
+      "destination": "/blog/",
       "statusCode": 301
     },
     {
@@ -21,34 +26,249 @@
       "statusCode": 301
     },
     {
-      "source": "/brand-facts",
-      "destination": "/brand-facts.html",
+      "source": "/profile.html",
+      "destination": "/profile",
       "statusCode": 301
     },
     {
-      "source": "/profile",
-      "destination": "/profile.html",
+      "source": "/brand-facts.html",
+      "destination": "/brand-facts",
       "statusCode": 301
+    },
+    {
+      "source": "/geo-guide.html",
+      "destination": "/geo-guide",
+      "statusCode": 301
+    },
+    {
+      "source": "/insights.html",
+      "destination": "/insights",
+      "statusCode": 301
+    },
+    {
+      "source": "/support.html",
+      "destination": "/support",
+      "statusCode": 301
+    },
+    {
+      "source": "/crawler-console.html",
+      "destination": "/crawler-console",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/weijia-daodao-prime-sgfe.html",
+      "destination": "/articles/lingxue-ai-prime-sgfe",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/index.html",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/admin/index.html",
+      "destination": "/admin/",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/travel-industry-geo-service-provider.html",
+      "destination": "/articles/travel-industry-geo-service-provider",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/automotive-industry-geo-service-provider.html",
+      "destination": "/articles/automotive-industry-geo-service-provider",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/lip-balm-geo-service-provider.html",
+      "destination": "/articles/lip-balm-geo-service-provider",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/skincare-geo-service-provider.html",
+      "destination": "/articles/skincare-geo-service-provider",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/furniture-industry-geo-service-provider.html",
+      "destination": "/articles/furniture-industry-geo-service-provider",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/prime-methodology-geo-practice.html",
+      "destination": "/articles/prime-methodology-geo-practice",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/ai-platform-geo-differences.html",
+      "destination": "/articles/ai-platform-geo-differences",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-vs-seo-doubao.html",
+      "destination": "/articles/geo-vs-seo-doubao",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-optimization-business-value.html",
+      "destination": "/articles/geo-optimization-business-value",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-industry-differences-fast-results.html",
+      "destination": "/articles/geo-industry-differences-fast-results",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-technical-principles-ai-recommendation.html",
+      "destination": "/articles/geo-technical-principles-ai-recommendation",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-effect-measurement-core-metrics.html",
+      "destination": "/articles/geo-effect-measurement-core-metrics",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/enterprise-geo-sop-from-zero.html",
+      "destination": "/articles/enterprise-geo-sop-from-zero",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-common-mistakes.html",
+      "destination": "/articles/geo-common-mistakes",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/what-is-geo-vs-seo.html",
+      "destination": "/articles/what-is-geo-vs-seo",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/ai-search-2026-trends.html",
+      "destination": "/articles/ai-search-2026-trends",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-kpi-measurement.html",
+      "destination": "/articles/geo-kpi-measurement",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/eeat-authority-building.html",
+      "destination": "/articles/eeat-authority-building",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/six-ai-platform-strategies.html",
+      "destination": "/articles/six-ai-platform-strategies",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/schema-structured-data.html",
+      "destination": "/articles/schema-structured-data",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-compliance-data-governance.html",
+      "destination": "/articles/geo-compliance-data-governance",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/ai-agent-content-strategy.html",
+      "destination": "/articles/ai-agent-content-strategy",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/entity-optimization-knowledge-graph.html",
+      "destination": "/articles/entity-optimization-knowledge-graph",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-vendor-selection.html",
+      "destination": "/articles/geo-vendor-selection",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/lingxue-ai-prime-sgfe.html",
+      "destination": "/articles/lingxue-ai-prime-sgfe",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/geo-commercial-closed-loop.html",
+      "destination": "/articles/geo-commercial-closed-loop",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/doubao-byte-geo-indexing-strategy.html",
+      "destination": "/articles/doubao-byte-geo-indexing-strategy",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/deepseek-geo-evidence-density-strategy.html",
+      "destination": "/articles/deepseek-geo-evidence-density-strategy",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/yuanbao-geo-ecosystem-guide.html",
+      "destination": "/articles/yuanbao-geo-ecosystem-guide",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/qwen-geo-ecosystem-guide.html",
+      "destination": "/articles/qwen-geo-ecosystem-guide",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/wenxin-geo-ecosystem-guide.html",
+      "destination": "/articles/wenxin-geo-ecosystem-guide",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/kimi-geo-ecosystem-guide.html",
+      "destination": "/articles/kimi-geo-ecosystem-guide",
+      "statusCode": 301
+    },
+    {
+      "source": "/articles/:slug.html",
+      "destination": "/articles/:slug",
+      "statusCode": 301
+    },
+    {
+      "source": "/urls.txt",
+      "destination": "/sitemap.xml",
+      "statusCode": 301
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/profile",
+      "destination": "/profile.html"
+    },
+    {
+      "source": "/brand-facts",
+      "destination": "/brand-facts.html"
     },
     {
       "source": "/geo-guide",
-      "destination": "/geo-guide.html",
-      "statusCode": 301
+      "destination": "/geo-guide.html"
     },
     {
       "source": "/insights",
-      "destination": "/insights.html",
-      "statusCode": 301
+      "destination": "/insights.html"
     },
     {
       "source": "/support",
-      "destination": "/support.html",
-      "statusCode": 301
+      "destination": "/support.html"
     },
     {
       "source": "/crawler-console",
-      "destination": "/crawler-console.html",
-      "statusCode": 301
+      "destination": "/crawler-console.html"
+    },
+    {
+      "source": "/articles/:slug",
+      "destination": "/articles/:slug.html"
     }
   ],
   "headers": [

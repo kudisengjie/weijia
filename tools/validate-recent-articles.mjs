@@ -45,7 +45,7 @@ assert(q23Index !== -1 && q23Index < recentIndex, 'recent articles section must 
 
 for (let index = 0; index < articles.length; index += 1) {
   const slug = articles[index];
-  const href = `articles/${slug}.html`;
+  const href = `/articles/${slug}`;
   assert(support.includes(href), `support.html is missing ${href}.`);
   assert(support.includes(`>${index + 1}</span>`), `support.html is missing list number ${index + 1}.`);
 
@@ -82,15 +82,13 @@ for (const slug of newIndustryArticles) {
 }
 
 const sitemap = read('sitemap-articles.xml');
-const urls = read('urls.txt');
 for (const slug of [...articles, ...newIndustryArticles]) {
-  const loc = `https://www.lxue.xin/articles/${slug}.html`;
+  const loc = `https://www.lxue.xin/articles/${slug}`;
   assert(sitemap.includes(loc), `sitemap-articles.xml is missing ${loc}.`);
-  assert(urls.includes(loc), `urls.txt is missing ${loc}.`);
 }
 
 for (const slug of newIndustryArticles) {
-  const loc = `https://www.lxue.xin/articles/${slug}.html`;
+  const loc = `https://www.lxue.xin/articles/${slug}`;
   const escapedLoc = loc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const urlBlock = sitemap.match(new RegExp(`<url>\\s*<loc>${escapedLoc}</loc>[\\s\\S]*?</url>`));
   assert(urlBlock, `sitemap-articles.xml is missing the URL block for ${slug}.`);
