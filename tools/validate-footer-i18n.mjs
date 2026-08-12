@@ -25,6 +25,34 @@ const navHome = makeElement('nav.home', '首页', false);
 const langButton = { textContent: 'English', addEventListener() {} };
 
 const script = fs.readFileSync('script.js', 'utf8');
+const css = fs.readFileSync('style.css', 'utf8');
+const trackedHtmlFiles = [];
+
+function collectTrackedHtmlFiles(dir = '.') {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (['.git', '.worktrees', 'artifacts', 'node_modules'].includes(entry.name)) continue;
+    const relativePath = dir === '.' ? entry.name : `${dir}/${entry.name}`;
+    if (entry.isDirectory()) collectTrackedHtmlFiles(relativePath);
+    else if (entry.name.endsWith('.html')) trackedHtmlFiles.push(relativePath);
+  }
+}
+
+collectTrackedHtmlFiles();
+const icpHtmlFiles = trackedHtmlFiles.filter((file) =>
+  fs.readFileSync(file, 'utf8').includes('https://beian.miit.gov.cn/#/Integrated/index')
+);
+
+assert.equal(icpHtmlFiles.length, 33, 'all 33 ICP footer pages should remain discoverable.');
+for (const file of icpHtmlFiles) {
+  const html = fs.readFileSync(file, 'utf8');
+  assert(html.includes('class="icp-link"'), `${file} should use the shared ICP interaction class.`);
+  assert(/(?:\.\.\/)*style\.css\?v=20260812(?:["'])/.test(html), `${file} should load the current shared stylesheet version.`);
+}
+assert(/\.icp-link\s*\{[^}]*cursor:\s*pointer[^}]*transition:\s*color 0\.2s ease, transform 0\.2s ease, text-decoration-color 0\.2s ease/s.test(css), 'ICP link should expose a pointer and explicit transitions.');
+assert(/\.icp-link:hover\s*\{[^}]*color:\s*var\(--primary-color\)[^}]*text-decoration:\s*underline[^}]*transform:\s*translateY\(-1px\)/s.test(css), 'ICP link should visibly respond to pointer hover.');
+assert(/\.icp-link:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--primary-color\)[^}]*outline-offset:\s*3px/s.test(css), 'ICP link should expose a visible keyboard focus state.');
+assert(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.icp-link\s*\{[^}]*transition:\s*none[^}]*\}[\s\S]*?\.icp-link:hover\s*\{[^}]*transform:\s*none/s.test(css), 'ICP link motion should be disabled when reduced motion is requested.');
+
 assert.ok(script.includes("entry.textContent = isEnglish ? 'Data' : '\\u6570\\u636e'"), 'crawler console entry should translate to Data in English and data in Chinese.');
 assert.ok(script.includes("localStorage.getItem('lang')"), 'crawler console entry should use the shared language key.');
 assert.ok(script.includes('updateCrawlerConsoleEntry'), 'script.js should update crawler console entry after language changes.');

@@ -276,7 +276,7 @@ for (const file of htmlFiles) {
   if (html.includes('noindex')) continue;
   assert(html.includes('https://schema.org'), `tools/validate-requested-fixes.mjs should include schema.org JSON-LD.`);
   if (/(?:\.\.\/)*style\.css(?:["'])/.test(html)) {
-    assert(/(?:\.\.\/)*style\.css\?v=20260729(?:["'])/.test(html), `${file} should version the shared stylesheet.`);
+    assert(/(?:\.\.\/)*style\.css\?v=20260812(?:["'])/.test(html), `${file} should version the shared stylesheet.`);
   }
   if (/(?:\.\.\/)*i18n\.js(?:["'])/.test(html)) {
     assert(/(?:\.\.\/)*i18n\.js\?v=20260729(?:["'])/.test(html), `${file} should version the translation bundle.`);
