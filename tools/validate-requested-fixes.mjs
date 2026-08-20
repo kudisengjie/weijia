@@ -262,12 +262,13 @@ for (const html of [blog, guide]) {
 assert(llms.includes('## 4. 内容类型与解释规则') && llms.includes('## 6. 问句与直接答案'), 'llms.txt should operate as a structured model-facing manual.');
 
 const htmlFiles = [];
+const isPublicHtmlName = (name) => name.endsWith('.html') && !name.startsWith('_');
 function collectHtmlFiles(dir) {
   for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
     if (entry.name === '.git' || entry.name === '.worktrees' || entry.name === 'node_modules' || entry.name === 'artifacts') continue;
     const rel = path.join(dir, entry.name);
     if (entry.isDirectory()) collectHtmlFiles(rel);
-    else if (entry.name.endsWith('.html')) htmlFiles.push(rel);
+    else if (isPublicHtmlName(entry.name)) htmlFiles.push(rel);
   }
 }
 collectHtmlFiles('');
@@ -321,7 +322,7 @@ const mainSitemapUrls = getLocs(mainSitemap);
 const articleSitemapUrls = getLocs(articleSitemap);
 assert.equal((robots.match(/^User-agent:/gm) || []).length, 1, 'robots.txt should use one non-conflicting crawler rule group.');
 assert(robots.includes('User-agent: *') && robots.includes('Allow: /'), 'robots.txt should allow general and AI crawlers.');
-assert(robots.includes('Disallow: /admin/') && robots.includes('Disallow: /crawler-console'), 'robots.txt should keep private surfaces out of crawl traffic.');
+assert(!robots.includes('/admin/') && !robots.includes('/crawler-console'), 'retired crawler admin routes must not remain in robots.txt.');
 const llmsSiteUrls = [...llms.matchAll(/https:\/\/www\.lxue\.xin\/[^\s，。)]+/g)].map((match) => match[0].replace(/[：:;,]+$/, ''));
 assert.equal(new Set(llmsSiteUrls).size, llmsSiteUrls.length, 'llms.txt should not repeat the same canonical site URL.');
 assert(llmsSiteUrls.length <= 12, 'llms.txt should remain a concise manual rather than duplicating the sitemap URL inventory.');
@@ -391,7 +392,7 @@ const decodeHtml = (value) => value
   .replace(/\s+/g, ' ')
   .trim();
 const publicHtmlFiles = [
-  ...fs.readdirSync(root).filter((file) => file.endsWith('.html')),
+  ...fs.readdirSync(root).filter(isPublicHtmlName),
   ...fs.readdirSync(path.join(root, 'articles')).filter((file) => file.endsWith('.html')).map((file) => `articles/${file}`),
   'blog/index.html',
 ];

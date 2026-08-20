@@ -53,9 +53,11 @@ assert(/\.icp-link:hover\s*\{[^}]*color:\s*var\(--primary-color\)[^}]*text-decor
 assert(/\.icp-link:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--primary-color\)[^}]*outline-offset:\s*3px/s.test(css), 'ICP link should expose a visible keyboard focus state.');
 assert(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.icp-link\s*\{[^}]*transition:\s*none[^}]*\}[\s\S]*?\.icp-link:hover\s*\{[^}]*transform:\s*none/s.test(css), 'ICP link motion should be disabled when reduced motion is requested.');
 
-assert.ok(script.includes("entry.textContent = isEnglish ? 'Data' : '\\u6570\\u636e'"), 'crawler console entry should translate to Data in English and data in Chinese.');
-assert.ok(script.includes("localStorage.getItem('lang')"), 'crawler console entry should use the shared language key.');
-assert.ok(script.includes('updateCrawlerConsoleEntry'), 'script.js should update crawler console entry after language changes.');
+assert.ok(script.includes("entry.textContent = isEnglish ? 'Lxue GEO Workbench' : '零雪 GEO 程序'"), 'private workbench entry should translate the current product name in both languages.');
+assert.ok(script.includes("localStorage.getItem('lang')"), 'private workbench entry should use the shared language key.');
+assert.ok(script.includes('updateGeoWorkbenchEntry'), 'script.js should update the private workbench entry after language changes.');
+assert.ok(script.includes("entry.href = 'https://geo.lxue.xin/'"), 'private workbench entry should use the dedicated GEO domain.');
+assert.ok(!script.includes('updateCrawlerConsoleEntry'), 'retired crawler console entry must not return.');
 
 const context = {
   console,

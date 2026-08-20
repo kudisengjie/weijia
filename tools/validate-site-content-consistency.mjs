@@ -10,6 +10,7 @@ const ignoredDirs = new Set(['.git', '.worktrees', 'node_modules', 'admin', 'too
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (ignoredDirs.has(entry.name)) continue;
+    if (entry.isFile() && entry.name.startsWith('_')) continue;
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(fullPath);
     else if (/\.(html|js|txt|xml|css)$/i.test(entry.name)) textFiles.push(fullPath);
@@ -80,7 +81,7 @@ for (const file of textFiles) {
 for (const file of htmlFiles) {
   const rel = path.relative(root, file).replace(/\\/g, '/');
   const content = fs.readFileSync(file, 'utf8');
-  const isRedirectOnly = rel === 'blog.html' || rel === 'crawler-console.html';
+  const isRedirectOnly = rel === 'blog.html';
   if (!isRedirectOnly && content.includes('<footer')) {
     if (!content.includes(phone)) failures.push(`${rel}: missing standard phone ${phone}`);
     if (!content.includes(email)) failures.push(`${rel}: missing standard email ${email}`);
