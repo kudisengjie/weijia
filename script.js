@@ -114,32 +114,34 @@ function getSiteLang() {
     return localStorage.getItem('lang') === 'en' || document.documentElement.lang === 'en' ? 'en' : 'zh';
 }
 
-function updateCrawlerConsoleEntry(entry) {
+function updateGeoWorkbenchEntry(entry) {
     if (!entry) return;
     var isEnglish = getSiteLang() === 'en';
-    entry.textContent = isEnglish ? 'Data' : '\u6570\u636e';
-    entry.setAttribute('aria-label', isEnglish ? 'Crawler data management admin' : '\u722c\u866b\u6293\u53d6\u6570\u636e\u7ba1\u7406\u540e\u53f0');
+    entry.textContent = isEnglish ? 'Lxue GEO Workbench' : '零雪 GEO 程序';
+    entry.setAttribute(
+        'aria-label',
+        isEnglish ? 'Open the private Lxue GEO workbench' : '打开零雪 GEO 私有文章工作台'
+    );
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     var footerBottom = document.querySelector('.footer-bottom');
-    if (!footerBottom || document.body.classList.contains('crawler-console-page')) return;
+    if (!footerBottom) return;
     var entry = document.createElement('a');
-    entry.className = 'crawler-console-entry';
-    var isNestedPage = location.pathname.indexOf('/articles/') !== -1 || location.pathname.indexOf('/blog/') !== -1;
-    entry.href = location.protocol === 'file:' ? 'http://localhost:8787/admin/' : '/admin/';
+    entry.className = 'geo-workbench-entry';
+    entry.href = 'https://geo.lxue.xin/';
     entry.rel = 'nofollow noopener';
-    updateCrawlerConsoleEntry(entry);
+    updateGeoWorkbenchEntry(entry);
     footerBottom.appendChild(entry);
 
     document.querySelectorAll('.lang-switch, .lang-switch-mobile').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            window.setTimeout(function() { updateCrawlerConsoleEntry(entry); }, 0);
+            window.setTimeout(function() { updateGeoWorkbenchEntry(entry); }, 0);
         });
     });
 
     window.addEventListener('storage', function(event) {
-        if (event.key === 'lang') updateCrawlerConsoleEntry(entry);
+        if (event.key === 'lang') updateGeoWorkbenchEntry(entry);
     });
 });
 

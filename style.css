@@ -2518,8 +2518,8 @@ body {
     .platform-article-logo-link { width: 88px; height: 88px; }
     .article-orbit { opacity: 0.28; }
 }
-/* ===== 2026 visual refresh: AI grid, subtle motion, hidden admin entry ===== */
-body:not(.crawler-console-page) {
+/* ===== 2026 visual refresh: AI grid, subtle motion, private GEO entry ===== */
+body {
     background:
         linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.96)),
         linear-gradient(rgba(30,58,95,0.028) 1px, transparent 1px),
@@ -2555,18 +2555,29 @@ body:not(.crawler-console-page) {
     object-fit: contain;
     background: transparent;
 }
-.crawler-console-entry {
+.geo-workbench-entry {
     display: inline-flex;
+    align-items: center;
     margin-left: 10px;
-    color: rgba(30, 58, 95, 0.28);
+    border: 1px solid rgba(59, 111, 172, 0.22);
+    border-radius: 999px;
+    padding: 5px 10px;
+    color: #1e4d80;
+    background: rgba(79, 136, 198, 0.08);
     font-size: 12px;
+    font-weight: 700;
     text-decoration: none;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
-.crawler-console-entry:hover { color: #1e3a5f; }
-.crawler-console-page { margin: 0; background: #f7fbff; }
-.crawler-console-shell { width: 100vw; height: 100vh; overflow: hidden; }
-.crawler-console-shell iframe { width: 100%; height: 100%; border: 0; display: block; background: #f7fbff; }
+.geo-workbench-entry:hover {
+    border-color: rgba(48, 103, 168, 0.45);
+    color: #153f6f;
+    background: rgba(79, 136, 198, 0.14);
+}
+.geo-workbench-entry:focus-visible {
+    outline: 3px solid rgba(64, 126, 199, 0.28);
+    outline-offset: 2px;
+}
 @keyframes pageRise {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
