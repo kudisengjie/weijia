@@ -193,7 +193,6 @@ const redirects = new Map(edge.redirects.map((rule) => [rule.source, rule]));
 const rewrites = new Map(edge.rewrites.map((rule) => [rule.source, rule]));
 assert.equal(redirects.get('/articles/:slug.html')?.destination, '/articles/:slug');
 assert.equal(redirects.get('/blog/index.html')?.destination, '/blog/');
-assert.equal(redirects.get('/admin/index.html')?.destination, '/admin/');
 for (const loc of articleSitemap.keys()) {
   const cleanPath = new URL(loc).pathname;
   const legacyRule = redirects.get(`${cleanPath}.html`);

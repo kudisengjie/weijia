@@ -2,8 +2,6 @@
 # 公开页面对遵循 robots.txt 的通用搜索与AI抓取器开放。
 User-agent: *
 Allow: /
-Disallow: /admin/
-Disallow: /crawler-console
 Disallow: /npm-cache/
 
 Sitemap: https://www.lxue.xin/sitemap.xml

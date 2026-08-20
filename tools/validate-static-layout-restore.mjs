@@ -64,11 +64,9 @@ for (const rule of mobileMustKeep) {
   assert.ok(css.includes(rule), `${rule} should remain for mobile responsiveness.`);
 }
 
-const adminCss = fs.readFileSync('admin/style.css', 'utf8');
-assert.ok(adminCss.includes('html, body {'), 'admin page should clamp document overflow.');
-assert.ok(adminCss.includes('width: min(1500px, 100%);'), 'admin login stage should not exceed the padded viewport.');
-assert.ok(adminCss.includes('html[lang="en"] .hero-copy'), 'admin English login copy should have language-specific spacing.');
-assert.ok(adminCss.includes('overflow-wrap: break-word;'), 'admin English title should wrap before it touches the login card.');
+assert.ok(!fs.existsSync('admin/index.html'), 'retired crawler admin page must stay removed.');
+assert.ok(!fs.existsSync('admin/style.css'), 'retired crawler admin stylesheet must stay removed.');
+assert.ok(!fs.existsSync('crawler-console.html'), 'retired crawler console must stay removed.');
 
 for (const compactRule of [
   '/* ===== Unified Compact Scale ===== */',

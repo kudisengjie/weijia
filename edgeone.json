@@ -51,11 +51,6 @@
       "statusCode": 301
     },
     {
-      "source": "/crawler-console.html",
-      "destination": "/crawler-console",
-      "statusCode": 301
-    },
-    {
       "source": "/articles/weijia-daodao-prime-sgfe.html",
       "destination": "/articles/lingxue-ai-prime-sgfe",
       "statusCode": 301
@@ -63,11 +58,6 @@
     {
       "source": "/blog/index.html",
       "destination": "/blog/",
-      "statusCode": 301
-    },
-    {
-      "source": "/admin/index.html",
-      "destination": "/admin/",
       "statusCode": 301
     },
     {
@@ -261,10 +251,6 @@
     {
       "source": "/support",
       "destination": "/support.html"
-    },
-    {
-      "source": "/crawler-console",
-      "destination": "/crawler-console.html"
     },
     {
       "source": "/articles/:slug",
