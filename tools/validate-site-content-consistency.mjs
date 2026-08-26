@@ -5,7 +5,10 @@ import path from 'node:path';
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(.:)/, '$1')), '..');
 const htmlFiles = [];
 const textFiles = [];
-const ignoredDirs = new Set(['.git', '.worktrees', 'node_modules', 'admin', 'tools']);
+// geo-site is deployed as a separate EdgeOne project and has its own product UI
+// contract. It is validated by validate-static-geo-workbench.mjs rather than the
+// public marketing site's navigation/content rules below.
+const ignoredDirs = new Set(['.git', '.worktrees', 'node_modules', 'admin', 'tools', 'geo-site']);
 
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
