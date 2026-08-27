@@ -8,6 +8,9 @@ dist/
 # Isolated feature worktrees
 .worktrees/
 
+# Local visual brainstorming previews
+.superpowers/
+
 # Environment variables
 .env
 .env.local
