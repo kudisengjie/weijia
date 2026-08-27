@@ -2556,9 +2556,10 @@ body {
     background: transparent;
 }
 .geo-workbench-entry {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    margin-left: 10px;
+    width: fit-content;
+    margin: 16px auto 0;
     border: 1px solid rgba(59, 111, 172, 0.22);
     border-radius: 999px;
     padding: 5px 10px;

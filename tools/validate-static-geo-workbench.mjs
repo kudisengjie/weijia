@@ -46,6 +46,18 @@ if (failures.length === 0) {
   expect(html.includes('assets/lxue-geo-founder.png'), "missing Lxue IP image");
   expect(css.includes("@media (max-width: 760px)"), "missing mobile layout");
   expect(css.includes("prefers-reduced-motion"), "missing reduced-motion support");
+  expect(
+    /@media\s*\(max-width:\s*520px\)\s*\{[\s\S]*?\.geo-steps\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*8px/s.test(css),
+    "phone workflow steps must use a readable two-column grid"
+  );
+  expect(
+    /@media\s*\(max-width:\s*520px\)\s*\{[\s\S]*?\.geo-steps li\s*\{[^}]*min-height:\s*64px[^}]*padding:\s*10px/s.test(css),
+    "phone workflow step cards must retain readable height and padding"
+  );
+  expect(
+    /@media\s*\(max-width:\s*520px\)\s*\{[\s\S]*?\.geo-step__number\s*\{[^}]*flex:\s*0 0 34px[^}]*height:\s*34px/s.test(css),
+    "phone workflow step numbers must not shrink"
+  );
   expect(source.includes("readSpreadsheet"), "spreadsheet content reader is missing");
   expect(source.includes("readDocx"), "DOCX content reader is missing");
   expect(source.includes("readPdf"), "PDF content reader is missing");

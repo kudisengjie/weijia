@@ -58,6 +58,10 @@ assert.ok(script.includes("localStorage.getItem('lang')"), 'private workbench en
 assert.ok(script.includes('updateGeoWorkbenchEntry'), 'script.js should update the private workbench entry after language changes.');
 assert.ok(script.includes("entry.href = 'https://geo.lxue.xin/'"), 'private workbench entry should use the dedicated GEO domain.');
 assert.ok(!script.includes('updateCrawlerConsoleEntry'), 'retired crawler console entry must not return.');
+assert.ok(
+  /\.geo-workbench-entry\s*\{[^}]*display:\s*flex[^}]*width:\s*fit-content[^}]*margin:\s*16px auto 0/s.test(css),
+  'private workbench footer entry should have a dedicated 16px top gap and remain centered.'
+);
 
 const context = {
   console,
