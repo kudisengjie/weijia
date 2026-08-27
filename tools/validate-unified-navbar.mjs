@@ -74,6 +74,7 @@ for (const page of pages) {
   expect(active ? activeKeys.length === 1 && activeKeys[0] === active : activeKeys.length === 0, `${page}: incorrect active navigation item`);
 
   expect(html.includes('style.css?v=20260827'), `${page}: stylesheet cache version was not updated`);
+  expect(html.includes('i18n.js?v=20260827'), `${page}: i18n cache version was not updated`);
   expect(html.includes('script.js?v=20260827'), `${page}: script cache version was not updated`);
 }
 
