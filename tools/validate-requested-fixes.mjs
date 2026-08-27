@@ -265,7 +265,7 @@ const htmlFiles = [];
 const isPublicHtmlName = (name) => name.endsWith('.html') && !name.startsWith('_');
 function collectHtmlFiles(dir) {
   for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
-    if (entry.name === '.git' || entry.name === '.worktrees' || entry.name === 'node_modules' || entry.name === 'artifacts') continue;
+    if (entry.name === '.git' || entry.name === '.worktrees' || entry.name === '.superpowers' || entry.name === 'node_modules' || entry.name === 'artifacts') continue;
     const rel = path.join(dir, entry.name);
     if (entry.isDirectory()) collectHtmlFiles(rel);
     else if (isPublicHtmlName(entry.name)) htmlFiles.push(rel);
