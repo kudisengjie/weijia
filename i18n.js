@@ -52,6 +52,13 @@ var i18n = {
             }
         });
 
+        document.querySelectorAll('[data-i18n-aria-label]').forEach(function(el) {
+            var key = el.getAttribute('data-i18n-aria-label');
+            if (dict[key] !== undefined) {
+                el.setAttribute('aria-label', dict[key]);
+            }
+        });
+
         document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
     }
 };
@@ -63,6 +70,9 @@ i18n.translations.zh = {
     'nav.geo': 'GEO指南',
     'nav.cases': 'GEO策略',
     'nav.faq': 'AI问答',
+    'nav.workbench': '零雪 GEO 程序',
+    'nav.newTab': '（在新标签页打开）',
+    'nav.menu': '导航菜单',
     'nav.lang': 'English',
 
     'hero.subtitle': '用AI重构企业流量架构，让获客更高效',
@@ -697,6 +707,9 @@ i18n.translations.en = {
     'nav.geo': 'GEO Guide',
     'nav.cases': 'GEO Strategy',
     'nav.faq': 'AI Q&A',
+    'nav.workbench': 'Lxue GEO Workbench',
+    'nav.newTab': ' (opens in a new tab)',
+    'nav.menu': 'Navigation menu',
     'nav.lang': '中文',
 
     'hero.subtitle': 'Rebuild enterprise traffic architecture with AI, making customer acquisition more efficient',

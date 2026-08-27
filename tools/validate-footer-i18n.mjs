@@ -27,6 +27,15 @@ const langButton = { textContent: 'English', addEventListener() {} };
 const script = fs.readFileSync('script.js', 'utf8');
 const css = fs.readFileSync('style.css', 'utf8');
 const trackedHtmlFiles = [];
+const unifiedNavPages = new Set([
+  'index.html',
+  'profile.html',
+  'blog/index.html',
+  'geo-guide.html',
+  'insights.html',
+  'support.html',
+  'brand-facts.html'
+]);
 
 function collectTrackedHtmlFiles(dir = '.') {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -46,7 +55,12 @@ assert.equal(icpHtmlFiles.length, 33, 'all 33 ICP footer pages should remain dis
 for (const file of icpHtmlFiles) {
   const html = fs.readFileSync(file, 'utf8');
   assert(html.includes('class="icp-link"'), `${file} should use the shared ICP interaction class.`);
-  assert(/(?:\.\.\/)*style\.css\?v=20260812(?:["'])/.test(html), `${file} should load the current shared stylesheet version.`);
+  const normalizedFile = file.replace(/\\/g, '/');
+  const expectedStyleVersion = unifiedNavPages.has(normalizedFile) ? '20260827' : '20260812';
+  assert(
+    new RegExp(`(?:\\.\\.\\/)*style\\.css\\?v=${expectedStyleVersion}(?:["'])`).test(html),
+    `${file} should load stylesheet version ${expectedStyleVersion}.`
+  );
 }
 assert(/\.icp-link\s*\{[^}]*cursor:\s*pointer[^}]*transition:\s*color 0\.2s ease, transform 0\.2s ease, text-decoration-color 0\.2s ease/s.test(css), 'ICP link should expose a pointer and explicit transitions.');
 assert(/\.icp-link:hover\s*\{[^}]*color:\s*var\(--primary-color\)[^}]*text-decoration:\s*underline[^}]*transform:\s*translateY\(-1px\)/s.test(css), 'ICP link should visibly respond to pointer hover.');
