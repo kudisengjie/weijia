@@ -4671,7 +4671,7 @@ body.premium-page {
 
 .navbar[data-unified-nav] a:focus-visible,
 .navbar[data-unified-nav] .menu-toggle:focus-visible {
-    outline: 3px solid rgba(56, 123, 199, 0.38);
+    outline: 3px solid var(--primary-color);
     outline-offset: 3px;
 }
 
