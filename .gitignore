@@ -45,7 +45,6 @@ lerna-debug.log*
 
 # npm cache
 npm-cache/
-
 # Browser QA artifacts
 .playwright-cli/
 output/playwright/
