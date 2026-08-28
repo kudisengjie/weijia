@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "test": "node --test src/model-switch.test.mjs",
     "build": "node scripts/build.mjs"
   },
   "dependencies": {

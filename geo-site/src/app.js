@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
 import { strFromU8, unzipSync } from "fflate";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import { DEFAULT_MODEL_PROVIDER, getModelPresentation } from "./model-switch.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("assets/pdf.worker.min.mjs", document.baseURI).href;
 
@@ -24,9 +25,33 @@ const checkCompany = document.getElementById("check-company");
 const statusTask = document.getElementById("status-task");
 const statusDocs = document.getElementById("status-docs");
 const statusRead = document.getElementById("status-read");
+const modelProviderSelect = document.getElementById("model-provider");
 
 let currentTask = null;
 let currentCompanies = [];
+
+function renderSelectedModel(provider = DEFAULT_MODEL_PROVIDER) {
+  const selected = getModelPresentation(provider);
+  if (modelProviderSelect) modelProviderSelect.value = selected.id;
+  document.querySelectorAll("[data-selected-model-provider]").forEach((node) => {
+    node.textContent = selected.provider;
+  });
+  document.querySelectorAll("[data-selected-model-name]").forEach((node) => {
+    node.textContent = selected.model;
+  });
+  document.querySelectorAll("[data-selected-model-label]").forEach((node) => {
+    node.textContent = selected.label;
+  });
+  document.querySelectorAll("[data-selected-model-preflight]").forEach((node) => {
+    node.textContent = `${selected.label} · 静态页未连接`;
+  });
+  document.querySelectorAll("[data-selected-model-connection]").forEach((node) => {
+    node.textContent = `${selected.label} · 未连接`;
+  });
+  document.querySelectorAll("[data-selected-model-service]").forEach((node) => {
+    node.textContent = `${selected.provider} · 未连接`;
+  });
+}
 
 function extensionOf(fileName) {
   const index = fileName.lastIndexOf(".");
@@ -326,4 +351,6 @@ taskInput.addEventListener("change", handleTaskFile);
 companyInput.addEventListener("change", handleCompanyFiles);
 clearButton.addEventListener("click", clearFiles);
 document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => changeView(button.dataset.view)));
+modelProviderSelect?.addEventListener("change", () => renderSelectedModel(modelProviderSelect.value));
+renderSelectedModel();
 updateStatus();

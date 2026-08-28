@@ -6,8 +6,8 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#eef6ff">
     <title>零雪 GEO｜批量文章工作台</title>
-    <meta name="description" content="零雪 GEO 批量文章工作台静态文件预览页面。文件只在当前浏览器读取，不上传、不连接 IMA 或 DeepSeek。">
-    <link rel="stylesheet" href="styles.css?v=20260828">
+    <meta name="description" content="零雪 GEO 批量文章工作台静态文件预览页面。可切换 Agnes 或 DeepSeek 展示，文件只在当前浏览器读取，不上传、不连接任何 API。">
+    <link rel="stylesheet" href="styles.css?v=20260828-models">
 </head>
 <body>
     <a class="skip-link" href="#geo-main">跳到工作区</a>
@@ -42,11 +42,11 @@
             <section class="geo-view is-active" data-view-panel="workspace">
                 <div class="geo-heading">
                     <div><span class="geo-heading__eyebrow">START A GEO BATCH</span><h1>启动零雪GEO任务</h1><p>上传任务表与公司介绍文档，先确认页面读取到的内容是否正确。</p></div>
-                    <div class="geo-model-badges" aria-label="API 连接状态"><span class="geo-model-badge"><small>DeepSeek</small><strong>V4 Flash · 未连接</strong></span><span class="geo-model-badge"><small>IMA API</small><strong>未连接</strong></span></div>
+                    <div class="geo-model-badges" aria-label="API 连接状态" aria-live="polite"><span class="geo-model-badge"><small data-selected-model-provider>Agnes</small><strong><span data-selected-model-name>2.5 Flash</span> · 未连接</strong></span><span class="geo-model-badge"><small>IMA API</small><strong>未连接</strong></span></div>
                 </div>
                 <section class="geo-notice" aria-labelledby="static-notice-title">
                     <span class="geo-notice__icon" aria-hidden="true">i</span>
-                    <div><strong id="static-notice-title">这是静态文件预览模式</strong><p>文件只在当前浏览器内存中读取，不会上传；不会运行生成任务，也不会连接 IMA、DeepSeek 或消耗 API 额度。</p></div>
+                    <div><strong id="static-notice-title">这是静态文件预览模式</strong><p>文件只在当前浏览器内存中读取，不会上传；模型切换仅供展示，不会运行生成任务，也不会连接 IMA、Agnes、DeepSeek 或消耗 API 额度。</p></div>
                 </section>
                 <div class="geo-workspace">
                     <section class="geo-upload-card" aria-labelledby="task-upload-title">
@@ -73,7 +73,7 @@
                     <section class="geo-preflight" aria-labelledby="preflight-title">
                         <div class="geo-preflight__title"><span aria-hidden="true">✓</span><div><h2 id="preflight-title">静态前置检查</h2><p>只确认文件是否已被浏览器成功读取。</p></div></div>
                         <div class="geo-preflight__grid">
-                            <div><span>任务表</span><strong id="check-task">等待选择</strong></div><div><span>公司文档</span><strong id="check-company">等待选择</strong></div><div><span>IMA 知识库</span><strong>静态页未连接</strong></div><div><span>DeepSeek</span><strong>静态页未连接</strong></div>
+                            <div><span>任务表</span><strong id="check-task">等待选择</strong></div><div><span>公司文档</span><strong id="check-company">等待选择</strong></div><div><span>IMA 知识库</span><strong>静态页未连接</strong></div><div><span>所选模型</span><strong data-selected-model-preflight>Agnes 2.5 Flash · 静态页未连接</strong></div>
                         </div>
                     </section>
                     <div class="geo-actions"><button class="geo-clear-button" id="clear-files" type="button" disabled>清除所选文件</button><div class="geo-run-area"><span>此页面只读取文件，不执行任务</span><button class="geo-run-button" id="run-task" type="button" disabled>开始生成（未接入）</button></div></div>
@@ -89,18 +89,34 @@
                 <div class="geo-empty-state"><span aria-hidden="true">□</span><h2>暂无已完成文章</h2><p>静态页面不会生成或保存文章。</p></div>
             </section>
             <section class="geo-view" data-view-panel="settings" hidden>
-                <div class="geo-heading"><div><span class="geo-heading__eyebrow">SETTINGS</span><h1>连接设置</h1><p>当前站点故意不配置任何模型或知识库密钥。</p></div></div>
-                <div class="geo-settings-grid"><article><span>IMA OpenAPI</span><strong>未接入</strong><p>不会获取或缓存 IMA 知识库。</p></article><article><span>DeepSeek API</span><strong>未接入</strong><p>不会生成、审核或优化文章。</p></article><article><span>浏览器文件</span><strong>仅内存读取</strong><p>刷新或关闭页面后自动清空。</p></article><article><span>最终域名</span><strong>geo.lxue.xin</strong><p>与本地程序数据完全隔离。</p></article></div>
+                <div class="geo-heading"><div><span class="geo-heading__eyebrow">SETTINGS</span><h1>模型与连接设置</h1><p>可以切换模型展示，但当前站点故意不配置任何模型或知识库密钥。</p></div></div>
+                <div class="geo-settings-grid">
+                    <article class="geo-model-setting">
+                        <label for="model-provider">批次模型</label>
+                        <div class="geo-model-setting__control">
+                            <select id="model-provider" aria-describedby="model-provider-help">
+                                <option value="agnes" selected>Agnes 2.5 Flash</option>
+                                <option value="deepseek">DeepSeek V4 Flash</option>
+                            </select>
+                            <strong data-selected-model-connection aria-live="polite">Agnes 2.5 Flash · 未连接</strong>
+                        </div>
+                        <p id="model-provider-help">仅切换静态展示；刷新后恢复 Agnes，不会调用模型或保存选择。</p>
+                    </article>
+                    <article><span>IMA OpenAPI</span><strong>未接入</strong><p>不会获取或缓存 IMA 知识库。</p></article>
+                    <article><span>模型 API</span><strong>全部未接入</strong><p>Agnes 与 DeepSeek 均不会生成、审核或优化文章。</p></article>
+                    <article><span>浏览器文件</span><strong>仅内存读取</strong><p>刷新或关闭页面后自动清空。</p></article>
+                    <article><span>最终域名</span><strong>geo.lxue.xin</strong><p>与本地程序数据完全隔离。</p></article>
+                </div>
             </section>
         </main>
 
         <aside class="geo-cabin" aria-label="零雪状态舱">
             <div class="geo-cabin__heading"><span>零雪状态舱</span><strong>文件预览已就绪</strong></div>
             <figure class="geo-character"><img src="assets/lxue-geo-founder.png" alt="零雪蓝发雪花精灵形象 IP" width="1024" height="1024"></figure>
-            <dl class="geo-status-list"><div><dt>当前任务</dt><dd id="status-task">暂无</dd></div><div><dt>已选文档</dt><dd id="status-docs">0</dd></div><div><dt>本地读取</dt><dd id="status-read">0 / 0</dd></div><div><dt>API 请求</dt><dd>0 次</dd></div></dl>
-            <div class="geo-service-chips" aria-label="服务连接状态"><span>IMA · 未连接</span><span>DeepSeek · 未连接</span></div>
+            <dl class="geo-status-list"><div><dt>当前任务</dt><dd id="status-task">暂无</dd></div><div><dt>已选文档</dt><dd id="status-docs">0</dd></div><div><dt>本地读取</dt><dd id="status-read">0 / 0</dd></div><div><dt>当前模型</dt><dd data-selected-model-label aria-live="polite">Agnes 2.5 Flash</dd></div><div><dt>API 请求</dt><dd>0 次</dd></div></dl>
+            <div class="geo-service-chips" aria-label="服务连接状态"><span>IMA · 未连接</span><span data-selected-model-service aria-live="polite">Agnes · 未连接</span></div>
         </aside>
     </div>
-    <script src="assets/app.js?v=20260824" defer></script>
+    <script src="assets/app.js?v=20260828-models" defer></script>
 </body>
 </html>
