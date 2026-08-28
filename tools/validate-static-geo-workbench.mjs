@@ -43,8 +43,31 @@ if (failures.length === 0) {
   expect(html.includes('data-view="settings"'), "missing settings view");
   expect(html.includes('id="run-task"') && html.includes("disabled"), "run button must remain disabled");
   expect(html.includes("静态文件预览模式") && html.includes("不会运行生成任务"), "missing static-mode disclosure");
+  expect(html.includes("开启AI智绘创作") && !html.includes("文件预览工作台"), "topbar title must use the approved AI creation wording");
+  expect(html.includes("启动零雪GEO任务") && !html.includes("开始一个 GEO 批次"), "workspace heading must use the approved GEO task wording");
+  expect(html.includes('styles.css?v=20260828'), "workbench stylesheet cache version must be refreshed");
+  expect(html.includes('class="geo-model-badges"'), "heading service badges need a shared wrapper");
+  expect((html.match(/class="geo-model-badge"/g) || []).length === 2, "heading must expose exactly two service badges");
+  expect(/class="geo-model-badge"[^>]*><small>IMA API<\/small><strong>未连接<\/strong>/.test(html), "heading must expose the IMA API disconnected badge");
   expect(html.includes('assets/lxue-geo-founder.png'), "missing Lxue IP image");
+  expect(/\.geo-model-badges\s*\{[^}]*display:\s*flex[^}]*justify-content:\s*flex-end/s.test(css), "desktop heading badges must align as one service group");
   expect(css.includes("@media (max-width: 760px)"), "missing mobile layout");
+  expect(
+    /@media\s*\(max-width:\s*760px\)\s*\{[\s\S]*?\.geo-model-badges\s*\{[^}]*justify-content:\s*flex-start/s.test(css),
+    "mobile service badges must align to the left"
+  );
+  expect(
+    /@media\s*\(max-width:\s*760px\)\s*\{[\s\S]*?\.geo-actions\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)[^}]*justify-items:\s*center[^}]*text-align:\s*center/s.test(css),
+    "mobile workbench actions must be centered"
+  );
+  expect(
+    /@media\s*\(max-width:\s*760px\)\s*\{[\s\S]*?\.geo-run-area\s*\{[^}]*width:\s*min\(100%,\s*280px\)[^}]*justify-items:\s*center/s.test(css),
+    "mobile run controls must use a centered bounded column"
+  );
+  expect(
+    /@media\s*\(max-width:\s*760px\)\s*\{[\s\S]*?\.geo-clear-button,\s*\.geo-run-button\s*\{[^}]*width:\s*min\(100%,\s*240px\)/s.test(css),
+    "mobile action buttons must not stretch across the workspace"
+  );
   expect(css.includes("prefers-reduced-motion"), "missing reduced-motion support");
   expect(
     /@media\s*\(max-width:\s*520px\)\s*\{[\s\S]*?\.geo-steps\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*8px/s.test(css),

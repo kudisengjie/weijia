@@ -56,7 +56,7 @@ for (const file of icpHtmlFiles) {
   const html = fs.readFileSync(file, 'utf8');
   assert(html.includes('class="icp-link"'), `${file} should use the shared ICP interaction class.`);
   const normalizedFile = file.replace(/\\/g, '/');
-  const expectedStyleVersion = unifiedNavPages.has(normalizedFile) ? '20260827' : '20260812';
+  const expectedStyleVersion = unifiedNavPages.has(normalizedFile) ? '20260828' : '20260812';
   assert(
     new RegExp(`(?:\\.\\.\\/)*style\\.css\\?v=${expectedStyleVersion}(?:["'])`).test(html),
     `${file} should load stylesheet version ${expectedStyleVersion}.`

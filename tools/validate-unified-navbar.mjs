@@ -73,7 +73,7 @@ for (const page of pages) {
   const active = expectedActive.get(page);
   expect(active ? activeKeys.length === 1 && activeKeys[0] === active : activeKeys.length === 0, `${page}: incorrect active navigation item`);
 
-  expect(html.includes('style.css?v=20260827'), `${page}: stylesheet cache version was not updated`);
+  expect(html.includes('style.css?v=20260828'), `${page}: stylesheet cache version was not updated`);
   expect(html.includes('i18n.js?v=20260827'), `${page}: i18n cache version was not updated`);
   expect(html.includes('script.js?v=20260827'), `${page}: script cache version was not updated`);
 }
@@ -94,6 +94,26 @@ for (const token of [
 const css = read('style.css');
 expect(css.includes('/* ===== Unified main-site navigation ===== */'), 'style.css: unified navigation block is missing');
 expect(css.includes('.navbar[data-unified-nav] .nav-geo-workbench'), 'style.css: workbench capsule is missing');
+expect(
+  /\.navbar\[data-unified-nav\] \.container\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto minmax\(0,\s*1fr\)/s.test(css),
+  'style.css: desktop navigation must use a centered three-column layout'
+);
+expect(
+  /\.navbar\[data-unified-nav\] \.nav-links\s*\{[^}]*justify-self:\s*center[^}]*margin:\s*0/s.test(css),
+  'style.css: desktop navigation links must stay centered instead of being pushed right'
+);
+expect(
+  /\.navbar\[data-unified-nav\] \.nav-actions\s*\{[^}]*justify-self:\s*end/s.test(css),
+  'style.css: desktop language action must stay in the right column'
+);
+expect(
+  /\.navbar\[data-unified-nav\] \.nav-links a\.nav-geo-workbench\s*\{[^}]*min-height:\s*32px[^}]*padding:\s*5px 10px[^}]*font-size:\s*12px/s.test(css),
+  'style.css: desktop workbench entry must reuse the compact footer-pill proportions'
+);
+expect(
+  /@media\s*\(max-width:\s*1180px\)[\s\S]*?\.navbar\[data-unified-nav\] \.container\s*\{[^}]*display:\s*flex[^}]*justify-content:\s*space-between/s.test(css),
+  'style.css: collapsed navigation must restore the flex container layout'
+);
 expect(/@media\s*\(max-width:\s*1180px\)[\s\S]*?\.navbar\[data-unified-nav\][\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s.test(css), 'style.css: two-column collapsed menu is missing');
 expect(/\.navbar\[data-unified-nav\][\s\S]*?min-height:\s*44px/s.test(css), 'style.css: 44px touch target contract is missing');
 expect(css.includes('.navbar[data-unified-nav] .nav-language-item'), 'style.css: separate mobile language row is missing');
