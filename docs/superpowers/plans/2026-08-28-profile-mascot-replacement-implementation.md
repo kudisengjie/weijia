@@ -6,7 +6,7 @@
 
 **Architecture:** Produce one dedicated transparent image asset from the approved source, reference it from the existing `.ai-platform-robot` element, and keep the established responsive CSS sizing. Verify Alpha transparency, static-site contracts, and rendered desktop/mobile screenshots before pushing `master`.
 
-**Tech Stack:** Static HTML/CSS, PNG Alpha transparency, ImageGen image editing, Node.js validation scripts, Playwright browser verification, Git.
+**Tech Stack:** Static HTML/CSS, PNG Alpha transparency, ImageGen image editing with the user-approved local `rembg` fallback, Node.js validation scripts, Playwright browser verification, Git.
 
 ---
 
@@ -23,7 +23,9 @@
 - Source: `E:\图片\零雪IP\第三期\ChatGPT Image 2026年8月2日 19_19_50 (4).png`
 - Create: `images/lxue-ice-elf-wave-transparent.png`
 
-- [ ] **Step 1: Generate the transparent PNG from the approved source**
+- [x] **Step 1: Generate the transparent PNG from the approved source**
+
+The built-in image edit was attempted first but did not preserve a genuine transparent background and the original subject accurately. After the user explicitly approved a local fallback, `rembg` was used to derive the Alpha mask; the final asset preserves the source RGB exactly and keeps only the single connected character component.
 
 Use the image-editing tool with the source file and this exact instruction:
 
@@ -33,11 +35,11 @@ Remove the entire gray and black background from this exact image and return a P
 
 Save the result exactly as `images/lxue-ice-elf-wave-transparent.png`.
 
-- [ ] **Step 2: Inspect the generated asset visually**
+- [x] **Step 2: Inspect the generated asset visually**
 
 Open the result at original detail. Expected: the same character and pose are intact; the background displays as transparency; no hair, snowflake, ear, sleeve, hand, or finger is clipped.
 
-- [ ] **Step 3: Verify dimensions and Alpha transparency**
+- [x] **Step 3: Verify dimensions and Alpha transparency**
 
 Run:
 
@@ -61,7 +63,7 @@ try {
 
 Expected: `Width=1024`, `Height=1024`, and `CornerAlpha=0,0,0,0`.
 
-- [ ] **Step 4: Commit the isolated asset**
+- [x] **Step 4: Commit the isolated asset**
 
 ```powershell
 git add images/lxue-ice-elf-wave-transparent.png
@@ -76,7 +78,7 @@ git commit -m "assets: add transparent ice elf mascot"
 - Verify only: `style.css:2479-2486`
 - Verify only: `style.css:2510-2518`
 
-- [ ] **Step 1: Record the existing responsive sizing contract**
+- [x] **Step 1: Record the existing responsive sizing contract**
 
 Run:
 
@@ -86,7 +88,7 @@ Select-String -Path style.css -Pattern '\.ai-platform-robot' -Context 0,2
 
 Expected: the desktop rule contains `width: 158px; height: 158px; object-fit: contain`, and the mobile rule contains `width: 96px; height: 96px`.
 
-- [ ] **Step 2: Replace only the image resource and alt text**
+- [x] **Step 2: Replace only the image resource and alt text**
 
 Change the existing element to this exact markup:
 
@@ -96,7 +98,7 @@ Change the existing element to this exact markup:
 
 Do not edit the heading copy, topic cards, navigation, or responsive sizes.
 
-- [ ] **Step 3: Verify the reference and old image isolation**
+- [x] **Step 3: Verify the reference and old image isolation**
 
 Run:
 
@@ -107,7 +109,7 @@ git diff -- profile.html style.css
 
 Expected: `profile.html` references the new image once; the old robot is absent from this page; `style.css` has no change unless visual testing proves one is required.
 
-- [ ] **Step 4: Commit the markup replacement**
+- [x] **Step 4: Commit the markup replacement**
 
 ```powershell
 git add profile.html style.css
