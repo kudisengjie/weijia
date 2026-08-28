@@ -40,7 +40,8 @@ assert.ok(script.includes("'https://geo.lxue.xin/'"), 'script.js should link the
 assert.ok(script.includes('打开零雪 GEO 私有文章工作台'), 'the footer entry should expose an exact accessible label.');
 assert.ok(!exists('crawler-console.html'), 'retired crawler console page must stay removed.');
 assert.ok(!exists('admin/index.html'), 'retired crawler admin must stay removed.');
-assert.ok(profile.includes('images/lxue-ice-elf-wave-transparent.png'), 'profile.html should use the approved transparent ice-elf mascot.');
+assert.ok(profile.includes('src="images/lxue-ice-elf-wave-transparent.png"'), 'profile.html should use the exact approved transparent ice-elf mascot source.');
+assert.ok(!profile.includes('src="images/yirui-robot-wave-cutout.png"'), 'profile.html should not use the retired Yirui robot mascot source.');
 
 for (const slug of articleSlugs) {
   const sourceFile = `articles/${slug}.html`;

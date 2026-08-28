@@ -95,13 +95,24 @@ assert(!profile.includes('· 重点'), 'brand detail platform tags should not di
 for (const [src, name] of platformLogos) {
   assert(new RegExp(`<a[^>]+class="ai-platform-card"[^>]*>[\\s\\S]*?<img[^>]+src="${src}"[^>]+alt="[^"]*${name}[^"]*"`).test(profile), `brand detail card should use the ${name} logo.`);
 }
-assert(profile.includes('src="images/lxue-ice-elf-wave-transparent.png"'), 'brand detail page should use the approved transparent ice-elf mascot.');
+const approvedMascotTag = '<img class="ai-platform-robot" src="images/lxue-ice-elf-wave-transparent.png" width="1024" height="1024" loading="lazy" decoding="async" alt="零雪冰雪精灵介绍六大AI平台适配专题">';
+assert(profile.includes(approvedMascotTag), 'brand detail page should use the complete approved transparent ice-elf mascot markup.');
+assert.equal((profile.match(/class="ai-platform-robot"/g) || []).length, 1, 'brand detail page should include exactly one AI platform mascot.');
+assert(!profile.includes('images/yirui-robot-wave-cutout.png'), 'brand detail page should not reference the retired Yirui robot mascot.');
 assert(exists('images/lxue-ice-elf-wave-transparent.png'), 'the approved transparent ice-elf mascot asset should exist.');
 if (exists('images/lxue-ice-elf-wave-transparent.png')) {
   const png = fs.readFileSync(path.join(root, 'images/lxue-ice-elf-wave-transparent.png'));
   assert.equal(png.toString('ascii', 1, 4), 'PNG', 'approved transparent ice-elf mascot should be a valid PNG.');
   assert([4, 6].includes(png[25]), 'approved transparent ice-elf mascot PNG should include an alpha channel.');
+  assert.equal(png.readUInt32BE(16), 1024, 'approved transparent ice-elf mascot PNG should be 1024px wide.');
+  assert.equal(png.readUInt32BE(20), 1024, 'approved transparent ice-elf mascot PNG should be 1024px tall.');
 }
+const mascotDesktopCss = css.match(/\.ai-platform-heading p\s*\{[^}]*\}\s*\.ai-platform-robot\s*\{([^}]*)\}\s*\.ai-platform-card-grid/s)?.[1] || '';
+assert(/width:\s*158px/.test(mascotDesktopCss) && /height:\s*158px/.test(mascotDesktopCss) && /object-fit:\s*contain/.test(mascotDesktopCss), 'desktop AI platform mascot should render at 158px by 158px with object-fit contain.');
+const mascotMobileCss = css.match(/@media\s*\(max-width:\s*768px\)\s*\{\s*\.ai-platform-topics\s*\{[^}]*\}\s*\.ai-platform-heading\s*\{[^}]*\}\s*\.ai-platform-robot\s*\{([^}]*)\}/s)?.[1] || '';
+assert(/width:\s*96px/.test(mascotMobileCss) && /height:\s*96px/.test(mascotMobileCss), 'mobile AI platform mascot should render at 96px by 96px within the 768px breakpoint.');
+const mascotRuleBodies = [...css.matchAll(/\.ai-platform-robot\s*\{([^}]*)\}/g)].map((match) => match[1]);
+assert(!mascotRuleBodies.some((rule) => /(?:width|height):\s*118px/.test(rule)), 'AI platform mascot CSS should not retain the retired 118px size override.');
 
 const blog = read('blog/index.html');
 assert(!blog.includes("'<h3") && !blog.includes("</h3>'"), 'blog recent heading should not render stray quote characters.');
