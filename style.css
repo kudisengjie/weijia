@@ -4256,7 +4256,7 @@ body {
     .answer-center-nav { grid-template-columns: 1fr; }
     .answer-center-nav a { min-height: 0; }
     .ai-platform-card-grid { grid-template-columns: 1fr; }
-    .ai-platform-robot { width: 118px; height: 118px; justify-self: end; }
+    .ai-platform-robot { justify-self: end; }
 }
 /* End AI answer center */
 
