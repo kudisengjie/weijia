@@ -95,12 +95,12 @@ assert(!profile.includes('· 重点'), 'brand detail platform tags should not di
 for (const [src, name] of platformLogos) {
   assert(new RegExp(`<a[^>]+class="ai-platform-card"[^>]*>[\\s\\S]*?<img[^>]+src="${src}"[^>]+alt="[^"]*${name}[^"]*"`).test(profile), `brand detail card should use the ${name} logo.`);
 }
-assert(profile.includes('src="images/yirui-robot-wave-cutout.png"'), 'brand detail page should use the approved cut-out Yirui robot.');
-assert(exists('images/yirui-robot-wave-cutout.png'), 'the cut-out Yirui robot asset should exist.');
-if (exists('images/yirui-robot-wave-cutout.png')) {
-  const png = fs.readFileSync(path.join(root, 'images/yirui-robot-wave-cutout.png'));
-  assert.equal(png.toString('ascii', 1, 4), 'PNG', 'cut-out robot should be a valid PNG.');
-  assert([4, 6].includes(png[25]), 'cut-out robot PNG should include an alpha channel.');
+assert(profile.includes('src="images/lxue-ice-elf-wave-transparent.png"'), 'brand detail page should use the approved transparent ice-elf mascot.');
+assert(exists('images/lxue-ice-elf-wave-transparent.png'), 'the approved transparent ice-elf mascot asset should exist.');
+if (exists('images/lxue-ice-elf-wave-transparent.png')) {
+  const png = fs.readFileSync(path.join(root, 'images/lxue-ice-elf-wave-transparent.png'));
+  assert.equal(png.toString('ascii', 1, 4), 'PNG', 'approved transparent ice-elf mascot should be a valid PNG.');
+  assert([4, 6].includes(png[25]), 'approved transparent ice-elf mascot PNG should include an alpha channel.');
 }
 
 const blog = read('blog/index.html');
