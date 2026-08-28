@@ -6,7 +6,7 @@
 
 **Architecture:** Produce one dedicated transparent image asset from the approved source, reference it from the existing `.ai-platform-robot` element, and keep the established responsive CSS sizing. Verify Alpha transparency, static-site contracts, and rendered desktop/mobile screenshots before pushing `master`.
 
-**Tech Stack:** Static HTML/CSS, PNG Alpha transparency, ImageGen image editing with the user-approved local `rembg` fallback, Node.js validation scripts, Playwright browser verification, Git.
+**Tech Stack:** Static HTML/CSS, PNG Alpha transparency, ImageGen image editing with the user-approved local `rembg` fallback, Node.js validation scripts, Playwright CLI with a local Chrome CDP fallback, Git.
 
 ---
 
@@ -125,8 +125,10 @@ If `style.css` is unchanged, stage only `profile.html`.
 - Verify: `profile.html`
 - Verify: `style.css`
 - Verify: `images/lxue-ice-elf-wave-transparent.png`
+- Modify: `tools/validate-requested-fixes.mjs` — update the approved profile mascot regression contract.
+- Modify: `tools/validate-ai-platform-admin.mjs` — update the focused profile mascot assertion.
 
-- [ ] **Step 1: Run static-site validation scripts**
+- [x] **Step 1: Run static-site validation scripts**
 
 Run:
 
@@ -135,13 +137,16 @@ node tools/validate-site-content-consistency.mjs
 node tools/validate-requested-fixes.mjs
 node tools/validate-static-layout-restore.mjs
 node tools/validate-unified-navbar.mjs
+node tools/validate-ai-platform-admin.mjs
 ```
 
 Expected: every command exits with code `0`.
 
-- [ ] **Step 2: Render the page at desktop width**
+- [x] **Step 2: Render the page at desktop width**
 
 Serve the repository on `127.0.0.1:4173`, open `/profile.html#ai-platform-topics`, and capture a screenshot at `1920×1080`.
+
+The Playwright CLI package lookup stalled in the local environment, so the same page was rendered in the installed Chrome browser through the Chrome DevTools Protocol. Computed layout metrics and a PNG screenshot were captured from the live page.
 
 Expected:
 
@@ -149,13 +154,13 @@ Expected:
 - the background behind the character is the page's existing light grid, not a gray/black square;
 - the character remains within `158×158px` and does not overlap the heading text or cards.
 
-- [ ] **Step 3: Render the page at mobile width**
+- [x] **Step 3: Render the page at mobile width**
 
 Resize to `390×844`, reload `/profile.html#ai-platform-topics`, and capture a screenshot.
 
 Expected: the character remains complete inside `96×96px`, the one-column heading flow remains intact, and no horizontal overflow appears.
 
-- [ ] **Step 4: Check exact Git scope and file integrity**
+- [x] **Step 4: Check exact Git scope and file integrity**
 
 Run:
 
@@ -165,7 +170,7 @@ git status --short
 git log -3 --oneline
 ```
 
-Expected: no whitespace errors; existing untracked user files remain unmodified; commits contain only the specification/plan, new image, and profile reference required by this task.
+Expected: no whitespace errors; existing untracked user files remain unmodified; commits contain only the specification/plan, new image, profile reference, responsive mascot sizing correction, and validator contract updates required by this task.
 
 - [ ] **Step 5: Push the requested branch**
 
