@@ -16,7 +16,7 @@ const parseQuotedAttributes = (tag) => Object.fromEntries(
 
 const sourceLine = (source, position) => source.slice(0, position).split('\n').length;
 
-function collectMascotCssRules(source) {
+function collectCssRules(source) {
   const masked = source.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\r\n]/g, ' '));
   const stack = [];
   const rules = [];
@@ -49,18 +49,13 @@ function collectMascotCssRules(source) {
 
     const context = stack.pop();
     assert(context, `style.css:${sourceLine(source, position)} should not contain an unmatched closing brace.`);
-    if (/\.ai-platform-robot(?![\w-])/.test(context.header)) {
-      const selectors = context.header.split(',').map((selector) => selector.trim());
-      const mascotSelectors = selectors.filter((selector) => /\.ai-platform-robot(?![\w-])/.test(selector));
-      for (const selector of mascotSelectors) {
-        assert.equal(selector, '.ai-platform-robot', `style.css:${sourceLine(source, context.position)} contains an unsupported higher-specificity AI platform mascot selector.`);
-      }
-      const unsupportedAncestors = stack.filter((ancestor) => !/^@media\b/i.test(ancestor.header));
-      assert.equal(unsupportedAncestors.length, 0, `style.css:${sourceLine(source, context.position)} places the AI platform mascot in an unsupported conditional rule.`);
+    if (!context.header.startsWith('@')) {
       rules.push({
         body: masked.slice(context.contentStart, position),
         media: stack.filter((ancestor) => /^@media\b/i.test(ancestor.header)).map((ancestor) => ancestor.header),
-        position: context.position
+        position: context.position,
+        selectors: context.header.split(',').map((selector) => selector.trim()),
+        unsupportedAncestors: stack.filter((ancestor) => !/^@media\b/i.test(ancestor.header))
       });
     }
     statementStart = position + 1;
@@ -68,6 +63,34 @@ function collectMascotCssRules(source) {
 
   assert.equal(stack.length, 0, 'style.css should not contain unmatched opening braces.');
   return rules.sort((left, right) => left.position - right.position);
+}
+
+const knownMascotAncestors = [
+  'html',
+  'body',
+  '.premium-page',
+  '.page-profile',
+  '.section',
+  '.profile-section',
+  '.container',
+  '#ai-platform-topics',
+  '.ai-platform-topics',
+  '.ai-platform-heading'
+];
+
+const compoundHasKnownMascotAncestor = (compound) => knownMascotAncestors.some((token) => {
+  if (token === 'html' || token === 'body') return new RegExp(`^${token}(?=$|[.#[:])`, 'i').test(compound);
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`${escaped}(?![\\w-])`).test(compound);
+});
+
+function selectorTargetsKnownMascot(selector) {
+  if (/\.ai-platform-robot(?![\w-])/.test(selector)) return true;
+  if (/\[[^\]]*ai-platform-robot[^\]]*\]/i.test(selector)) return true;
+  const compounds = selector.trim().split(/\s+|[>+~]/).filter(Boolean);
+  const target = compounds.at(-1);
+  if (compounds.length === 1 && /^(?:img|\*)$/i.test(target)) return true;
+  return /^(?:img|\*)$/i.test(target) && compounds.slice(0, -1).some(compoundHasKnownMascotAncestor);
 }
 
 function mediaApplies(query, viewport, position) {
@@ -195,18 +218,38 @@ assert.equal(mascotImage.height, '1024', 'brand detail mascot should declare its
 assert.equal(mascotImage.loading, 'lazy', 'brand detail mascot should load lazily.');
 assert.equal(mascotImage.decoding, 'async', 'brand detail mascot should decode asynchronously.');
 assert.equal(mascotImage.alt, '零雪冰雪精灵介绍六大AI平台适配专题', 'brand detail mascot should expose the approved Chinese alternative text.');
+assert.equal(mascotImage.style, undefined, 'brand detail mascot should not use inline sizing styles.');
 assert(!profile.includes('images/yirui-robot-wave-cutout.png'), 'brand detail page should not reference the retired Yirui robot mascot.');
 assert(exists('images/lxue-ice-elf-wave-transparent.png'), 'the approved transparent ice-elf mascot asset should exist.');
 if (exists('images/lxue-ice-elf-wave-transparent.png')) {
   const png = fs.readFileSync(path.join(root, 'images/lxue-ice-elf-wave-transparent.png'));
-  assert(png.length >= 26, 'approved transparent ice-elf mascot PNG should include a complete IHDR header.');
+  assert(png.length >= 33, 'approved transparent ice-elf mascot PNG should include a complete IHDR chunk.');
   assert(png.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')), 'approved transparent ice-elf mascot should use the complete PNG signature.');
+  assert.equal(png.readUInt32BE(8), 13, 'approved transparent ice-elf mascot should use a 13-byte IHDR chunk.');
   assert.equal(png.toString('ascii', 12, 16), 'IHDR', 'approved transparent ice-elf mascot should begin with an IHDR chunk.');
   assert.equal(png.readUInt32BE(16), 1024, 'approved transparent ice-elf mascot PNG should be 1024px wide.');
   assert.equal(png.readUInt32BE(20), 1024, 'approved transparent ice-elf mascot PNG should be 1024px tall.');
   assert([4, 6].includes(png[25]), 'approved transparent ice-elf mascot PNG should include an alpha color type.');
 }
-const mascotCssRules = collectMascotCssRules(css);
+const cssRules = collectCssRules(css);
+const mascotCssRules = [];
+for (const rule of cssRules) {
+  const declarations = mascotDeclarations(rule);
+  for (const selector of rule.selectors) {
+    if (/\.ai-platform-robot(?![\w-])/.test(selector)) {
+      assert.equal(selector, '.ai-platform-robot', `style.css:${sourceLine(css, rule.position)} contains an unsupported higher-specificity AI platform mascot selector.`);
+      assert.equal(rule.unsupportedAncestors.length, 0, `style.css:${sourceLine(css, rule.position)} places the AI platform mascot in an unsupported conditional rule.`);
+      mascotCssRules.push(rule);
+      continue;
+    }
+    if (selectorTargetsKnownMascot(selector) && declarations.length > 0) {
+      assert.fail(`style.css:${sourceLine(css, rule.position)} selector "${selector}" sets mascot dimensions through a known profile DOM path; only exact .ai-platform-robot rules are modeled.`);
+    }
+  }
+  if (rule.selectors.some(selectorTargetsKnownMascot)) {
+    assert(!declarations.some(({ important }) => important), `style.css:${sourceLine(css, rule.position)} should not use !important for known mascot dimension rules.`);
+  }
+}
 assert(mascotCssRules.length > 0, 'style.css should define the AI platform mascot.');
 for (const rule of mascotCssRules) {
   assert(!mascotDeclarations(rule).some(({ property, value }) => (property === 'width' || property === 'height') && value === '118px'), `style.css:${sourceLine(css, rule.position)} should not retain the retired 118px mascot size.`);
