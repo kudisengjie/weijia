@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 把官网静态 GEO 页升级为八厂商、Flash / Pro 双档模型目录，默认 DeepSeek Flash，并保持完全无 API、不可运行。
+**Goal:** 把官网静态 GEO 页升级为八张厂商分类卡，每张卡内直接选择该厂商自己的两个模型，默认 DeepSeek Flash，并保持完全无 API、不可运行。
 
-**Architecture:** `src/model-switch.js` 提供不可变模型目录和纯函数选择接口；`index.html` 使用原生 radio 构成 Logo 卡片与模式分段开关；`src/app.js` 只同步当前选择到既有状态节点。所有厂商素材复制到本地 `assets/model-logos/`，不增加网络依赖。
+**Architecture:** `src/model-switch.js` 继续提供不可变模型目录和纯函数选择接口；`index.html` 使用一个跨厂商的 `model-option` 原生 radio 组，在每张 Logo 厂商卡内放置两个具体模型；`src/app.js` 从选项的厂商与档位数据同步当前选择到既有状态节点。不增加网络依赖。
 
 **Tech Stack:** HTML、CSS、原生 JavaScript、Node.js 内置测试运行器、esbuild
 
@@ -32,7 +32,7 @@ assert.equal(getModelPresentation("qwen", "pro").modelId, "qwen3.8-max");
 assert.equal(getModelPresentation("unknown", "unknown").id, "deepseek");
 ```
 
-静态契约继续断言 `#run-task` 禁用、源码没有网络传输 API，并新增八个 `name="model-provider"`、两个 `name="model-tier"`、无 Agnes 文案和八个本地 Logo 文件的断言。
+静态契约继续断言 `#run-task` 禁用、源码没有网络传输 API，并断言八张厂商卡、16 个 `name="model-option"`、每家两个映射、无独立 `model-tier` 控件、无 Agnes 文案和八个本地 Logo 文件。
 
 - [ ] **Step 2: 运行测试确认 RED**
 
@@ -66,7 +66,7 @@ export function getModelPresentation(provider, tier) { /* 返回规范化扁平�
 
 HTML 契约仍会失败；完成 Task 3 后统一运行 GREEN。
 
-### Task 3: 接入 Logo 卡片、模式开关和同步状态
+### Task 3: 接入厂商分类卡、卡内模型选项和同步状态
 
 **Files:**
 - Modify: `geo-site/index.html`
@@ -85,17 +85,17 @@ HTML 契约仍会失败；完成 Task 3 后统一运行 GREEN。
 
 从用户提供的 `E:\美迪电商\媒体和AI平台LOGO\` 素材复制到 `geo-site/assets/model-logos/`，统一使用 ASCII 文件名；不修改源文件。
 
-- [ ] **Step 2: 用原生 radio 替换下拉框**
+- [ ] **Step 2: 在厂商卡内放置模型 radio**
 
-设置页加入 `name="model-provider"` 的八张 Logo 卡和 `name="model-tier"` 的 Flash / Pro 两段式控件。DeepSeek 与 Flash 带 `checked`。增加 `data-selected-model-id` 节点展示真实映射。
+设置页加入八张 Logo 厂商卡，每张卡包含两个 `name="model-option"` radio，并分别携带 `data-provider` 与 `data-tier`。DeepSeek Flash 带 `checked`。保留 `data-selected-model-id` 节点展示真实映射。
 
 - [ ] **Step 3: 同步二维选择**
 
-`src/app.js` 导入 `DEFAULT_MODEL_TIER`，为厂商与档位 radio 注册 `change`；`renderSelectedModel(provider, tier)` 同步 checked 状态以及既有 `data-selected-model-*` 节点。不得加入持久化或请求。
+`src/app.js` 为 16 个模型 radio 注册 `change`；`renderSelectedModel(provider, tier)` 同步唯一 checked 状态以及既有 `data-selected-model-*` 节点。不得加入持久化或请求。
 
 - [ ] **Step 4: 完成桌面与移动样式**
 
-桌面四列、760px 以下两列；radio 保持屏幕阅读器可读，卡片具备 `:checked`、`:hover` 和 `:focus-visible` 状态。Logo 使用固定容器和 `object-fit: contain`，不得拉伸。
+桌面四列、平板两列、520px 以下单列；radio 保持屏幕阅读器可读，厂商卡和模型按钮具备 `:checked`、`:hover` 和 `:focus-visible` 状态。Logo 使用固定容器和 `object-fit: contain`，不得拉伸。
 
 ### Task 4: GREEN、构建和一次浏览器验证
 
@@ -147,4 +147,3 @@ git commit -m "feat: expand static GEO model catalog"
 Run: `git push origin HEAD:master`
 
 Expected: remote `master` advances to this commit without包含任何主工作区未跟踪文件。
-
