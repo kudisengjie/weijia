@@ -125,3 +125,25 @@ test("static preview keeps generation disabled and has no model transport", () =
     /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\b/,
   );
 });
+
+test("model choice dots and names stay on the same horizontal row", () => {
+  const styles = fs.readFileSync(path.join(root, "styles.css"), "utf8");
+  assert.doesNotMatch(
+    styles,
+    /\.geo-settings-grid article span, \.geo-settings-grid article strong/,
+    "generic settings-card styles must not override nested model controls",
+  );
+  assert.match(
+    styles,
+    /\.geo-settings-grid > article > span, \.geo-settings-grid > article > strong/,
+  );
+  assert.match(
+    styles,
+    /\.geo-model-option > span\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;/s,
+  );
+  assert.match(
+    styles,
+    /\.geo-model-setting__intro > span, \.geo-model-setting__intro > strong\s*\{\s*display:\s*block;/,
+    "the settings heading should keep its established stacked hierarchy",
+  );
+});
