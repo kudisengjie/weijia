@@ -4,7 +4,7 @@ import { strFromU8, unzipSync } from "fflate";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import {
   DEFAULT_MODEL_PROVIDER,
-  DEFAULT_MODEL_TIER,
+  DEFAULT_MODEL_SLOT,
   getModelPresentation,
 } from "./model-switch.js";
 
@@ -35,12 +35,12 @@ let currentTask = null;
 let currentCompanies = [];
 function renderSelectedModel(
   provider = DEFAULT_MODEL_PROVIDER,
-  tier = DEFAULT_MODEL_TIER,
+  slot = DEFAULT_MODEL_SLOT,
 ) {
-  const selected = getModelPresentation(provider, tier);
+  const selected = getModelPresentation(provider, slot);
   modelOptionInputs.forEach((input) => {
     input.checked = input.dataset.provider === selected.id
-      && input.dataset.tier === selected.tier;
+      && input.dataset.slot === selected.slot;
   });
   document.querySelectorAll("[data-selected-model-provider]").forEach((node) => {
     node.textContent = selected.provider;
@@ -364,7 +364,7 @@ companyInput.addEventListener("change", handleCompanyFiles);
 clearButton.addEventListener("click", clearFiles);
 document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => changeView(button.dataset.view)));
 modelOptionInputs.forEach((input) => input.addEventListener("change", () => {
-  if (input.checked) renderSelectedModel(input.dataset.provider, input.dataset.tier);
+  if (input.checked) renderSelectedModel(input.dataset.provider, input.dataset.slot);
 }));
 renderSelectedModel();
 updateStatus();

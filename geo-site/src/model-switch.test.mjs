@@ -22,41 +22,66 @@ const expectedProviderIds = [
   "mimo",
 ];
 
-const expectedModelIds = {
-  hunyuan: { flash: "hy3 · no_think", pro: "hy3 · think_high" },
-  qwen: { flash: "qwen3.8-flash", pro: "qwen3.8-max" },
-  doubao: { flash: "Doubao-Seed-2.1-Turbo", pro: "Doubao-Seed-2.1-Pro" },
-  deepseek: { flash: "deepseek-v4-flash", pro: "deepseek-v4-pro" },
-  minimax: { flash: "MiniMax-M3 · thinking disabled", pro: "MiniMax-M3 · thinking enabled" },
-  zhipu: { flash: "glm-5.2 · reasoning low", pro: "glm-5.2 · reasoning max" },
-  kimi: { flash: "kimi-k3 · reasoning low", pro: "kimi-k3 · reasoning max" },
-  mimo: { flash: "mimo-v2-flash", pro: "mimo-v2.5-pro" },
+const expectedModels = {
+  hunyuan: {
+    primary: { model: "Hy3", modelId: "hy3" },
+    secondary: { model: "Hy4 Preview", modelId: "hy4-preview" },
+  },
+  qwen: {
+    primary: { model: "Qwen3.8 Flash", modelId: "qwen3.8-flash" },
+    secondary: { model: "Qwen3.8 Max", modelId: "qwen3.8-max" },
+  },
+  doubao: {
+    primary: { model: "Seed 2.0 Lite", modelId: "doubao-seed-2-0-lite-260215" },
+    secondary: { model: "Seed 2.0 Pro", modelId: "doubao-seed-2-0-pro-260215" },
+  },
+  deepseek: {
+    primary: { model: "V4 Flash", modelId: "deepseek-v4-flash" },
+    secondary: { model: "V4 Pro", modelId: "deepseek-v4-pro" },
+  },
+  minimax: {
+    primary: { model: "M2.7", modelId: "MiniMax-M2.7" },
+    secondary: { model: "M3", modelId: "MiniMax-M3" },
+  },
+  zhipu: {
+    primary: { model: "GLM-5.3 Flash", modelId: "glm-5.3-flash" },
+    secondary: { model: "GLM-5.3", modelId: "glm-5.3" },
+  },
+  kimi: {
+    primary: { model: "K2.7 Code", modelId: "kimi-k2.7-code" },
+    secondary: { model: "K3", modelId: "kimi-k3" },
+  },
+  mimo: {
+    primary: { model: "MiMo V2.5", modelId: "mimo-v2.5" },
+    secondary: { model: "MiMo V2.5 Pro", modelId: "mimo-v2.5-pro" },
+  },
 };
 
 test("DeepSeek Flash is the default static model", () => {
   assert.equal(modelSwitch.DEFAULT_MODEL_PROVIDER, "deepseek");
-  assert.equal(modelSwitch.DEFAULT_MODEL_TIER, "flash");
+  assert.equal(modelSwitch.DEFAULT_MODEL_SLOT, "primary");
   assert.equal(modelSwitch.getModelPresentation?.().label, "DeepSeek V4 Flash");
 });
 
-test("catalog exposes exactly eight providers with Flash and Pro presentations", () => {
+test("catalog exposes exactly eight providers with their two reference models", () => {
   assert.deepEqual(modelSwitch.MODEL_PROVIDER_IDS, expectedProviderIds);
 
   for (const providerId of expectedProviderIds) {
-    for (const tier of ["flash", "pro"]) {
-      const presentation = modelSwitch.getModelPresentation?.(providerId, tier);
+    for (const slot of ["primary", "secondary"]) {
+      const presentation = modelSwitch.getModelPresentation?.(providerId, slot);
       assert.equal(presentation?.id, providerId);
-      assert.equal(presentation?.tier, tier);
-      assert.equal(presentation?.modelId, expectedModelIds[providerId][tier]);
+      assert.equal(presentation?.slot, slot);
+      assert.equal(presentation?.model, expectedModels[providerId][slot].model);
+      assert.equal(presentation?.modelId, expectedModels[providerId][slot].modelId);
       assert.match(presentation?.logo ?? "", /^assets\/model-logos\/[a-z-]+\.png$/);
     }
   }
 });
 
-test("unknown provider and tier fall back independently to DeepSeek Flash", () => {
+test("unknown provider and slot fall back independently to DeepSeek V4 Flash", () => {
   assert.deepEqual(
     modelSwitch.getModelPresentation?.("unknown", "unknown"),
-    modelSwitch.getModelPresentation?.("deepseek", "flash"),
+    modelSwitch.getModelPresentation?.("deepseek", "primary"),
   );
 });
 
@@ -67,7 +92,7 @@ test("static settings group two model choices inside each of eight provider card
   assert.doesNotMatch(html, /name="model-provider"|name="model-tier"/);
   assert.match(
     html,
-    /name="model-option"[^>]*data-provider="deepseek"[^>]*data-tier="flash"[^>]*checked/,
+    /name="model-option"[^>]*data-provider="deepseek"[^>]*data-slot="primary"[^>]*checked/,
   );
   for (const providerId of expectedProviderIds) {
     assert.equal(
@@ -76,6 +101,11 @@ test("static settings group two model choices inside each of eight provider card
       `${providerId} should expose two model choices`,
     );
   }
+  for (const { primary, secondary } of Object.values(expectedModels)) {
+    assert.ok(html.includes(`<strong>${primary.model}</strong>`));
+    assert.ok(html.includes(`<strong>${secondary.model}</strong>`));
+  }
+  assert.doesNotMatch(html, /极速|深度|<small>Flash<\/small>|<small>Pro<\/small>/);
   assert.doesNotMatch(html, /Agnes/i);
 });
 
