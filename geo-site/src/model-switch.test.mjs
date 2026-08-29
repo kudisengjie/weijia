@@ -60,12 +60,22 @@ test("unknown provider and tier fall back independently to DeepSeek Flash", () =
   );
 });
 
-test("static settings contain eight providers, two tiers, and no Agnes", () => {
+test("static settings group two model choices inside each of eight provider cards", () => {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
-  assert.equal(html.match(/name="model-provider"/g)?.length, 8);
-  assert.equal(html.match(/name="model-tier"/g)?.length, 2);
-  assert.match(html, /name="model-provider"[^>]*value="deepseek"[^>]*checked/);
-  assert.match(html, /name="model-tier"[^>]*value="flash"[^>]*checked/);
+  assert.equal(html.match(/class="geo-provider-card"/g)?.length, 8);
+  assert.equal(html.match(/name="model-option"/g)?.length, 16);
+  assert.doesNotMatch(html, /name="model-provider"|name="model-tier"/);
+  assert.match(
+    html,
+    /name="model-option"[^>]*data-provider="deepseek"[^>]*data-tier="flash"[^>]*checked/,
+  );
+  for (const providerId of expectedProviderIds) {
+    assert.equal(
+      html.match(new RegExp(`data-provider="${providerId}"`, "g"))?.length,
+      2,
+      `${providerId} should expose two model choices`,
+    );
+  }
   assert.doesNotMatch(html, /Agnes/i);
 });
 

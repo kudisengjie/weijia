@@ -29,26 +29,18 @@ const checkCompany = document.getElementById("check-company");
 const statusTask = document.getElementById("status-task");
 const statusDocs = document.getElementById("status-docs");
 const statusRead = document.getElementById("status-read");
-const modelProviderInputs = document.querySelectorAll('input[name="model-provider"]');
-const modelTierInputs = document.querySelectorAll('input[name="model-tier"]');
+const modelOptionInputs = document.querySelectorAll('input[name="model-option"]');
 
 let currentTask = null;
 let currentCompanies = [];
-let currentModelProvider = DEFAULT_MODEL_PROVIDER;
-let currentModelTier = DEFAULT_MODEL_TIER;
-
 function renderSelectedModel(
   provider = DEFAULT_MODEL_PROVIDER,
   tier = DEFAULT_MODEL_TIER,
 ) {
   const selected = getModelPresentation(provider, tier);
-  currentModelProvider = selected.id;
-  currentModelTier = selected.tier;
-  modelProviderInputs.forEach((input) => {
-    input.checked = input.value === selected.id;
-  });
-  modelTierInputs.forEach((input) => {
-    input.checked = input.value === selected.tier;
+  modelOptionInputs.forEach((input) => {
+    input.checked = input.dataset.provider === selected.id
+      && input.dataset.tier === selected.tier;
   });
   document.querySelectorAll("[data-selected-model-provider]").forEach((node) => {
     node.textContent = selected.provider;
@@ -371,11 +363,8 @@ taskInput.addEventListener("change", handleTaskFile);
 companyInput.addEventListener("change", handleCompanyFiles);
 clearButton.addEventListener("click", clearFiles);
 document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => changeView(button.dataset.view)));
-modelProviderInputs.forEach((input) => input.addEventListener("change", () => {
-  if (input.checked) renderSelectedModel(input.value, currentModelTier);
-}));
-modelTierInputs.forEach((input) => input.addEventListener("change", () => {
-  if (input.checked) renderSelectedModel(currentModelProvider, input.value);
+modelOptionInputs.forEach((input) => input.addEventListener("change", () => {
+  if (input.checked) renderSelectedModel(input.dataset.provider, input.dataset.tier);
 }));
 renderSelectedModel();
 updateStatus();

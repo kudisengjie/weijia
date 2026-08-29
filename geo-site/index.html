@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#eef6ff">
     <title>零雪 GEO｜批量文章工作台</title>
     <meta name="description" content="零雪 GEO 批量文章工作台静态文件预览页面。可切换八家主流模型的 Flash 与 Pro 展示，文件只在当前浏览器读取，不上传、不连接任何 API。">
-    <link rel="stylesheet" href="styles.css?v=20260829-model-catalog">
+    <link rel="stylesheet" href="styles.css?v=20260829-provider-models">
 </head>
 <body>
     <a class="skip-link" href="#geo-main">跳到工作区</a>
@@ -92,28 +92,45 @@
                 <div class="geo-heading"><div><span class="geo-heading__eyebrow">SETTINGS</span><h1>模型与连接设置</h1><p>可以切换模型展示，但当前站点故意不配置任何模型或知识库密钥。</p></div></div>
                 <div class="geo-settings-grid">
                     <article class="geo-model-setting">
-                        <div class="geo-model-setting__intro"><span>批次模型</span><strong>选择厂商与运行模式</strong><p id="model-provider-help">仅切换静态展示；刷新后恢复 DeepSeek Flash，不会调用模型或保存选择。</p></div>
-                        <fieldset class="geo-model-picker" aria-describedby="model-provider-help">
-                            <legend>选择模型厂商</legend>
-                            <div class="geo-model-picker__grid">
-                                <label class="geo-model-choice"><input type="radio" name="model-provider" value="hunyuan"><span class="geo-model-choice__surface"><span class="geo-model-choice__logo"><img src="assets/model-logos/hunyuan.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-model-choice__copy"><strong>腾讯混元</strong><small>Hy3</small></span><span class="geo-model-choice__mark" aria-hidden="true">✓</span></span></label>
-                                <label class="geo-model-choice"><input type="radio" name="model-provider" value="qwen"><span class="geo-model-choice__surface"><span class="geo-model-choice__logo"><img src="assets/model-logos/qwen.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-model-choice__copy"><strong>通义千问</strong><small>Qwen3.8</small></span><span class="geo-model-choice__mark" aria-hidden="true">✓</span></span></label>
-                                <label class="geo-model-choice"><input type="radio" name="model-provider" value="doubao"><span class="geo-model-choice__surface"><span class="geo-model-choice__logo"><img src="assets/model-logos/doubao.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-model-choice__copy"><strong>豆包</strong><small>Seed 2.1</small></span><span class="geo-model-choice__mark" aria-hidden="true">✓</span></span></label>
-                                <label class="geo-model-choice"><input type="radio" name="model-provider" value="deepseek" checked><span class="geo-model-choice__surface"><span class="geo-model-choice__logo"><img src="assets/model-logos/deepseek.png" alt="" width="256" height="192" loading="lazy"></span><span class="geo-model-choice__copy"><strong>DeepSeek</strong><small>V4</small></span><span class="geo-model-choice__mark" aria-hidden="true">✓</span></span></label>
-                                <label class="geo-model-choice"><input type="radio" name="model-provider" value="minimax"><span class="geo-model-choice__surface"><span class="geo-model-choice__logo"><img src="assets/model-logos/minimax.png" alt="" width="230" height="200" loading="lazy"></span><span class="geo-model-choice__copy"><strong>MiniMax</strong><small>M3</small></span><span class="geo-model-choice__mark" aria-hidden="true">✓</span></span></label>
-                                <label class="geo-model-choice"><input type="radio" name="model-provider" value="zhipu"><span class="geo-model-choice__surface"><span class="geo-model-choice__logo"><img src="assets/model-logos/zhipu.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-model-choice__copy"><strong>智谱 GLM</strong><small>GLM-5.2</small></span><span class="geo-model-choice__mark" aria-hidden="true">✓</span></span></label>
-                                <label class="geo-model-choice"><input type="radio" name="model-provider" value="kimi"><span class="geo-model-choice__surface"><span class="geo-model-choice__logo"><img src="assets/model-logos/kimi.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-model-choice__copy"><strong>Kimi</strong><small>K3</small></span><span class="geo-model-choice__mark" aria-hidden="true">✓</span></span></label>
-                                <label class="geo-model-choice"><input type="radio" name="model-provider" value="mimo"><span class="geo-model-choice__surface"><span class="geo-model-choice__logo"><img src="assets/model-logos/mimo.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-model-choice__copy"><strong>MiMo</strong><small>V2 系列</small></span><span class="geo-model-choice__mark" aria-hidden="true">✓</span></span></label>
+                        <div class="geo-model-setting__intro"><span>批次模型</span><strong>按厂商选择具体模型</strong><p id="model-provider-help">每家厂商提供两个独立模型选项；整个批次只使用一个所选模型。静态页不会调用模型或保存选择。</p></div>
+                        <fieldset class="geo-model-catalog" aria-describedby="model-provider-help">
+                            <legend>模型厂商与具体模型</legend>
+                            <div class="geo-provider-grid">
+                                <article class="geo-provider-card">
+                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/hunyuan.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-provider-card__identity"><strong>腾讯混元</strong><small>Hy3 系列</small></span><span class="geo-provider-card__status">未接入</span></header>
+                                    <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="hunyuan:flash" data-provider="hunyuan" data-tier="flash" aria-label="腾讯混元 Hy3 极速模式"><span><i aria-hidden="true"></i><strong>Hy3 极速</strong><small>Flash</small></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="hunyuan:pro" data-provider="hunyuan" data-tier="pro" aria-label="腾讯混元 Hy3 深度模式"><span><i aria-hidden="true"></i><strong>Hy3 深度</strong><small>Pro</small></span></label></div>
+                                </article>
+                                <article class="geo-provider-card">
+                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/qwen.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-provider-card__identity"><strong>通义千问</strong><small>Qwen3.8 系列</small></span><span class="geo-provider-card__status">未接入</span></header>
+                                    <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="qwen:flash" data-provider="qwen" data-tier="flash" aria-label="通义千问 Qwen3.8 Flash"><span><i aria-hidden="true"></i><strong>Qwen3.8 Flash</strong><small>Flash</small></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="qwen:pro" data-provider="qwen" data-tier="pro" aria-label="通义千问 Qwen3.8 Max"><span><i aria-hidden="true"></i><strong>Qwen3.8 Max</strong><small>Pro</small></span></label></div>
+                                </article>
+                                <article class="geo-provider-card">
+                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/doubao.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-provider-card__identity"><strong>豆包</strong><small>Seed 2.1 系列</small></span><span class="geo-provider-card__status">未接入</span></header>
+                                    <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="doubao:flash" data-provider="doubao" data-tier="flash" aria-label="豆包 Seed 2.1 Turbo"><span><i aria-hidden="true"></i><strong>Seed 2.1 Turbo</strong><small>Flash</small></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="doubao:pro" data-provider="doubao" data-tier="pro" aria-label="豆包 Seed 2.1 Pro"><span><i aria-hidden="true"></i><strong>Seed 2.1 Pro</strong><small>Pro</small></span></label></div>
+                                </article>
+                                <article class="geo-provider-card">
+                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/deepseek.png" alt="" width="256" height="192" loading="lazy"></span><span class="geo-provider-card__identity"><strong>DeepSeek</strong><small>V4 系列</small></span><span class="geo-provider-card__status">未接入</span></header>
+                                    <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="deepseek:flash" data-provider="deepseek" data-tier="flash" aria-label="DeepSeek V4 Flash" checked><span><i aria-hidden="true"></i><strong>V4 Flash</strong><small>Flash</small></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="deepseek:pro" data-provider="deepseek" data-tier="pro" aria-label="DeepSeek V4 Pro"><span><i aria-hidden="true"></i><strong>V4 Pro</strong><small>Pro</small></span></label></div>
+                                </article>
+                                <article class="geo-provider-card">
+                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/minimax.png" alt="" width="230" height="200" loading="lazy"></span><span class="geo-provider-card__identity"><strong>MiniMax</strong><small>M3 系列</small></span><span class="geo-provider-card__status">未接入</span></header>
+                                    <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="minimax:flash" data-provider="minimax" data-tier="flash" aria-label="MiniMax M3 快速模式"><span><i aria-hidden="true"></i><strong>M3 快速</strong><small>Flash</small></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="minimax:pro" data-provider="minimax" data-tier="pro" aria-label="MiniMax M3 深度模式"><span><i aria-hidden="true"></i><strong>M3 深度</strong><small>Pro</small></span></label></div>
+                                </article>
+                                <article class="geo-provider-card">
+                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/zhipu.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-provider-card__identity"><strong>智谱 GLM</strong><small>GLM-5.2 系列</small></span><span class="geo-provider-card__status">未接入</span></header>
+                                    <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="zhipu:flash" data-provider="zhipu" data-tier="flash" aria-label="智谱 GLM-5.2 快速模式"><span><i aria-hidden="true"></i><strong>GLM-5.2 快速</strong><small>Flash</small></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="zhipu:pro" data-provider="zhipu" data-tier="pro" aria-label="智谱 GLM-5.2 深度模式"><span><i aria-hidden="true"></i><strong>GLM-5.2 深度</strong><small>Pro</small></span></label></div>
+                                </article>
+                                <article class="geo-provider-card">
+                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/kimi.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-provider-card__identity"><strong>Kimi</strong><small>K3 系列</small></span><span class="geo-provider-card__status">未接入</span></header>
+                                    <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="kimi:flash" data-provider="kimi" data-tier="flash" aria-label="Kimi K3 快速模式"><span><i aria-hidden="true"></i><strong>K3 快速</strong><small>Flash</small></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="kimi:pro" data-provider="kimi" data-tier="pro" aria-label="Kimi K3 深度模式"><span><i aria-hidden="true"></i><strong>K3 深度</strong><small>Pro</small></span></label></div>
+                                </article>
+                                <article class="geo-provider-card">
+                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/mimo.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-provider-card__identity"><strong>MiMo</strong><small>V2 系列</small></span><span class="geo-provider-card__status">未接入</span></header>
+                                    <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="mimo:flash" data-provider="mimo" data-tier="flash" aria-label="MiMo V2 Flash"><span><i aria-hidden="true"></i><strong>V2 Flash</strong><small>Flash</small></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="mimo:pro" data-provider="mimo" data-tier="pro" aria-label="MiMo V2.5 Pro"><span><i aria-hidden="true"></i><strong>V2.5 Pro</strong><small>Pro</small></span></label></div>
+                                </article>
                             </div>
                         </fieldset>
                         <div class="geo-model-setting__footer">
-                            <fieldset class="geo-model-tier">
-                                <legend>运行模式</legend>
-                                <div class="geo-model-tier__segments">
-                                    <label><input type="radio" name="model-tier" value="flash" checked><span><strong>Flash</strong><small>快速响应</small></span></label>
-                                    <label><input type="radio" name="model-tier" value="pro"><span><strong>Pro</strong><small>深度能力</small></span></label>
-                                </div>
-                            </fieldset>
                             <div class="geo-model-summary" aria-live="polite"><span>当前选择</span><strong data-selected-model-connection>DeepSeek V4 Flash · 未连接</strong><code data-selected-model-id>deepseek-v4-flash</code></div>
                         </div>
                     </article>
@@ -132,6 +149,6 @@
             <div class="geo-service-chips" aria-label="服务连接状态"><span>IMA · 未连接</span><span data-selected-model-service aria-live="polite">DeepSeek · 未连接</span></div>
         </aside>
     </div>
-    <script src="assets/app.js?v=20260829-model-catalog" defer></script>
+    <script src="assets/app.js?v=20260829-provider-models" defer></script>
 </body>
 </html>
