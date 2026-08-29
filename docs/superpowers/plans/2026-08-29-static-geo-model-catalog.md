@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 把官网静态 GEO 页升级为八张厂商分类卡，每张卡内直接选择该厂商自己的两个模型，默认 DeepSeek Flash，并保持完全无 API、不可运行。
+**Goal:** 把官网静态 GEO 页升级为八张厂商分类卡，每张卡严格显示参考工作台中的两个真实模型名称，默认 DeepSeek V4 Flash，并保持完全无 API、不可运行。
 
-**Architecture:** `src/model-switch.js` 继续提供不可变模型目录和纯函数选择接口；`index.html` 使用一个跨厂商的 `model-option` 原生 radio 组，在每张 Logo 厂商卡内放置两个具体模型；`src/app.js` 从选项的厂商与档位数据同步当前选择到既有状态节点。不增加网络依赖。
+**Architecture:** `src/model-switch.js` 使用 `primary` / `secondary` 两个中性槽位保存每家厂商的实际模型，不再把目录结构命名为 Flash / Pro；`index.html` 使用一个跨厂商的 `model-option` 原生 radio 组，在每张 Logo 厂商卡内放置两个具体模型；`src/app.js` 从选项的厂商与槽位数据同步当前选择到既有状态节点。不增加网络依赖。
 
 **Tech Stack:** HTML、CSS、原生 JavaScript、Node.js 内置测试运行器、esbuild
 
@@ -22,13 +22,13 @@
 
 ```js
 assert.equal(DEFAULT_MODEL_PROVIDER, "deepseek");
-assert.equal(DEFAULT_MODEL_TIER, "flash");
+assert.equal(DEFAULT_MODEL_SLOT, "primary");
 assert.deepEqual(MODEL_PROVIDER_IDS, [
   "hunyuan", "qwen", "doubao", "deepseek",
   "minimax", "zhipu", "kimi", "mimo",
 ]);
-assert.equal(getModelPresentation("deepseek", "pro").modelId, "deepseek-v4-pro");
-assert.equal(getModelPresentation("qwen", "pro").modelId, "qwen3.8-max");
+assert.equal(getModelPresentation("deepseek", "secondary").modelId, "deepseek-v4-pro");
+assert.equal(getModelPresentation("qwen", "secondary").modelId, "qwen3.8-max");
 assert.equal(getModelPresentation("unknown", "unknown").id, "deepseek");
 ```
 
@@ -38,7 +38,7 @@ assert.equal(getModelPresentation("unknown", "unknown").id, "deepseek");
 
 Run: `npm test`
 
-Expected: FAIL，因为 `DEFAULT_MODEL_TIER`、`MODEL_PROVIDER_IDS` 和八厂商目录尚未实现，HTML 仍是 Agnes / DeepSeek 下拉框。
+Expected: FAIL，因为 `DEFAULT_MODEL_SLOT` 与参考工作台中的模型映射尚未实现。
 
 ### Task 2: 实现纯模型目录
 
@@ -52,12 +52,12 @@ Expected: FAIL，因为 `DEFAULT_MODEL_TIER`、`MODEL_PROVIDER_IDS` 和八厂商
 
 ```js
 export const DEFAULT_MODEL_PROVIDER = "deepseek";
-export const DEFAULT_MODEL_TIER = "flash";
+export const DEFAULT_MODEL_SLOT = "primary";
 export const MODEL_PROVIDER_IDS = Object.freeze([
   "hunyuan", "qwen", "doubao", "deepseek",
   "minimax", "zhipu", "kimi", "mimo",
 ]);
-export function getModelPresentation(provider, tier) { /* 返回规范化扁平对象 */ }
+export function getModelPresentation(provider, slot) { /* 返回规范化扁平对象 */ }
 ```
 
 每个返回对象固定包含 `id`、`provider`、`tier`、`tierLabel`、`model`、`modelId`、`label` 和 `logo`。非法厂商或档位分别回退为 DeepSeek 和 Flash。
@@ -87,11 +87,11 @@ HTML 契约仍会失败；完成 Task 3 后统一运行 GREEN。
 
 - [ ] **Step 2: 在厂商卡内放置模型 radio**
 
-设置页加入八张 Logo 厂商卡，每张卡包含两个 `name="model-option"` radio，并分别携带 `data-provider` 与 `data-tier`。DeepSeek Flash 带 `checked`。保留 `data-selected-model-id` 节点展示真实映射。
+设置页加入八张 Logo 厂商卡，每张卡包含两个 `name="model-option"` radio，并分别携带 `data-provider` 与 `data-slot`。DeepSeek V4 Flash 带 `checked`。模型按钮只显示真实模型名，不再附加 Flash / Pro、极速 / 深度副标题。保留 `data-selected-model-id` 节点展示真实映射。
 
 - [ ] **Step 3: 同步二维选择**
 
-`src/app.js` 为 16 个模型 radio 注册 `change`；`renderSelectedModel(provider, tier)` 同步唯一 checked 状态以及既有 `data-selected-model-*` 节点。不得加入持久化或请求。
+`src/app.js` 为 16 个模型 radio 注册 `change`；`renderSelectedModel(provider, slot)` 同步唯一 checked 状态以及既有 `data-selected-model-*` 节点。不得加入持久化或请求。
 
 - [ ] **Step 4: 完成桌面与移动样式**
 
