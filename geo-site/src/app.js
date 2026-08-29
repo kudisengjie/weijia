@@ -2,7 +2,11 @@ import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
 import { strFromU8, unzipSync } from "fflate";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
-import { DEFAULT_MODEL_PROVIDER, getModelPresentation } from "./model-switch.js";
+import {
+  DEFAULT_MODEL_PROVIDER,
+  DEFAULT_MODEL_TIER,
+  getModelPresentation,
+} from "./model-switch.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("assets/pdf.worker.min.mjs", document.baseURI).href;
 
@@ -25,14 +29,27 @@ const checkCompany = document.getElementById("check-company");
 const statusTask = document.getElementById("status-task");
 const statusDocs = document.getElementById("status-docs");
 const statusRead = document.getElementById("status-read");
-const modelProviderSelect = document.getElementById("model-provider");
+const modelProviderInputs = document.querySelectorAll('input[name="model-provider"]');
+const modelTierInputs = document.querySelectorAll('input[name="model-tier"]');
 
 let currentTask = null;
 let currentCompanies = [];
+let currentModelProvider = DEFAULT_MODEL_PROVIDER;
+let currentModelTier = DEFAULT_MODEL_TIER;
 
-function renderSelectedModel(provider = DEFAULT_MODEL_PROVIDER) {
-  const selected = getModelPresentation(provider);
-  if (modelProviderSelect) modelProviderSelect.value = selected.id;
+function renderSelectedModel(
+  provider = DEFAULT_MODEL_PROVIDER,
+  tier = DEFAULT_MODEL_TIER,
+) {
+  const selected = getModelPresentation(provider, tier);
+  currentModelProvider = selected.id;
+  currentModelTier = selected.tier;
+  modelProviderInputs.forEach((input) => {
+    input.checked = input.value === selected.id;
+  });
+  modelTierInputs.forEach((input) => {
+    input.checked = input.value === selected.tier;
+  });
   document.querySelectorAll("[data-selected-model-provider]").forEach((node) => {
     node.textContent = selected.provider;
   });
@@ -47,6 +64,9 @@ function renderSelectedModel(provider = DEFAULT_MODEL_PROVIDER) {
   });
   document.querySelectorAll("[data-selected-model-connection]").forEach((node) => {
     node.textContent = `${selected.label} · 未连接`;
+  });
+  document.querySelectorAll("[data-selected-model-id]").forEach((node) => {
+    node.textContent = selected.modelId;
   });
   document.querySelectorAll("[data-selected-model-service]").forEach((node) => {
     node.textContent = `${selected.provider} · 未连接`;
@@ -351,6 +371,11 @@ taskInput.addEventListener("change", handleTaskFile);
 companyInput.addEventListener("change", handleCompanyFiles);
 clearButton.addEventListener("click", clearFiles);
 document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => changeView(button.dataset.view)));
-modelProviderSelect?.addEventListener("change", () => renderSelectedModel(modelProviderSelect.value));
+modelProviderInputs.forEach((input) => input.addEventListener("change", () => {
+  if (input.checked) renderSelectedModel(input.value, currentModelTier);
+}));
+modelTierInputs.forEach((input) => input.addEventListener("change", () => {
+  if (input.checked) renderSelectedModel(currentModelProvider, input.value);
+}));
 renderSelectedModel();
 updateStatus();

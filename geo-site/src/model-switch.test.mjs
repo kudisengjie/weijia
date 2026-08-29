@@ -11,26 +11,75 @@ const modelSwitch = fs.existsSync(modulePath)
   ? await import(pathToFileURL(modulePath).href)
   : {};
 
-test("Agnes is the default static model", () => {
-  assert.equal(modelSwitch.DEFAULT_MODEL_PROVIDER, "agnes");
-  assert.deepEqual(modelSwitch.getModelPresentation?.(), {
-    id: "agnes",
-    provider: "Agnes",
-    model: "2.5 Flash",
-    label: "Agnes 2.5 Flash",
-  });
+const expectedProviderIds = [
+  "hunyuan",
+  "qwen",
+  "doubao",
+  "deepseek",
+  "minimax",
+  "zhipu",
+  "kimi",
+  "mimo",
+];
+
+const expectedModelIds = {
+  hunyuan: { flash: "hy3 · no_think", pro: "hy3 · think_high" },
+  qwen: { flash: "qwen3.8-flash", pro: "qwen3.8-max" },
+  doubao: { flash: "Doubao-Seed-2.1-Turbo", pro: "Doubao-Seed-2.1-Pro" },
+  deepseek: { flash: "deepseek-v4-flash", pro: "deepseek-v4-pro" },
+  minimax: { flash: "MiniMax-M3 · thinking disabled", pro: "MiniMax-M3 · thinking enabled" },
+  zhipu: { flash: "glm-5.2 · reasoning low", pro: "glm-5.2 · reasoning max" },
+  kimi: { flash: "kimi-k3 · reasoning low", pro: "kimi-k3 · reasoning max" },
+  mimo: { flash: "mimo-v2-flash", pro: "mimo-v2.5-pro" },
+};
+
+test("DeepSeek Flash is the default static model", () => {
+  assert.equal(modelSwitch.DEFAULT_MODEL_PROVIDER, "deepseek");
+  assert.equal(modelSwitch.DEFAULT_MODEL_TIER, "flash");
+  assert.equal(modelSwitch.getModelPresentation?.().label, "DeepSeek V4 Flash");
 });
 
-test("DeepSeek can be selected and unknown values fall back to Agnes", () => {
-  assert.equal(modelSwitch.getModelPresentation?.("deepseek").label, "DeepSeek V4 Flash");
-  assert.equal(modelSwitch.getModelPresentation?.("unknown").id, "agnes");
+test("catalog exposes exactly eight providers with Flash and Pro presentations", () => {
+  assert.deepEqual(modelSwitch.MODEL_PROVIDER_IDS, expectedProviderIds);
+
+  for (const providerId of expectedProviderIds) {
+    for (const tier of ["flash", "pro"]) {
+      const presentation = modelSwitch.getModelPresentation?.(providerId, tier);
+      assert.equal(presentation?.id, providerId);
+      assert.equal(presentation?.tier, tier);
+      assert.equal(presentation?.modelId, expectedModelIds[providerId][tier]);
+      assert.match(presentation?.logo ?? "", /^assets\/model-logos\/[a-z-]+\.png$/);
+    }
+  }
+});
+
+test("unknown provider and tier fall back independently to DeepSeek Flash", () => {
+  assert.deepEqual(
+    modelSwitch.getModelPresentation?.("unknown", "unknown"),
+    modelSwitch.getModelPresentation?.("deepseek", "flash"),
+  );
+});
+
+test("static settings contain eight providers, two tiers, and no Agnes", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  assert.equal(html.match(/name="model-provider"/g)?.length, 8);
+  assert.equal(html.match(/name="model-tier"/g)?.length, 2);
+  assert.match(html, /name="model-provider"[^>]*value="deepseek"[^>]*checked/);
+  assert.match(html, /name="model-tier"[^>]*value="flash"[^>]*checked/);
+  assert.doesNotMatch(html, /Agnes/i);
+});
+
+test("all supplied logos are local assets", () => {
+  for (const providerId of expectedProviderIds) {
+    const logoPath = path.join(root, "assets", "model-logos", `${providerId}.png`);
+    assert.equal(fs.existsSync(logoPath), true, `${providerId} logo should exist`);
+  }
 });
 
 test("static preview keeps generation disabled and has no model transport", () => {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const app = fs.readFileSync(path.join(root, "src", "app.js"), "utf8");
-  assert.match(html, /id="model-provider"/);
-  assert.match(html, /<button[^>]*id="run-task"[^>]*disabled/);
+  assert.match(html, /<button(?=[^>]*id="run-task")(?=[^>]*disabled)[^>]*>/);
   assert.doesNotMatch(
     app,
     /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\b/,
