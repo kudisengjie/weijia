@@ -147,3 +147,10 @@ test("model choice dots and names stay on the same horizontal row", () => {
     "the settings heading should keep its established stacked hierarchy",
   );
 });
+
+test("workspace omits the static preview notice module", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(root, "styles.css"), "utf8");
+  assert.doesNotMatch(html, /geo-notice|static-notice-title|这是静态文件预览模式/);
+  assert.doesNotMatch(styles, /\.geo-notice/);
+});

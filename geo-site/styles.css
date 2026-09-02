@@ -212,11 +212,6 @@ label:focus-within {
 .geo-model-badge small { color: #8197b0; font-size: 9px; }
 .geo-model-badge strong { margin-top: 2px; font-size: 10px; }
 
-.geo-notice { display: flex; align-items: center; gap: 13px; margin-bottom: 14px; padding: 13px 15px; border: 1px solid #eed6a3; border-radius: 13px; color: #6c5630; background: #fffaf0; }
-.geo-notice__icon { display: grid; place-items: center; flex: 0 0 24px; height: 24px; border: 1px solid #dbb767; border-radius: 50%; font-family: Georgia, serif; font-weight: 700; }
-.geo-notice strong { font-size: 12px; }
-.geo-notice p { margin: 3px 0 0; font-size: 11px; line-height: 1.6; }
-
 .geo-workspace { padding: clamp(14px, 2vw, 24px); border-radius: 18px; background: rgba(252, 254, 255, .9); }
 .geo-upload-card { padding: 18px; border: 1px solid #cde2fa; border-radius: 15px; background: #f8fbff; }
 .geo-upload-card + .geo-upload-card { margin-top: 14px; }
