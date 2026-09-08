@@ -13,9 +13,9 @@
 | 安装命令 | `npm ci` |
 | 构建命令 | `npm run build` |
 | 输出目录 | `dist` |
-| 构建 Node | 建议 22 或更高（浏览器 PDF 依赖要求）；函数仍为 Node 20 |
+| 构建 Node | 22.17.1 或 24.5.0（浏览器 PDF 依赖要求）；函数仍为 Node 20 |
 | Node Functions | 启用；`cloud-functions/api/[[path]].js` |
-| Blob | 启用 Pages Blob；私有 Store 由服务端 SDK 使用 `lxue-geo-private` 名称获取 |
+| Blob | 使用 Pages Blob；SDK 首次调用自动创建 `lxue-geo-private` 命名空间，不需要手动创建同名存储空间 |
 
 `edgeone.json` 已设置函数最长 120 秒，以及需保留的 Node 依赖。公开 `dist` 只包含 HTML、CSS、图片和浏览器 bundle；函数由 EdgeOne 单独打包，**不要把 `.local`、`server`、环境配置或整个项目目录直接作为静态产物上传**。
 
@@ -36,6 +36,18 @@
 初始值已在开发电脑生成于 **`geo-site/.local/edgeone-secrets.json`**。该文件已被 Git 忽略，不含明文登录密码。仅将其各字段复制到 EdgeOne 控制台对应环境变量；**不要上传此 JSON、不要发到聊天、不要写进仓库**。Windows 环境变量不会自动出现在 EdgeOne 云端。
 
 禁止在生产环境设置 `GEO_LOCAL_DEV=1`。本地服务自动使用该值以允许 HTTP localhost Cookie；正式站点必须使用 HTTPS Secure Cookie。
+
+### 控制台操作与存储报错
+
+1. 进入绑定 `geo.lxue.xin` 的 GEO 子站项目 → 项目设置，按上表设置根目录、构建和输出目录，不改官网主站项目。
+2. 在环境变量中逐项添加上述 7 个变量，值从本地私有配置的同名字段复制；界面中的值不包含 JSON 外层引号。不要重新生成已有加密根密钥。
+3. 保存后，在部署记录中重新部署生产分支 `master`。环境变量变更只作用于新部署，刷新网页不能替代重新部署。
+4. Blob 官方 SDK 在托管函数中自动获取部署凭据，首次调用创建命名空间；并非必须先找到一个“启用 Blob”开关。不要把 IMA Key 填成 Blob 凭据。
+5. 如果仍提示 `STORAGE_UNAVAILABLE`，打开此次部署的函数日志，核对 Node 函数依赖是否安装、Blob SDK 是否取得平台部署凭据，以及当前项目是否支持 Blob。页面这条通用错误来自存储初始化阶段，不代表账号或密码错误，也不能单凭它断言“未启用 Blob”。如控制台没有 Blob 入口，先确认当前账号/项目的功能支持，不要盲目购买 CloudBase。
+
+给开发者提供函数错误类型和部署设置截图即可；遮住 Token、密码哈希、加密根密钥和 IMA 凭据。目前入口未输出底层初始化异常，若平台日志没有原因，需再加入脱敏诊断，不能猜测根因。
+
+官方依据：[项目构建与环境变量](https://edgeone.cloud.tencent.com/pages/document/162936788693114880)、[Blob 自动创建与托管凭据](https://pages.edgeone.ai/zh/document/blob-storage)。
 
 ## 每月更新 IMA
 

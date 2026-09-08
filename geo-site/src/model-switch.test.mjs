@@ -156,3 +156,11 @@ test("workspace omits the static preview notice module", () => {
   assert.doesNotMatch(html, /geo-notice|static-notice-title|这是静态文件预览模式/);
   assert.doesNotMatch(styles, /\.geo-notice/);
 });
+
+test("login slogan stays on one line with both captions centered under the mascot", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(root, "styles.css"), "utf8");
+  assert.match(html, /<h2>让好内容，被 AI 看见。<\/h2>/);
+  assert.match(styles, /\.login-art__copy\s*\{[^}]*text-align:\s*center;/);
+  assert.match(styles, /\.login-art h2\s*\{[^}]*white-space:\s*nowrap;/);
+});

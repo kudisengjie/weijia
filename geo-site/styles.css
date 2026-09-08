@@ -19,8 +19,8 @@
 .login-art { position: relative; min-width: 0; }
 .login-eyebrow { color: #537db3; font-size: 11px; letter-spacing: .16em; font-weight: 700; }
 .login-art > img { display: block; width: 100%; max-width: 470px; height: auto; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 24px 26px #4264901a); margin: -4px auto 0; }
-.login-art__copy { padding: 0 20px; }
-.login-art h2 { font-size: clamp(26px, 3vw, 38px); line-height: 1.4; letter-spacing: -.03em; margin: 4px 0 12px; }
+.login-art__copy { padding: 0 20px; text-align: center; }
+.login-art h2 { font-size: clamp(24px, 3vw, 38px); line-height: 1.4; letter-spacing: -.03em; margin: 4px 0 12px; white-space: nowrap; }
 .login-art p { color: #617c9b; margin: 0; font-size: 15px; }
 .login-card { background: #ffffffd9; border: 1px solid #ffffff; border-radius: 28px; padding: 44px 38px 30px; box-shadow: 0 22px 64px #365d8e12; min-width: 0; }
 .login-brand { color: #3b699a; font-size: 16px; font-weight: 700; }
