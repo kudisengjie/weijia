@@ -26,7 +26,7 @@ http.createServer(async(req,res)=>{
     const pathname=new URL(req.url,origin).pathname;
     if(pathname.startsWith('/api/')){
       const chunks=[];let bytes=0;for await(const c of req){bytes+=c.length;if(bytes>4*1024*1024){res.writeHead(413);res.end('{}');return;}chunks.push(c);}
-      const result=await handler(new Request(origin+req.url,{method:req.method,headers:req.headers,...(['GET','HEAD'].includes(req.method)?{}:{body:Buffer.concat(chunks)})}));res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));return;
+      const result=await handler(new Request(origin+req.url,{method:req.method,headers:req.headers,...(['GET','HEAD'].includes(req.method)?{}:{body:Buffer.concat(chunks)})}),{clientIp:req.socket.remoteAddress});res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));return;
     }
     const file=pathname==='/'?'index.html':decodeURIComponent(pathname).slice(1);
     if(!/^(index\.html|styles\.css|favicon\.ico|assets\/[a-zA-Z0-9_./-]+)$/.test(file)||file.split('/').includes('..')){res.writeHead(404);res.end();return;}

@@ -20,7 +20,7 @@ async function fixture(fetcher=async()=>{throw new Error('Unexpected real reques
   const store=new MemoryStore(), handler=router.createHandler({store,env,fetcher});
   let cookie='',csrf='';
   async function request(path,body,headers={}) {
-    const response=await handler(new Request(env.APP_ORIGIN+'/api/'+path,{method:body===undefined?'GET':'POST',headers:{origin:env.APP_ORIGIN,'content-type':'application/json',cookie,'x-csrf-token':csrf,...headers},...(body===undefined?{}:{body:JSON.stringify(body)})}));
+    const response=await handler(new Request(env.APP_ORIGIN+'/api/'+path,{method:body===undefined?'GET':'POST',headers:{origin:env.APP_ORIGIN,'content-type':'application/json',cookie,'x-csrf-token':csrf,...headers},...(body===undefined?{}:{body:JSON.stringify(body)})}),{clientIp:'127.0.0.1'});
     if(response.headers.has('set-cookie'))cookie=response.headers.get('set-cookie').split(';')[0];
     const data=await response.json();if(data.csrf)csrf=data.csrf;
     return {status:response.status,data,response};

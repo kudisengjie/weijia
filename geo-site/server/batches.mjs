@@ -21,13 +21,13 @@ export async function getBatch(store,env,session,id) {
 export async function createBatch(body,store,env,session) {
   if(typeof body.requestId!=='string'||!/^[a-zA-Z0-9-]{16,80}$/.test(body.requestId))throw new HttpError(400,'缺少有效的提交标识。');
   const id=digest(body.requestId).slice(0,32),path=batchPath(session,id);
-  const existing=await store.get(path);if(existing)return summary(unseal(existing,env,path));
+  const existing=await store.get(path);if(existing){const saved=summary(unseal(existing,env,path));await store.set(`${ownerPrefix(session)}/summaries/${id}`,saved);return saved;}
   const {tasks,companies}=parseTasks(body.rows,body.companies);
   const settings=await loadSettings(store,env,session);
   if(!settings.keys[settings.model.id])throw new HttpError(422,'请先保存所选模型的 API Key。');
   const ima=await imaCredentials(store,env);if(!ima.clientId||!ima.apiKey)throw new HttpError(503,'管理员尚未配置 IMA。');
   const b={id,model:settings.model,tasks,companies,articles:[],createdAt:new Date().toISOString(),expiresAt:session.expiresAt,phase:'bases',status:'ready',seq:0,requests:0,cursor:'',bases:[],rules:{generation:[],audit:[],memory:[]},queue:[],ruleFiles:[],visited:[],sources:[],evidenceCache:{},taskIndex:0,repairCount:0};
-  if(!await store.create(path,seal(b,env,path)))return summary(await getBatch(store,env,session,id));
+  if(!await store.create(path,seal(b,env,path))){const saved=summary(await getBatch(store,env,session,id));await store.set(`${ownerPrefix(session)}/summaries/${id}`,saved);return saved;}
   await store.set(`${ownerPrefix(session)}/summaries/${id}`,summary(b));return summary(b);
 }
 export async function listBatches(store,session) {

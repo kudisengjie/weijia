@@ -8,13 +8,13 @@ import { createBatch, getBatch, listBatches, advanceBatch, batchPublic } from '.
 
 export function createHandler({store,env,fetcher=fetch}) {
   const response=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer',...headers}});
-  return async request=>{
+  return async (request,context={})=>{
     try {
       checkOrigin(request,env);
       const path=new URL(request.url).pathname.replace(/^\/api\//,'').replace(/\/$/,'');
       const post=request.method==='POST';
       if(!post&&request.method!=='GET')throw new HttpError(405,'请求方法不支持。');
-      if(path==='auth/login'&&post){const result=await login(request,await readJson(request,4096),store,env);return response(result.data,200,{'Set-Cookie':result.cookie});}
+      if(path==='auth/login'&&post){const result=await login(request,await readJson(request,4096),store,env,context.clientIp);return response(result.data,200,{'Set-Cookie':result.cookie});}
       const session=await authenticate(request,store,env);
       // Authenticate before consuming a potentially large document body.
       const body=post?await readJson(request,path==='batches'?4*1024*1024:32768):{};

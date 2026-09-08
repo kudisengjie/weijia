@@ -17,7 +17,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     try {response=await fetch('/api/'+path,{method:body===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(125000)});}
     catch {throw new Error('连接中断或请求超时，未自动重试。批次可在历史记录中读取进度。');}
     let data;try{data=await response.json();}catch{throw new Error('运行接口未部署，请管理员检查 EdgeOne 的项目根目录和 Node Functions。');}
-    if(!response.ok){if(response.status===401&&path!=='auth/login')showLogin();const e=new Error(data.error||'请求失败。');e.code=data.code;throw e;}
+    if(!response.ok){if(response.status===401&&path!=='auth/login')showLogin();const e=new Error(data.error||'请求失败。');e.code=data.code;e.status=response.status;throw e;}
     return data;
   }
   function selected() {const input=document.querySelector('input[name="model-option"]:checked');return getModelPresentation(input.dataset.provider,input.dataset.slot);}
@@ -104,7 +104,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     try{
       if(!pendingCreate)pendingCreate={requestId:crypto.randomUUID(),...getUploads()};
       const b=await api('batches',pendingCreate);pendingCreate=null;await drive(b);
-    }catch(error){toast(error.message);if(!/连接中断/.test(error.message))pendingCreate=null;}
+    }catch(error){toast(error.message);if(error.status>=400&&error.status<500)pendingCreate=null;}
     finally{button.disabled=false;}
   });
   async function history() {

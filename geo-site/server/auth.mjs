@@ -1,12 +1,14 @@
 import { HttpError, cookieToken, digest, equal, passwordMatches, requireConfig, sessionCookie, token } from './security.mjs';
+import { isIP } from 'node:net';
 
-export async function login(request, body, store, env) {
+export async function login(request, body, store, env, clientIp) {
   requireConfig(env);
+  if (!isIP(clientIp || '')) throw new HttpError(503, '服务端缺少可信客户端地址，请管理员检查函数配置。', 'CLIENT_IP_REQUIRED');
   // Reserve attempt slots with conditional writes. Parallel requests cannot bypass the limit.
   const window = Math.floor(Date.now() / 900000);
   let allowed = false, reserved = '';
   for (let slot = 0; slot < 5; slot++) {
-    reserved = `login-attempts/${window}/${slot}`;
+    reserved = `login-attempts/${digest(clientIp)}/${window}/${slot}`;
     if (await store.create(reserved, { at: Date.now() })) { allowed = true; break; }
   }
   if (!allowed) throw new HttpError(429, '登录尝试过多，请 15 分钟后再试。', 'RATE_LIMITED');
