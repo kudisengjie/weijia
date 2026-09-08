@@ -1,16 +1,21 @@
 {
-  "name": "lxue-geo-static-preview",
+  "name": "lxue-geo-workbench",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --test src/model-switch.test.mjs",
-    "build": "node scripts/build.mjs"
+    "test": "node --test src/*.test.mjs server/*.test.mjs",
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs",
+    "setup": "node scripts/setup.mjs",
+    "smoke:ima": "node scripts/smoke-ima.mjs"
   },
   "dependencies": {
+    "@edgeone/pages-blob": "^0.0.16",
     "fflate": "^0.8.2",
     "mammoth": "1.12.1",
     "pdfjs-dist": "5.4.149",
+    "pdfjs-server": "npm:pdfjs-dist@^4.8.69",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {

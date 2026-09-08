@@ -116,14 +116,16 @@ test("all supplied logos are local assets", () => {
   }
 });
 
-test("static preview keeps generation disabled and has no model transport", () => {
+test("runtime gates the workspace behind login and never embeds credentials", () => {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
-  const app = fs.readFileSync(path.join(root, "src", "app.js"), "utf8");
-  assert.match(html, /<button(?=[^>]*id="run-task")(?=[^>]*disabled)[^>]*>/);
-  assert.doesNotMatch(
-    app,
-    /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\b/,
-  );
+  const runtime = fs.readFileSync(path.join(root, "src", "runtime.js"), "utf8");
+  assert.match(html, /class="geo-shell" hidden/);
+  assert.match(html, /id="login-form"/);
+  assert.match(html, /id="ima-form"/);
+  assert.match(html, /id="model-form"/);
+  assert.doesNotMatch(html + runtime, /localStorage|sessionStorage|IMA_OPENAPI_APIKEY/);
+  assert.doesNotMatch(html, /type="password"[^>]*value="[^"]+"/);
+  assert.match(runtime, /fetch\('\/api\/'/);
 });
 
 test("model choice dots and names stay on the same horizontal row", () => {

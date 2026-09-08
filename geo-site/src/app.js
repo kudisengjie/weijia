@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
 import { strFromU8, unzipSync } from "fflate";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import { initializeRuntime } from './runtime.js';
 import {
   DEFAULT_MODEL_PROVIDER,
   DEFAULT_MODEL_SLOT,
@@ -33,6 +34,7 @@ const modelOptionInputs = document.querySelectorAll('input[name="model-option"]'
 
 let currentTask = null;
 let currentCompanies = [];
+let selectedSheetIndex = 0;
 function renderSelectedModel(
   provider = DEFAULT_MODEL_PROVIDER,
   slot = DEFAULT_MODEL_SLOT,
@@ -52,7 +54,7 @@ function renderSelectedModel(
     node.textContent = selected.label;
   });
   document.querySelectorAll("[data-selected-model-preflight]").forEach((node) => {
-    node.textContent = `${selected.label} · 静态页未连接`;
+    node.textContent = `${selected.label} · 请保存设置`;
   });
   document.querySelectorAll("[data-selected-model-connection]").forEach((node) => {
     node.textContent = `${selected.label} · 未连接`;
@@ -83,8 +85,8 @@ function ensureReadable(file) {
 
 function truncate(text) {
   const normalized = String(text || "").replace(/\r\n?/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-  if (normalized.length <= MAX_PREVIEW_CHARS) return { text: normalized, truncated: false, total: normalized.length };
-  return { text: `${normalized.slice(0, MAX_PREVIEW_CHARS)}\n\n……预览已截断`, truncated: true, total: normalized.length };
+  if (normalized.length <= MAX_PREVIEW_CHARS) return { text: normalized, fullText: normalized, truncated: false, total: normalized.length };
+  return { text: `${normalized.slice(0, MAX_PREVIEW_CHARS)}\n\n……仅预览截断，提交使用完整正文`, fullText: normalized, truncated: true, total: normalized.length };
 }
 
 function makeFileItem(file, status, detail = "") {
@@ -138,13 +140,16 @@ async function readPdf(file) {
   ensureReadable(file);
   const documentTask = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
   const pdf = await documentTask.promise;
-  const pageCount = Math.min(pdf.numPages, 50);
+  if (pdf.numPages > 100) { await documentTask.destroy(); throw new Error('PDF 超过 100 页，请拆分后上传，不会截断正文。'); }
+  const pageCount = pdf.numPages;
   const parts = [];
+  try {
   for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
     parts.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
   }
+  } finally { await documentTask.destroy(); }
   const preview = truncate(parts.join("\n\n"));
   if (!preview.text) throw new Error("PDF 中没有提取到可显示的文字；文件可能是扫描图片。");
   return { ...preview, pages: pdf.numPages, limitedPages: pdf.numPages > pageCount };
@@ -187,12 +192,13 @@ async function readCompanyDocument(file) {
   if (extension === "docx") return readDocx(file);
   if (extension === "pdf") return readPdf(file);
   if (extension === "odt") return readOdt(file);
-  if (["txt", "md", "rtf"].includes(extension)) return readTextDocument(file, extension);
-  if (extension === "doc") throw new Error("旧版 DOC 无法在静态浏览器中可靠提取，请在 Word 中另存为 DOCX 后重新选择。");
+  if (["txt", "md"].includes(extension)) return readTextDocument(file, extension);
+  if (["doc", "rtf"].includes(extension)) throw new Error("请在 Word 中另存为 DOCX 后上传，以确保中文正文完整。");
   throw new Error(`暂不支持读取 .${extension || "未知"} 文件。`);
 }
 
 function renderSheet(data, sheetIndex) {
+  selectedSheetIndex = sheetIndex;
   taskPreview.replaceChildren();
   taskPreview.hidden = false;
   const sheet = data.sheets[sheetIndex];
@@ -249,7 +255,15 @@ function renderCompanyPreviews() {
     summary.append(name, status);
     const content = document.createElement("pre");
     content.textContent = item.error ? item.error : item.result.text;
-    details.append(summary, content);
+    const brandLabel = document.createElement('label');
+    brandLabel.className = 'runtime-field';
+    brandLabel.textContent = '对应品牌（与任务表的品牌名完全一致）';
+    const brandInput = document.createElement('input');
+    brandInput.type = 'text'; brandInput.maxLength = 120; brandInput.required = true;
+    brandInput.value = item.brand || ''; brandInput.placeholder = '填写这份文档所属品牌';
+    brandInput.addEventListener('input', () => { item.brand = brandInput.value; });
+    brandLabel.append(brandInput);
+    details.append(summary, brandLabel, content);
     companyPreview.appendChild(details);
   });
 }
@@ -368,3 +382,12 @@ modelOptionInputs.forEach((input) => input.addEventListener("change", () => {
 }));
 renderSelectedModel();
 updateStatus();
+
+initializeRuntime({
+  renderSelectedModel, changeView,
+  getUploads() {
+    if (!currentTask?.data) throw new Error('请先选择并成功读取任务表。');
+    if (!currentCompanies.length || currentCompanies.some(item => !item.result || item.error)) throw new Error('请先成功读取所有公司文档。');
+    return { rows: currentTask.data.sheets[selectedSheetIndex].rows, companies: currentCompanies.map(item => ({ name: item.file.name, brand: item.brand || '', text: item.result.fullText })) };
+  },
+});

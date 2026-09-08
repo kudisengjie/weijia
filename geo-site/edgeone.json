@@ -1,11 +1,20 @@
 {
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "cloudFunctions": {
+    "nodejs": {
+      "maxDuration": 120,
+      "externalNodeModules": ["@edgeone/pages-blob", "mammoth", "pdfjs-server"]
+    }
+  },
   "headers": [
     {
       "source": "/*",
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; worker-src 'self' blob:; connect-src 'none'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'none'"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         },
         {
           "key": "Referrer-Policy",
@@ -35,7 +44,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public,max-age=31536000,immutable"
+          "value": "public,max-age=0,must-revalidate"
         }
       ]
     }

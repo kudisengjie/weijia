@@ -27,3 +27,12 @@ fs.copyFileSync(
 );
 
 console.log("Built geo-site/assets/app.js and local PDF worker.");
+
+// Only this allowlisted directory is public. Never publish server source or configuration files.
+const output = path.join(projectRoot, 'dist');
+fs.mkdirSync(output, { recursive: true });
+for (const file of ['index.html', 'styles.css', 'favicon.ico']) fs.copyFileSync(path.join(projectRoot, file), path.join(output, file));
+fs.cpSync(assetsDir, path.join(output, 'assets'), { recursive: true });
+const allowed = new Set(['index.html', 'styles.css', 'favicon.ico', 'assets']);
+for (const file of fs.readdirSync(output)) if (!allowed.has(file)) throw new Error(`Unexpected public file: ${file}. Refusing unsafe deployment output.`);
+console.log('Public dist ready. EdgeOne bundles cloud-functions separately.');
