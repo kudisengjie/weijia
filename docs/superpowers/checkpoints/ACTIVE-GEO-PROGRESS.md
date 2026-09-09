@@ -74,3 +74,10 @@ EdgeOne Pages，不使用 CloudBase。A 登录布局：桌面人物在左、表�
 - 修复为函数入口静态导入 `getStore`，并仅 external 化确实含静态/原生依赖的 `mammoth` 和 `pdfjs-server`；存储初始化错误只记录异常名与代码，不记录 message、stack 或密钥。
 - TDD 回归先以 2 项失败复现，修复后通过。后端相关测试 18/18 通过；Node 20 目标函数按 EdgeOne external 配置打包成功，Blob SDK 已进入 73.6KB bundle、保留平台部署凭据注入标记，bundle 导入成功。
 - 线上是否恢复必须以新提交部署后的真实登录验证为准，本地不能冒充 EdgeOne 运行时。
+
+## 最新增量：EdgeOne 登录写入兼容性
+
+- 新函数上线后，线上 `GET /api/auth/session` 已返回预期的 `401 LOGIN_REQUIRED`，证明 Blob 凭据注入、读取和 7 项登录配置均已生效；`POST /api/auth/login` 使用无效凭据仍稳定复现 `503 SERVER_ERROR`，因此问题与用户账号、密码内容无关，范围收敛到登录前的 Blob 条件写入。
+- 对照 EdgeOne 官方 Node Cloud Function Blob 示例，移除项目额外添加的 `Cache-Control: no-store` 写入选项；强一致性继续只用于读取，条件创建继续使用 SDK 官方的 `onlyIfNew`，不削弱并发锁和幂等语义。
+- 为所有 Blob 操作附加仅含 `get/set/create/delete/list` 的安全操作标签；意外异常记录 `api_request_failed`、EdgeOne 请求 UUID、接口路径、HTTP 方法、异常名和代码，不记录 message、stack、正文或密钥。以后可用单条云端日志直接定位，不再只剩笼统 503。
+- 定向 TDD 共 4 项先失败、修复后 6/6 通过；服务端相关测试 16/16 通过，生产构建成功。当前增量仍须以 EdgeOne 新部署后的真实登录结果验收，不能由本地结果替代。

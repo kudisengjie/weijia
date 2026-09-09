@@ -9,9 +9,10 @@ import { createBatch, getBatch, listBatches, advanceBatch, batchPublic } from '.
 export function createHandler({store,env,fetcher=fetch}) {
   const response=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer',...headers}});
   return async (request,context={})=>{
+    let path='unknown';
     try {
       checkOrigin(request,env);
-      const path=new URL(request.url).pathname.replace(/^\/api\//,'').replace(/\/$/,'');
+      path=new URL(request.url).pathname.replace(/^\/api\//,'').replace(/\/$/,'');
       const post=request.method==='POST';
       if(!post&&request.method!=='GET')throw new HttpError(405,'请求方法不支持。');
       if(path==='auth/login'&&post){const result=await login(request,await readJson(request,4096),store,env,context.clientIp);return response(result.data,200,{'Set-Cookie':result.cookie});}
@@ -32,6 +33,16 @@ export function createHandler({store,env,fetcher=fetch}) {
       const match=path.match(/^batches\/([a-f0-9]{32})(\/step)?$/);
       if(match){if(match[2]&&post)return response(await advanceBatch(match[1],body,store,env,session,fetcher));if(!match[2]&&!post)return response(batchPublic(await getBatch(store,env,session,match[1])));}
       throw new HttpError(404,'接口不存在。');
-    } catch(error) {return response({error:error instanceof HttpError?error.message:'服务暂不可用，请检查 EdgeOne 服务端配置。',code:error instanceof HttpError?error.code:'SERVER_ERROR'},error instanceof HttpError?error.status:503);}
+    } catch(error) {
+      if (!(error instanceof HttpError)) console.error('api_request_failed', {
+        requestId: context.requestId,
+        path,
+        method: request.method,
+        name: error?.name,
+        code: error?.code,
+        operation: error?.storageOperation,
+      });
+      return response({error:error instanceof HttpError?error.message:'服务暂不可用，请检查 EdgeOne 服务端配置。',code:error instanceof HttpError?error.code:'SERVER_ERROR'},error instanceof HttpError?error.status:503);
+    }
   };
 }

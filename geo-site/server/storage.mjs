@@ -1,15 +1,37 @@
 import { HttpError, token } from './security.mjs';
 
+function markStorageError(error, storageOperation) {
+  if (error && typeof error === 'object') {
+    error.storageOperation ||= storageOperation;
+    return error;
+  }
+  return Object.assign(new Error('Storage operation failed'), { code: 'STORAGE_ERROR', storageOperation });
+}
+
 export class JsonStore {
   constructor(blob) { this.blob = blob; }
-  async get(key) { return this.blob.get(key, { type: 'json', consistency: 'strong' }); }
-  async set(key, value) { await this.blob.setJSON(key, value, { cacheControl: 'no-store' }); }
-  async create(key, value) {
-    try { await this.blob.setJSON(key, value, { onlyIfNew: true, cacheControl: 'no-store' }); return true; }
-    catch (error) { if (error.code === 'PRECONDITION_FAILED') return false; throw error; }
+  async get(key) {
+    try { return await this.blob.get(key, { type: 'json', consistency: 'strong' }); }
+    catch (error) { throw markStorageError(error, 'get'); }
   }
-  async delete(key) { await this.blob.delete(key); }
-  async list(prefix) { const { blobs } = await this.blob.list({ prefix, consistency: 'strong', limit: 500 }); return blobs.map(x => x.key); }
+  async set(key, value) {
+    try { await this.blob.setJSON(key, value); }
+    catch (error) { throw markStorageError(error, 'set'); }
+  }
+  async create(key, value) {
+    try { await this.blob.setJSON(key, value, { onlyIfNew: true }); return true; }
+    catch (error) { if (error?.code === 'PRECONDITION_FAILED') return false; throw markStorageError(error, 'create'); }
+  }
+  async delete(key) {
+    try { await this.blob.delete(key); }
+    catch (error) { throw markStorageError(error, 'delete'); }
+  }
+  async list(prefix) {
+    try {
+      const { blobs } = await this.blob.list({ prefix, consistency: 'strong', limit: 500 });
+      return blobs.map(x => x.key);
+    } catch (error) { throw markStorageError(error, 'list'); }
+  }
 }
 export async function withLock(store, key, action) {
   // Immutable lease chain: no compare-and-delete race, even after timeout recovery.
