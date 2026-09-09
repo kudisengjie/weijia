@@ -31,7 +31,3 @@ export async function withLock(store, key, action) {
   }
   throw new HttpError(503,'状态存储恢复链过长，请管理员检查存储服务。');
 }
-export async function makeProductionStore() {
-  const { getStore } = await import('@edgeone/pages-blob');
-  return new JsonStore(getStore({ name: 'lxue-geo-private', consistency: 'strong' }));
-}

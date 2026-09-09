@@ -5,7 +5,7 @@
   "cloudFunctions": {
     "nodejs": {
       "maxDuration": 120,
-      "externalNodeModules": ["@edgeone/pages-blob", "mammoth", "pdfjs-server"]
+      "externalNodeModules": ["mammoth", "pdfjs-server"]
     }
   },
   "headers": [

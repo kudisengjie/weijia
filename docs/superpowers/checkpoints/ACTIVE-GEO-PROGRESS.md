@@ -40,8 +40,9 @@ EdgeOne Pages，不使用 CloudBase。A 登录布局：桌面人物在左、表�
 ## 未完成项，按顺序继续
 
 1. 运行恢复命令确认发布状态；若 HEAD 已等于 origin/master，不要重复推送。
-2. 当前没有可用的 EdgeOne 部署授权/Token。用户线上截图为 `STORAGE_UNAVAILABLE`，由函数入口的存储初始化 catch 返回，无法仅凭页面判断具体原因。按 `geo-site/DEPLOYMENT.md` 配置服务端变量并重新部署；Blob 命名空间由 SDK 自动创建，不要继续重复“启用 Blob 开关”的未经证实指引。不得提交 `.local` 配置文件。
-3. 控制台配置后做一次真实线上登录与小批次验收；此前本地浏览器和模拟测试无需无变化重复执行。
+2. 用户已在 EdgeOne 配好构建目录、7 个服务端变量和 Node 22.17.1，并重新部署，但旧函数仍返回 `STORAGE_UNAVAILABLE`。代码侧 Blob 注入修复完成，需推送后再次部署新提交。
+3. 新提交部署后先验证登录；若仍失败，错误页已改为要求查看 Cloud Functions 日志，日志会输出脱敏的 `blob_init_failed` 名称和代码。依据该单次日志继续，不猜测、不循环改配置。
+4. 登录通过后做一次真实线上小批次验收；此前本地浏览器、模拟测试和 IMA 只读测试无需无变化重复执行。
 
 ## 已知限制 / 必须诚实说明
 
@@ -65,3 +66,11 @@ EdgeOne Pages，不使用 CloudBase。A 登录布局：桌面人物在左、表�
 - 官方说明确认 Blob 首次 SDK 调用自动创建命名空间；环境变量更改需要新部署。底层 Blob 初始化异常目前被入口 catch 隐藏，尚无云端函数日志证据，不能臆断为未启用、缺少某个环境变量或 SDK 打包问题。后台操作步骤已加入 `DEPLOYMENT.md`。
 - 2026-09-09 已实时核验 GitHub `master` 指向登录文案修复提交 `7adcc7c`。用户随后截图中 EdgeOne 最近部署仍显示旧提交 `87d3e22`；需等待/触发新部署后在控制台核对其提交号，不能由 Git 状态代替线上部署确认。
 - 修复进度漂移根因：静态文档不再声明动态推送状态；恢复脚本明确显示完整本地 HEAD、GitHub 引用来源、同步关系、本地主分支，并将 EdgeOne 状态标为必须从部署记录核对。
+
+## 最新增量：EdgeOne Blob 初始化修复
+
+- 用户截图确认 `geo-site` 根目录、`dist` 输出、`npm run build`、`npm ci`、全部 7 个环境变量和 Node 22.17.1 均已配置，因此不再重复要求修改这些项目。
+- 根因定位为代码与官方 Cloud Functions Blob 示例不一致：项目把 `@edgeone/pages-blob` 动态导入且列为 `externalNodeModules`，导致其构建时部署凭据占位符无法随函数 bundle 注入。
+- 修复为函数入口静态导入 `getStore`，并仅 external 化确实含静态/原生依赖的 `mammoth` 和 `pdfjs-server`；存储初始化错误只记录异常名与代码，不记录 message、stack 或密钥。
+- TDD 回归先以 2 项失败复现，修复后通过。后端相关测试 18/18 通过；Node 20 目标函数按 EdgeOne external 配置打包成功，Blob SDK 已进入 73.6KB bundle、保留平台部署凭据注入标记，bundle 导入成功。
+- 线上是否恢复必须以新提交部署后的真实登录验证为准，本地不能冒充 EdgeOne 运行时。
