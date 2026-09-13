@@ -35,11 +35,15 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
   function renderConnections() {
     if(!settings)return;
     const model=settings.model,configured=settings.providers[model.id].configured;
+    document.querySelectorAll('[data-selected-model-provider]').forEach(n=>n.textContent=model.provider);
+    document.querySelectorAll('[data-selected-model-name]').forEach(n=>n.textContent=model.model);
     document.querySelectorAll('[data-selected-model-preflight]').forEach(n=>n.textContent=`${model.label} · ${configured?'已配置，尚未验证':'未配置 API'}`);
     document.querySelectorAll('[data-selected-model-service]').forEach(n=>n.textContent=`${model.provider} · ${configured?'已配置':'未配置'}`);
+    document.querySelectorAll('[data-selected-model-status]').forEach(n=>n.textContent=configured?'已配置':'未配置');
     document.querySelectorAll('[data-selected-model-label]').forEach(n=>n.textContent=activeBatch?.model.label||model.label);
     document.querySelectorAll('[data-selected-model-connection]').forEach(n=>n.textContent=`已保存：${model.label} · ${configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-ima-status]').forEach(n=>n.textContent=settings.ima.configured?'IMA · 已配置（运行时校验权限）':'IMA · 等待管理员配置');
+    document.querySelectorAll('[data-ima-badge-status]').forEach(n=>n.textContent=settings.ima.configured?'已配置':'未配置');
     const chip=document.querySelector('.geo-service-chips > span');chip.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 未配置';
     const expiry=settings.ima.expiresAt;
     $('ima-expiry').textContent=expiry?`到期日期：${expiry}${Date.parse(expiry)-Date.now()<7*86400000?' · 即将到期或已过期，请管理员更新':''}`:'到期日期尚未登记。共享凭据由管理员维护。';

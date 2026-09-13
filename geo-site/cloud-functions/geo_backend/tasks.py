@@ -16,7 +16,10 @@ def text_value(value: object, label: str, maximum: int, required: bool = True) -
     return value
 
 def parse_tasks(rows: object, companies: object) -> tuple[list[dict[str, object]], list[dict[str, str]]]:
-    if not isinstance(rows, list) or len(rows) < 2 or len(rows) > 101 or any(not isinstance(row, list) for row in rows):
+    if not isinstance(rows, list) or any(not isinstance(row, list) for row in rows):
+        raise ApiError(400, "任务表需要标题行和任务行，每批最多 100 行。")
+    rows = [row for row in rows if any(str(cell or "").strip() for cell in row)]
+    if len(rows) < 2 or len(rows) > 101:
         raise ApiError(400, "任务表需要标题行和任务行，每批最多 100 行。")
     if not isinstance(companies, list) or not companies or len(companies) > 20:
         raise ApiError(400, "请上传并指定公司介绍文档，每批最多 20 份。")

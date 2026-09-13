@@ -77,7 +77,7 @@ body {
         radial-gradient(circle at 7% 3%, rgba(135, 185, 255, .22), transparent 27rem),
         radial-gradient(circle at 94% 9%, rgba(204, 231, 255, .55), transparent 25rem),
         #f7fbff;
-    font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+    font-family: "Microsoft YaHei", "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
     font-size: 14px;
 }
 
@@ -337,7 +337,10 @@ label:focus-within {
 .geo-clear-button:disabled { opacity: .46; cursor: not-allowed; }
 .geo-run-area { display: flex; align-items: center; gap: 12px; }
 .geo-run-area span { color: #8295aa; font-size: 9px; }
-.geo-run-button { border: 0; color: #8093aa; background: #dfe8f3; cursor: not-allowed; }
+.geo-run-button { border: 0; transition: color .18s ease, background-color .18s ease, box-shadow .18s ease; }
+.geo-run-button:not(:disabled) { color: #fff; background: #285b8d; box-shadow: 0 8px 18px rgba(40, 91, 141, .2); cursor: pointer; }
+.geo-run-button:not(:disabled):hover { background: #3470aa; }
+.geo-run-button:disabled { color: #8093aa; background: #dfe8f3; box-shadow: none; cursor: not-allowed; }
 
 .geo-empty-state { display: grid; place-items: center; min-height: 430px; padding: 40px; border: 1px solid var(--line); border-radius: 18px; color: #7d92aa; background: rgba(252, 254, 255, .9); text-align: center; box-shadow: var(--shadow); }
 .geo-empty-state > span { display: grid; place-items: center; width: 70px; height: 70px; border: 1px solid #bcd8f5; border-radius: 50%; color: #5f94d8; background: #edf6ff; font-size: 28px; }
@@ -412,7 +415,7 @@ label:focus-within {
 .geo-service-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: auto; padding-top: 12px; }
 .geo-service-chips span { padding: 8px 4px; border: 1px solid #cce1d9; border-radius: 8px; color: #45816b; background: #eff9f5; font-size: 8px; font-weight: 800; text-align: center; }
 
-@media (min-width: 1181px) and (max-width: 1360px) {
+@media (min-width: 1181px) and (max-width: 1900px) {
     .geo-provider-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -476,6 +479,56 @@ label:focus-within {
     .geo-provider-grid { grid-template-columns: 1fr; gap: 8px; }
     .geo-provider-card { padding: 11px; }
     .geo-settings-grid .geo-model-option strong { font-size: 11px; }
+}
+
+@media (min-width: 861px) {
+    .geo-topbar__title strong { font-size: 18px; }
+    .geo-topbar__eyebrow, .geo-heading__eyebrow { font-size: 12px; }
+    .geo-home-link, .geo-mode-pill { font-size: 14px; }
+    .geo-brand small, .geo-steps small, .geo-sidebar__foot small { font-size: 12px; line-height: 1.55; }
+    .geo-heading p { font-size: 14px; line-height: 1.65; }
+    .geo-model-badge { min-width: 126px; padding: 11px 14px; }
+    .geo-model-badge small { font-size: 12px; }
+    .geo-model-badge strong { margin-top: 4px; font-size: 14px; line-height: 1.4; }
+    .geo-upload-card { padding: 22px; }
+    .geo-card-heading__index { font-size: 12px; }
+    .geo-card-heading h2 { font-size: 18px; }
+    .geo-card-heading p, .geo-dropzone > span:last-child { font-size: 13px; line-height: 1.65; }
+    .geo-card-heading__state { padding: 6px 10px; font-size: 12px; }
+    .geo-dropzone strong { font-size: 17px; }
+    .geo-file-slot__empty, .geo-file-list__empty { font-size: 13px; }
+    .geo-file-item { padding: 12px 14px; }
+    .geo-file-item strong, .geo-document-picker strong { font-size: 14px; }
+    .geo-file-item small, .geo-document-picker small { font-size: 12px; line-height: 1.5; }
+    .geo-file-item em { font-size: 12px; }
+    .geo-preview { padding: 16px; }
+    .geo-preview__heading h3 { font-size: 16px; }
+    .geo-preview__heading select { min-height: 40px; font-size: 13px; }
+    .geo-preview__meta small { font-size: 12px; }
+    .geo-preview__meta strong { font-size: 13px; }
+    .geo-table-wrap table { font-size: 13px; line-height: 1.55; }
+    .geo-table-wrap th, .geo-table-wrap td { padding: 10px 12px; }
+    .geo-preview--documents summary { padding: 13px 14px; }
+    .geo-preview--documents summary strong { font-size: 14px; }
+    .geo-preview--documents summary span { font-size: 12px; }
+    .geo-preview--documents pre { font: 14px/1.85 "Microsoft YaHei", "Microsoft YaHei UI", "PingFang SC", sans-serif; }
+    .geo-preflight h2 { font-size: 16px; }
+    .geo-preflight p { font-size: 12px; line-height: 1.65; }
+    .geo-preflight__grid div { padding: 12px 13px; font-size: 13px; }
+    .geo-run-area span { font-size: 12px; }
+    .geo-clear-button, .geo-run-button { min-height: 46px; font-size: 14px; }
+    .geo-empty-state p { font-size: 14px; }
+    .geo-settings-grid > article > span, .geo-model-setting__intro > span, .geo-model-catalog > legend { font-size: 12px; }
+    .geo-settings-grid > article > p, .geo-model-setting__intro > p { font-size: 13px; }
+    .geo-settings-grid .geo-provider-card__identity strong { font-size: 14px; }
+    .geo-settings-grid .geo-provider-card__identity small { font-size: 12px; }
+    .geo-provider-card__status { font-size: 12px !important; }
+    .geo-settings-grid .geo-model-option strong { font-size: 13px; }
+    .geo-model-summary code { font-size: 12px; }
+    .geo-cabin__heading span { font-size: 12px; }
+    .geo-cabin__heading strong { font-size: 18px; }
+    .geo-status-list div { font-size: 13px; line-height: 1.45; }
+    .geo-service-chips span { padding: 10px 6px; font-size: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

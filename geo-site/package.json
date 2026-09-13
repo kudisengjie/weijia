@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test src/*.test.mjs scripts/*.test.mjs",
-    "test:python": ".venv/Scripts/python.exe -m unittest discover -s tests_py -v",
+    "test:python": "node scripts/test-python.mjs",
     "build": "node scripts/build.mjs",
     "dev": "node scripts/dev.mjs",
     "setup": "node scripts/setup.mjs",

@@ -8,6 +8,7 @@ import {
   DEFAULT_MODEL_SLOT,
   getModelPresentation,
 } from "./model-switch.js";
+import { normalizeSpreadsheetRows } from "./spreadsheet-rows.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("assets/pdf.worker.min.mjs", document.baseURI).href;
 
@@ -115,8 +116,8 @@ function makeMeta(label, value) {
 }
 
 function readSpreadsheetRows(sheet) {
-  return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false }).map((row) =>
-    Array.from(row, (cell) => String(cell ?? "")),
+  return normalizeSpreadsheetRows(
+    XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false }),
   );
 }
 

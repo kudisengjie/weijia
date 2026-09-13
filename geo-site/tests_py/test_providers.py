@@ -31,7 +31,7 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(b'"enable_thinking":false', captured["request"].content)
         self.assertEqual("Bearer secret", captured["request"].headers["authorization"])
 
-    async def test_mimo_uses_api_key_header(self):
+    async def test_mimo_uses_openai_compatible_bearer_header(self):
         from geo_backend.models import model_selection
         from geo_backend.providers import complete
 
@@ -48,8 +48,88 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
             await complete(model_selection("mimo", "primary"), "mimo-secret", [{"role": "user", "content": "test"}], client=client)
 
-        self.assertEqual("mimo-secret", captured["headers"]["api-key"])
-        self.assertNotIn("authorization", captured["headers"])
+        self.assertEqual("Bearer mimo-secret", captured["headers"]["authorization"])
+        self.assertNotIn("api-key", captured["headers"])
+
+    async def test_each_provider_uses_its_official_endpoint(self):
+        from geo_backend.models import model_selection
+        from geo_backend.providers import complete
+
+        expected = {
+            "hunyuan": "https://tokenhub.tencentmaas.com/v1/chat/completions",
+            "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+            "doubao": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+            "deepseek": "https://api.deepseek.com/chat/completions",
+            "minimax": "https://api.minimax.cn/v1/chat/completions",
+            "zhipu": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+            "kimi": "https://api.moonshot.ai/v1/chat/completions",
+            "mimo": "https://api.xiaomimimo.com/v1/chat/completions",
+        }
+
+        for provider, endpoint in expected.items():
+            with self.subTest(provider=provider):
+                selected = model_selection(provider, "primary")
+                captured = {}
+
+                def handler(request):
+                    captured["url"] = str(request.url)
+                    return httpx.Response(
+                        200,
+                        request=request,
+                        json={"model": selected["modelId"], "choices": [{"finish_reason": "stop", "message": {"content": "OK"}}]},
+                    )
+
+                async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                    await complete(selected, "secret", [{"role": "user", "content": "test"}], client=client, test=True)
+
+                self.assertEqual(endpoint, captured["url"])
+
+    async def test_minimax_kimi_and_mimo_use_completion_token_field(self):
+        from geo_backend.models import model_selection
+        from geo_backend.providers import complete
+
+        for provider in ("minimax", "kimi", "mimo"):
+            with self.subTest(provider=provider):
+                selected = model_selection(provider, "primary")
+                captured = {}
+
+                def handler(request):
+                    captured["body"] = request.content
+                    return httpx.Response(
+                        200,
+                        request=request,
+                        json={"model": selected["modelId"], "choices": [{"finish_reason": "stop", "message": {"content": "OK"}}]},
+                    )
+
+                async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                    await complete(selected, "secret", [{"role": "user", "content": "test"}], client=client, test=True)
+
+                self.assertIn(b'"max_completion_tokens":128', captured["body"])
+                self.assertNotIn(b'"max_tokens"', captured["body"])
+
+    async def test_reasoning_models_allow_full_length_article_output(self):
+        from geo_backend.models import model_selection
+        from geo_backend.providers import complete
+
+        expected_limits = {"hunyuan": 16384, "minimax": 65536, "kimi": 16384, "mimo": 32768}
+        for provider, limit in expected_limits.items():
+            with self.subTest(provider=provider):
+                selected = model_selection(provider, "primary")
+                captured = {}
+
+                def handler(request):
+                    captured["body"] = request.content
+                    return httpx.Response(
+                        200,
+                        request=request,
+                        json={"model": selected["modelId"], "choices": [{"finish_reason": "stop", "message": {"content": "OK"}}]},
+                    )
+
+                async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                    await complete(selected, "secret", [{"role": "user", "content": "test"}], client=client)
+
+                field = b'"max_completion_tokens"' if provider in {"minimax", "kimi", "mimo"} else b'"max_tokens"'
+                self.assertIn(field + b':' + str(limit).encode(), captured["body"])
 
     async def test_returned_model_must_match_the_selected_model(self):
         from geo_backend.errors import ApiError
@@ -67,6 +147,28 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(ApiError) as rejected:
                 await complete(model_selection("deepseek", "primary"), "secret", [], client=client)
         self.assertEqual("MODEL_MISMATCH", rejected.exception.code)
+
+    async def test_kimi_direct_api_uses_the_selected_official_model(self):
+        from geo_backend.models import model_selection
+        from geo_backend.providers import complete
+
+        def handler(request):
+            return httpx.Response(
+                200,
+                request=request,
+                json={"model": "kimi-k2.7-code", "choices": [{"finish_reason": "stop", "message": {"content": "OK"}}]},
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            result = await complete(
+                model_selection("kimi", "primary"),
+                "secret",
+                [{"role": "user", "content": "test"}],
+                client=client,
+                test=True,
+            )
+
+        self.assertEqual("OK", result)
 
     async def test_protocol_disconnect_is_reported_without_retry(self):
         from geo_backend.errors import ApiError

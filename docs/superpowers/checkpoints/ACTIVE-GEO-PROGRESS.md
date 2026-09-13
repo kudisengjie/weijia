@@ -8,45 +8,50 @@
 - 当前分支：`feat/static-geo-model-catalog`
 - 发布目标：`kudisengjie/weijia` 的 `master`，用户已授权推送。
 - GEO 子站目录：`geo-site`
-- 不要切回旧 `E:/codex/weijia` 副本，不要重复图片替换、静态模型目录、排版和旧 Node/Blob 修复。
+- 不要切回旧 `E:/codex/weijia` 副本；不要重复登录、Python/PostgreSQL 迁移、图片替换和旧 Node/Blob 修复。
 
 ## 用户已确定的范围
 
-使用 EdgeOne Pages，不使用 CloudBase。登录页继续采用 A 方案和用户提供的透明人物图；登录后进入可运行 GEO 工作台。用户填写八家模型自己的 API（不包含 Agnes），每个批次固定创建时所选模型。IMA 使用站点所有者凭据，管理员可按月更新；模型 Key、IMA 覆盖凭据、会话和批次进度只在服务端保存。
+使用 EdgeOne Pages + Python Cloud Functions + Neon PostgreSQL，不使用 CloudBase。登录页采用 A 方案和用户提供的人物图。用户在现有设置界面填写八家模型自己的 API；IMA 使用站点所有者凭据，管理员可按月更新。模型 Key、IMA 覆盖凭据、会话和批次进度只在服务端保存。
+
+移动端当前可接受，本阶段只重点改善 PC。用户新增但明确要求稍后处理的需求：第一次运行前选择文章输出目录，同一台设备复用已授权目录，不要每批重复选择。
 
 ## 当前实现
 
-- `geo-site/cloud-functions/api/[[default]].py`：EdgeOne Python ASGI 入口；入口显式补入 `cloud-functions` 路径，保证共享后端包可导入。
-- `geo-site/cloud-functions/geo_backend/`：FastAPI 路由、Node scrypt 兼容密码验证、HttpOnly/Secure/SameSite 会话、CSRF、登录限流、PostgreSQL 仓储、幂等批次状态机、IMA 和八家模型适配器。
-- `geo-site/cloud-functions/schema.py`：Neon PostgreSQL/pgcrypto 表结构，包含稳定用户、会话、模型设置、IMA 覆盖、批次 JSONB 状态和 `(batch_id, seq)` 防重复领取记录；首次连接在事务级 advisory lock 下幂等初始化。
-- `geo-site/cloud-functions/requirements.txt`：FastAPI、httpx、psycopg、pydantic、pypdf、python-docx。
-- `geo-site/edgeone.json`：仅启用 Python Cloud Functions，最长运行 120 秒；旧 Node/Blob 入口和依赖已删除。
-- `geo-site/src/runtime.js`：登录成功先展示工作台，再加载设置和历史；加载失败不回到登录页，也不会重复读取；诊断文案指向 Python Cloud Functions/PostgreSQL。
-- `geo-site/DEPLOYMENT.md`：唯一部署路径为 EdgeOne + Neon，说明现有 7 个变量保持不变，只增加 `DATABASE_URL`，以及 `/api/health` 验收方式。
-- `geo-site/scripts/setup.mjs`、`scripts/dev.mjs`、`scripts/smoke_ima.py`：不输出密钥；初始化脚本从 `GEO_ACCOUNT` 环境读取账号，不把账号硬编码进仓库。
+- EdgeOne Python ASGI + PostgreSQL 登录、会话、CSRF、限流、模型设置、IMA 覆盖和幂等批次状态机仍保留；用户已确认上一版线上可以真实登录。
+- PC 端在 861px 以上使用微软雅黑优先的独立排版层：辅助文字 12px、正文/表格 13–14px、卡片标题 16–18px；移动端原布局不变。
+- 运行按钮只有在 `disabled` 时显示灰色；可运行时显示深蓝底白字。
+- 顶部模型和 IMA 徽标已改为读取 `/api/settings`，与创作准备区、设置页和右侧状态舱使用同一配置状态，不再保留静态“未连接”。
+- Excel 读取端和 Python 后端都会删除整行为空的格式行。包含 200 个格式行但只有少量真实任务的表格不再误触 100 行限制。
+- API Key 设置交互未改。厂商适配已修正腾讯混元、MiniMax 中国开放平台和 Kimi 的官方域名，MiMo Bearer 鉴权，以及 MiniMax/Kimi/MiMo 的 token 字段；不自动重试外部生成请求。
+- 默认目录保留混元 Hy3/Hy4、Qwen3.8、Seed 2.0、DeepSeek V4、MiMo V2.5；MiniMax 更新为 M2.7/M3，智谱更新为 GLM-5.3 Flash/5.3；Kimi 界面保留用户指定的 K2.7 Code/K3，并使用开放平台 `kimi-k2.7-code`/`kimi-k3` 请求 ID。
+- `npm run test:python` 已改用跨平台 Node 启动器，在 Windows 不再因路径分隔符无法启动虚拟环境。
 
-## 本次新鲜验证证据
+## 本阶段新鲜验证证据
 
-- `.venv/Scripts/python.exe -m unittest discover -s tests_py -v`：32/32 通过。
-- `node --test src/runtime-auth.test.mjs src/model-switch.test.mjs`：12/12 通过。
-- `npm run build`：成功生成 `assets/app.js`、PDF worker 和白名单 `dist`。
+- `npm test`：19/19 通过。
+- `npm run test:python`：37/37 通过。
+- `npm run build`：成功生成最新 `assets/app.js`、PDF worker 和白名单 `dist`。
 - `git diff --check`：无空白错误。
-- 回归边界已先复现再修复：超大登录 body 返回 413；恶意 IMA 端口返回安全的 422；HTTP 传输层断开只报告一次错误，不自动重试。
-- 已运行 `npm install` 更新 `package-lock.json`；旧 `@edgeone/pages-blob`、`pdfjs-server` 和 Node 服务端已从依赖/源码中移除。
+- TDD 回归先失败再修复：Excel 空白格式行、顶部连接状态、桌面字号、八家厂商地址/鉴权/token 字段、Kimi 开放平台模型 ID。
+- Playwright 已覆盖 1920×1000 工作区与 1440×900 设置页；1440px 下模型卡片自动两列、页面没有横向溢出。用本地 API mock 确认 IMA 与 DeepSeek 配置后，顶部、创作准备区和右侧状态舱同时显示“已配置”；切到尚未保存的 Kimi 时，顶部仍保持已保存的 DeepSeek 名称和状态，编辑区单独显示待保存选择。
 
-## 还不能声称完成的事项
+## 当前三层状态
 
-1. 当前提交尚未完成 Git 检查点和推送；完成最后的状态/秘密扫描后再提交并推送到授权的 `master`。
-2. 本机没有可用 Neon `DATABASE_URL`，因此没有冒充完成线上 PostgreSQL、EdgeOne `/api/health`、真实登录、真实模型或真实批次验收。用户在 EdgeOne 新增 `DATABASE_URL` 后必须重新部署 `master`，再按 `DEPLOYMENT.md` 顺序验收。
-3. IMA 真实只读测试曾在旧运行链路通过，但 Python/Neon 新线上链路尚未宣称真实通过；线上验收时只做一次明确的小批次和一次用户授权的真实模型测试。
+- 本地工作树：本阶段实现与验证已完成，收尾提交已建立；推送状态见下方。
+- GitHub：远端 `master` 仍是上一版 Python/PostgreSQL 提交；本阶段尚未推送。
+- EdgeOne：上一版已由用户确认可以登录；本阶段 PC/IMA/Excel/模型适配修复尚未部署。
 
-## EdgeOne 后台接续动作
+## 仍需完成或现场确认
 
-保留已有 `APP_ORIGIN`、`GEO_ACCOUNT`、`GEO_PASSWORD_HASH`、`GEO_MASTER_KEY`、`IMA_ADMIN_SECRET`、`IMA_OPENAPI_CLIENTID`、`IMA_OPENAPI_APIKEY` 的值，不重新生成；只新增 Neon pooled connection string 为 `DATABASE_URL`，使用 `sslmode=require`。保存后重新部署 `master`，先访问 `/api/health`，再登录。任何截图都遮盖连接串、哈希、根密钥、管理员口令、IMA 和模型 Key。
+1. 建立本地 Git 检查点并推送到授权的 GitHub `master`，等待 EdgeOne 自动部署。
+2. 部署后检查 `/api/health`、登录和顶部 IMA 状态。没有读取或输出任何密钥值。
+3. Mock 测试证明请求契约正确，但不能代替各厂商账号权限、余额和模型开通状态。线上已有 DeepSeek 密钥时，可通过“测试已保存模型”发起一次明确的小请求；其余厂商必须在各自 Key 配置后逐个测试，不能宣称未配置厂商已经真实成功。
+4. 后续阶段实现文章输出目录选择与同设备复用；浏览器需要采用 File System Access API，并为不支持的浏览器提供逐篇下载退路。
 
 ## 重要限制
 
-- 原生联网搜索没有启用。
 - 浏览器关闭后已完成的批次步骤仍持久化，但不会后台无限自动推进。
-- 模型失败/超时不自动重发；只有用户明确恢复超时步骤才会继续，避免重复计费。
+- 模型失败/超时不自动重发；只有用户明确恢复失败步骤才继续，避免重复计费。
 - IMA 证据最多读取前六份完整原文；超长或不支持格式明确报错，不静默截断。
+- `.local`、数据库连接串、密码、管理员口令、IMA 与模型 Key 不得进入 Git 或进度记录。

@@ -157,6 +157,30 @@ test("workspace omits the static preview notice module", () => {
   assert.doesNotMatch(styles, /\.geo-notice/);
 });
 
+test("top connection badges are runtime-driven instead of static labels", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const runtime = fs.readFileSync(path.join(root, "src", "runtime.js"), "utf8");
+
+  assert.match(html, /data-selected-model-status/);
+  assert.match(html, /data-ima-badge-status/);
+  assert.match(runtime, /\[data-selected-model-status\]/);
+  assert.match(runtime, /\[data-ima-badge-status\]/);
+  assert.match(runtime, /\[data-selected-model-provider\][^\n]+model\.provider/);
+  assert.match(runtime, /\[data-selected-model-name\][^\n]+model\.model/);
+});
+
+test("desktop typography uses Microsoft YaHei and readable content sizes", () => {
+  const styles = fs.readFileSync(path.join(root, "styles.css"), "utf8");
+
+  assert.match(styles, /font-family:\s*"Microsoft YaHei",/);
+  assert.match(styles, /@media \(min-width:\s*861px\)/);
+  assert.match(styles, /\.geo-table-wrap table\s*\{[^}]*font-size:\s*13px;/s);
+  assert.match(styles, /\.geo-model-badge strong\s*\{[^}]*font-size:\s*14px;/s);
+  assert.match(styles, /\.geo-run-button:not\(:disabled\)\s*\{[^}]*cursor:\s*pointer;/s);
+  assert.match(styles, /\.geo-run-button:disabled\s*\{[^}]*cursor:\s*not-allowed;/s);
+  assert.match(styles, /@media \(min-width:\s*1181px\) and \(max-width:\s*1900px\)/);
+});
+
 test("login slogan stays on one line with both captions centered under the mascot", () => {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const styles = fs.readFileSync(path.join(root, "styles.css"), "utf8");

@@ -76,6 +76,15 @@ class BatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(1, len(self.repository.batches))
         self.assertEqual("user-1", next(iter(self.repository.batches.values()))["user_id"])
 
+    async def test_blank_spreadsheet_formatting_rows_do_not_count_toward_limit(self):
+        expires = datetime.now(timezone.utc) + timedelta(days=7)
+        body = batch_body()
+        body["rows"].extend([["", " ", None] for _ in range(198)])
+
+        created = self.service.create(body, "user-1", expires)
+
+        self.assertEqual(1, created["total"])
+
     async def test_repeated_sequence_never_repeats_the_external_step(self):
         expires = datetime.now(timezone.utc) + timedelta(days=7)
         created = self.service.create(batch_body(), "user-1", expires)

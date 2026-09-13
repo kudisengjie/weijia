@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#eef6ff">
     <title>零雪 GEO｜批量文章工作台</title>
     <meta name="description" content="零雪 GEO 批量文章工作台。登录后连接自己的模型 API，使用共享 IMA 知识库生成与审核文章。">
-    <link rel="stylesheet" href="styles.css?v=20260908-login-copy">
+    <link rel="stylesheet" href="styles.css?v=20260913-pc-runtime">
 </head>
 <body>
     <a class="skip-link" href="#geo-main">跳到工作区</a>
@@ -53,7 +53,7 @@
             <section class="geo-view is-active" data-view-panel="workspace">
                 <div class="geo-heading">
                     <div><span class="geo-heading__eyebrow">START A GEO BATCH</span><h1>启动零雪GEO任务</h1><p>上传任务表与公司介绍文档，先确认页面读取到的内容是否正确。</p></div>
-                    <div class="geo-model-badges" aria-label="API 连接状态" aria-live="polite"><span class="geo-model-badge"><small data-selected-model-provider>DeepSeek</small><strong><span data-selected-model-name>V4 Flash</span> · 未连接</strong></span><span class="geo-model-badge"><small>IMA API</small><strong>未连接</strong></span></div>
+                    <div class="geo-model-badges" aria-label="API 连接状态" aria-live="polite"><span class="geo-model-badge"><small data-selected-model-provider>DeepSeek</small><strong><span data-selected-model-name>V4 Flash</span> · <span data-selected-model-status>未配置</span></strong></span><span class="geo-model-badge"><small>IMA API</small><strong data-ima-badge-status>未配置</strong></span></div>
                 </div>
                 <div class="geo-workspace">
                     <section class="geo-upload-card" aria-labelledby="task-upload-title">
@@ -126,7 +126,7 @@
                                     <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="minimax:primary" data-provider="minimax" data-slot="primary" aria-label="MiniMax M2.7"><span><i aria-hidden="true"></i><strong>M2.7</strong></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="minimax:secondary" data-provider="minimax" data-slot="secondary" aria-label="MiniMax M3"><span><i aria-hidden="true"></i><strong>M3</strong></span></label></div>
                                 </article>
                                 <article class="geo-provider-card">
-                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/zhipu.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-provider-card__identity"><strong>智谱 GLM</strong><small>GLM-5.3</small></span><span class="geo-provider-card__status">未接入</span></header>
+                                    <header class="geo-provider-card__header"><span class="geo-provider-card__logo"><img src="assets/model-logos/zhipu.png" alt="" width="200" height="200" loading="lazy"></span><span class="geo-provider-card__identity"><strong>智谱 GLM</strong><small>GLM-5 系列</small></span><span class="geo-provider-card__status">未接入</span></header>
                                     <div class="geo-provider-card__options"><label class="geo-model-option"><input type="radio" name="model-option" value="zhipu:primary" data-provider="zhipu" data-slot="primary" aria-label="智谱 GLM-5.3 Flash"><span><i aria-hidden="true"></i><strong>GLM-5.3 Flash</strong></span></label><label class="geo-model-option"><input type="radio" name="model-option" value="zhipu:secondary" data-provider="zhipu" data-slot="secondary" aria-label="智谱 GLM-5.3"><span><i aria-hidden="true"></i><strong>GLM-5.3</strong></span></label></div>
                                 </article>
                                 <article class="geo-provider-card">
@@ -157,6 +157,6 @@
         </aside>
     </div>
     <div id="runtime-toast" class="runtime-toast" role="status" hidden></div>
-    <script src="assets/app.js?v=20260908-runtime" defer></script>
+    <script src="assets/app.js?v=20260913-pc-runtime" defer></script>
 </body>
 </html>

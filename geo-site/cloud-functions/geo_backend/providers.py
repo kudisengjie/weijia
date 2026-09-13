@@ -10,25 +10,34 @@ ENDPOINTS = {
     "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
     "doubao": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
     "deepseek": "https://api.deepseek.com/chat/completions",
-    "minimax": "https://api.minimaxi.com/v1/chat/completions",
+    "minimax": "https://api.minimax.cn/v1/chat/completions",
     "zhipu": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-    "kimi": "https://api.moonshot.cn/v1/chat/completions",
+    "kimi": "https://api.moonshot.ai/v1/chat/completions",
     "mimo": "https://api.xiaomimimo.com/v1/chat/completions",
+}
+
+COMPLETION_LIMITS = {
+    "hunyuan": 16384,
+    "minimax": 65536,
+    "kimi": 16384,
+    "mimo": 32768,
 }
 
 
 async def complete(model: dict[str, str], key: str, messages: list[dict[str, str]], *, client=None, test: bool = False) -> str:
     if not key:
         raise ApiError(422, "请先在设置中填写所选模型的 API Key。", "MODEL_KEY_REQUIRED")
-    payload: dict[str, object] = {"model": model["modelId"], "messages": messages, "stream": False, "max_tokens": 128 if test else 8192}
+    payload: dict[str, object] = {"model": model["modelId"], "messages": messages, "stream": False}
+    completion_limit = 128 if test else COMPLETION_LIMITS.get(model["id"], 8192)
+    if model["id"] in {"minimax", "kimi", "mimo"}:
+        payload["max_completion_tokens"] = completion_limit
+    else:
+        payload["max_tokens"] = completion_limit
     if model["id"] == "qwen":
         payload["enable_thinking"] = False
     if model["id"] in {"doubao", "zhipu", "deepseek"}:
         payload["thinking"] = {"type": "disabled"}
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
-    if model["id"] == "mimo":
-        headers.pop("Authorization")
-        headers["api-key"] = key
 
     owned = client is None
     http = client or httpx.AsyncClient(timeout=httpx.Timeout(100.0), follow_redirects=False)
@@ -53,6 +62,7 @@ async def complete(model: dict[str, str], key: str, messages: list[dict[str, str
     if not isinstance(content, str) or not content.strip():
         raise ApiError(502, "模型没有返回可用正文。", "MODEL_EMPTY")
     returned = data.get("model")
-    if not isinstance(returned, str) or (returned != model["modelId"] and not returned.startswith(model["modelId"] + "-")):
+    requested = model["modelId"]
+    if not isinstance(returned, str) or (returned != requested and not returned.startswith(requested + "-")):
         raise ApiError(502, "提供商返回模型与所选模型不一致。", "MODEL_MISMATCH")
     return content.strip()

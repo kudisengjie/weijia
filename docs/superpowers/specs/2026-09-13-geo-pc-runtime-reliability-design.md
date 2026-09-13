@@ -38,12 +38,12 @@
 - 通义千问：保留 Qwen3.8 Flash / Max。
 - 豆包：保留 Seed 2.0 Lite / Pro。
 - DeepSeek：保留 V4 Flash / Pro。
-- MiniMax：使用 M2.7 / M2.7 Highspeed，移除无法在官方目录确认的 M3。
-- 智谱 GLM：使用 GLM-5.2 / GLM-5.1，移除无法在官方目录确认的 GLM-5.3。
-- Kimi：界面保留用户指定的 K2.7 Code / K3；官方请求 ID 使用 `kimi-for-coding` / `k3`，并切换到当前 Moonshot API 域名。
+- MiniMax：使用 M2.7 / M3，并调用中国开放平台当前的 OpenAI 兼容接口。
+- 智谱 GLM：使用 GLM-5.3 Flash / GLM-5.3。
+- Kimi：界面保留用户指定的 K2.7 Code / K3；开放平台请求 ID 使用 `kimi-k2.7-code` / `kimi-k3`，并切换到当前 Kimi API 域名。
 - Xiaomi MiMo：保留 V2.5 / V2.5 Pro，改用官方 OpenAI 兼容的 Bearer 鉴权。
 
-MiniMax 与 MiMo 使用其官方文档要求的 `max_completion_tokens`；其他兼容接口保持 `max_tokens`。生成请求不自动重试，避免重复扣费或重复生成。
+MiniMax、Kimi 与 MiMo 使用其官方文档要求的 `max_completion_tokens`；混元使用不低于官方建议的输出额度，避免思考模型因额度过小截断。生成请求不自动重试，避免重复扣费或重复生成。
 
 ## 验证
 
