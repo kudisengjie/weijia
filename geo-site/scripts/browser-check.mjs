@@ -16,7 +16,7 @@ page.on('pageerror',error=>errors.push(error.message));
 const output=path.join(root,'.local/browser-check');await fs.mkdir(output,{recursive:true});
 const batch={id:'a'.repeat(32),model:{id:'kimi',label:'Kimi K3'},phase:'done',phaseLabel:'全部完成',seq:1,status:'completed',completed:1,total:1,requests:2,title:'验收品牌',articles:[{index:1,brand:'验收品牌',title:'验收问题',markdown:'# 测试文章\n\n仅用于界面验收。'}]};
 try {
-  await page.goto('http://127.0.0.1:8787',{waitUntil:'networkidle'});
+  await page.goto('http://127.0.0.1:8088',{waitUntil:'networkidle'});
   await assert.equal(await page.locator('.geo-shell').isVisible(),false);
   await page.screenshot({path:path.join(output,'login-desktop.png'),fullPage:true});
   await page.setViewportSize({width:390,height:844});

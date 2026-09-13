@@ -1,83 +1,52 @@
 # 零雪 GEO 当前检查点
 
-更新时间：2026-09-09。本文件只保存已经完成的功能、验证证据和后续事项，不再记录会随下一次提交立即过期的“当前已推送/已部署”结论。**本地、GitHub 和 EdgeOne 三层实时状态以恢复脚本及控制台显示为准，不能把其中任何两层混为一谈。**
+更新时间：2026-09-13。本文件只记录可复核的实现、验证和明确未完成项；本地、GitHub、EdgeOne 三层状态分开记录，不把“已保存”“已推送”“已部署”混为一谈。
 
 ## 从这里接续
 
-- 工作树：`E:/codex/weijia/.worktrees/static-geo-model-catalog`
-- 分支：`feat/static-geo-model-catalog`
+- 当前工作树：`E:/codex/weijia/.worktrees/static-geo-model-catalog`
+- 当前分支：`feat/static-geo-model-catalog`
 - 发布目标：`kudisengjie/weijia` 的 `master`，用户已授权推送。
-- 不要切回旧目录重写，不要重复此前图片替换、静态模型目录和排版任务。
-- 读取此记录后执行 `node geo-site/scripts/progress.mjs` 核对本地状态；发布状态重要时只执行一次 `node geo-site/scripts/progress.mjs --refresh` 实时刷新 GitHub。
+- GEO 子站目录：`geo-site`
+- 不要切回旧 `E:/codex/weijia` 副本，不要重复图片替换、静态模型目录、排版和旧 Node/Blob 修复。
 
 ## 用户已确定的范围
 
-EdgeOne Pages，不使用 CloudBase。A 登录布局：桌面人物在左、表单在右，手机人物缩小到表单上方。使用用户提供的透明人物 PNG，不重新生图。登录后用户填八家模型自己的 API，不包含 Agnes。整个批次固定创建时所选模型。IMA 使用站点所有者凭据，管理员能按月更新；密钥只保留在服务端。
+使用 EdgeOne Pages，不使用 CloudBase。登录页继续采用 A 方案和用户提供的透明人物图；登录后进入可运行 GEO 工作台。用户填写八家模型自己的 API（不包含 Agnes），每个批次固定创建时所选模型。IMA 使用站点所有者凭据，管理员可按月更新；模型 Key、IMA 覆盖凭据、会话和批次进度只在服务端保存。
 
-## 已保存的实现
+## 当前实现
 
-- `geo-site/server/`：登录哈希校验、HttpOnly Cookie、CSRF、同源检查、请求大小限制、AES-GCM 密钥加密、IMA 轮换、八厂商模型接口、完整原文解析、分阶段批次与防重复领取。
-- `geo-site/cloud-functions/api/[[path]].js`：EdgeOne Node Functions 同域接口入口。
-- `geo-site/src/runtime.js`、`index.html`、`styles.css`：A 登录页、API 配置、管理员更新、运行/暂停/继续、历史、已审核文章 MD 下载。
-- `geo-site/src/app.js`：公司文档保留完整正文而非只提交预览；按品牌绑定文档。
-- `geo-site/scripts/`：公开文件白名单构建、本地服务、私有配置初始化、只读 IMA smoke。
-- `geo-site/edgeone.json`：120 秒函数、私有 API 同源 CSP、dist 输出目录；前后端分开发布。
+- `geo-site/cloud-functions/api/[[default]].py`：EdgeOne Python ASGI 入口；入口显式补入 `cloud-functions` 路径，保证共享后端包可导入。
+- `geo-site/cloud-functions/geo_backend/`：FastAPI 路由、Node scrypt 兼容密码验证、HttpOnly/Secure/SameSite 会话、CSRF、登录限流、PostgreSQL 仓储、幂等批次状态机、IMA 和八家模型适配器。
+- `geo-site/cloud-functions/schema.py`：Neon PostgreSQL/pgcrypto 表结构，包含稳定用户、会话、模型设置、IMA 覆盖、批次 JSONB 状态和 `(batch_id, seq)` 防重复领取记录；首次连接在事务级 advisory lock 下幂等初始化。
+- `geo-site/cloud-functions/requirements.txt`：FastAPI、httpx、psycopg、pydantic、pypdf、python-docx。
+- `geo-site/edgeone.json`：仅启用 Python Cloud Functions，最长运行 120 秒；旧 Node/Blob 入口和依赖已删除。
+- `geo-site/src/runtime.js`：登录成功先展示工作台，再加载设置和历史；加载失败不回到登录页，也不会重复读取；诊断文案指向 Python Cloud Functions/PostgreSQL。
+- `geo-site/DEPLOYMENT.md`：唯一部署路径为 EdgeOne + Neon，说明现有 7 个变量保持不变，只增加 `DATABASE_URL`，以及 `/api/health` 验收方式。
+- `geo-site/scripts/setup.mjs`、`scripts/dev.mjs`、`scripts/smoke_ima.py`：不输出密钥；初始化脚本从 `GEO_ACCOUNT` 环境读取账号，不把账号硬编码进仓库。
 
-## 已取得的验证证据，不重复空跑
+## 本次新鲜验证证据
 
-以下来自本次开发中真实命令输出，不代表线上已验收：
+- `.venv/Scripts/python.exe -m unittest discover -s tests_py -v`：32/32 通过。
+- `node --test src/runtime-auth.test.mjs src/model-switch.test.mjs`：12/12 通过。
+- `npm run build`：成功生成 `assets/app.js`、PDF worker 和白名单 `dist`。
+- `git diff --check`：无空白错误。
+- 回归边界已先复现再修复：超大登录 body 返回 413；恶意 IMA 端口返回安全的 422；HTTP 传输层断开只报告一次错误，不自动重试。
+- 已运行 `npm install` 更新 `package-lock.json`；旧 `@edgeone/pages-blob`、`pdfjs-server` 和 Node 服务端已从依赖/源码中移除。
 
-- `npm test`：修复后的最终 21/21 通过。含登录/CSRF/密钥隔离、IMA 更新失败保留旧值、全批次模拟外部响应、防重复提交、并发领取，以及历史索引恢复/过期锁/登录来源隔离回归测试。
-- `npm run build`：成功生成浏览器 bundle 和公开 dist。
-- `node scripts/smoke-ima.mjs`：一次真实 IMA 只读请求成功，`copilotVisible: true`（11:57）。未进行真实模型生成测试；不要把模拟测试描述为模型真实调用。
-- 私有部署配置已生成于忽略目录 `.local`，仅记录存在，不记录内容。不要再次初始化或覆盖加密根密钥。
-- 浏览器验收已通过：1440px 桌面和 390px 手机 A 登录页、实际本地登录、模型 Key 保存与清空输入、横排模型按钮、完整正文提交、MD 下载；真实生成传输使用明确模拟，不消耗模型额度。
-- 恢复场景补测通过：创建返回 503 后再次提交仍沿用相同 requestId，不另建批次。
-- Node 20 目标函数 bundle 编译成功，函数入口导入通过。EdgeOne 线上打包和配置仍需控制台完成。
-- 一次集中代码审查结束，3 个重要问题已修复：锁过期恢复、登录按可信 context.clientIp 限流、幂等重试补回历史索引。没有第二轮循环审核。
-- 本地预览服务曾启动于 `http://127.0.0.1:8787`。恢复时先只读探测该地址，活着就复用；不要重复启动同端口服务。
+## 还不能声称完成的事项
 
-## 未完成项，按顺序继续
+1. 当前提交尚未完成 Git 检查点和推送；完成最后的状态/秘密扫描后再提交并推送到授权的 `master`。
+2. 本机没有可用 Neon `DATABASE_URL`，因此没有冒充完成线上 PostgreSQL、EdgeOne `/api/health`、真实登录、真实模型或真实批次验收。用户在 EdgeOne 新增 `DATABASE_URL` 后必须重新部署 `master`，再按 `DEPLOYMENT.md` 顺序验收。
+3. IMA 真实只读测试曾在旧运行链路通过，但 Python/Neon 新线上链路尚未宣称真实通过；线上验收时只做一次明确的小批次和一次用户授权的真实模型测试。
 
-1. 运行恢复命令确认发布状态；若 HEAD 已等于 origin/master，不要重复推送。
-2. 用户已在 EdgeOne 配好构建目录、7 个服务端变量和 Node 22.17.1，并重新部署，但旧函数仍返回 `STORAGE_UNAVAILABLE`。代码侧 Blob 注入修复完成，需推送后再次部署新提交。
-3. 新提交部署后先验证登录；若仍失败，错误页已改为要求查看 Cloud Functions 日志，日志会输出脱敏的 `blob_init_failed` 名称和代码。依据该单次日志继续，不猜测、不循环改配置。
-4. 登录通过后做一次真实线上小批次验收；此前本地浏览器、模拟测试和 IMA 只读测试无需无变化重复执行。
+## EdgeOne 后台接续动作
 
-## 已知限制 / 必须诚实说明
+保留已有 `APP_ORIGIN`、`GEO_ACCOUNT`、`GEO_PASSWORD_HASH`、`GEO_MASTER_KEY`、`IMA_ADMIN_SECRET`、`IMA_OPENAPI_CLIENTID`、`IMA_OPENAPI_APIKEY` 的值，不重新生成；只新增 Neon pooled connection string 为 `DATABASE_URL`，使用 `sslmode=require`。保存后重新部署 `master`，先访问 `/api/health`，再登录。任何截图都遮盖连接串、哈希、根密钥、管理员口令、IMA 和模型 Key。
 
-- 本版密钥和批次按登录会话隔离，7 天有效；退出或新登录不会恢复上一会话的私有数据。此处和“开发进度保存”是两件事。若用户要求 GEO 历史跨登录保存，应单独修订身份隔离方案，不能把共享账号下不同使用者的密钥合并。
-- 浏览器驱动下一步；关闭页面后已完成步骤仍保存，但不再自动启动后续步骤。
-- 原生联网搜索没有启用，不能声称已联网搜索。
-- IMA 检索最多取排名前六份完整证据文档；超长正文报错，不静默截断。
-- 函数运行上限及存储额度受 EdgeOne 套餐限制，不能承诺永远免费或无限运行。
+## 重要限制
 
-## 本次修复的接续问题
-
-代码未丢失，但此前只存在于未提交的隔离工作树，计划复选框也未更新；主目录仍是旧版本。现在用固定恢复入口、当前状态记录和本地 Git 检查点明确最新状态，避免接续时重新开始。
-
-首个实现检查点为 `7f54f59`；后续修复与交付以当前 HEAD 为准。GEO 运行进度另外修复了“批次正文保存成功、历史索引失败后无法恢复”的实际缺陷。
-
-## 最新增量：登录文案与 EdgeOne 配置说明
-
-- 移除标题 `<br>`，显示“让好内容，被 AI 看见。”一行；标题和副文案相对人物居中。保留原 A 方案的移动端紧凑人物布局，登录表单不改。
-- 一条定向回归测试先失败、修复后通过；公开构建成功。真实 Chrome 检查 1440、1024、801px 时标题单行、两段文字与图片中心偏差不足 1px；390px 无横向溢出。
-- 截图在忽略目录 `geo-site/.local/browser-check/login-copy-1440.png` 和 `login-copy-390.png`。浏览器只检查匿名登录页，API 为 401 模拟，没有重测 IMA 或付费模型。
-- 官方说明确认 Blob 首次 SDK 调用自动创建命名空间；环境变量更改需要新部署。底层 Blob 初始化异常目前被入口 catch 隐藏，尚无云端函数日志证据，不能臆断为未启用、缺少某个环境变量或 SDK 打包问题。后台操作步骤已加入 `DEPLOYMENT.md`。
-- 2026-09-09 已实时核验 GitHub `master` 指向登录文案修复提交 `7adcc7c`。用户随后截图中 EdgeOne 最近部署仍显示旧提交 `87d3e22`；需等待/触发新部署后在控制台核对其提交号，不能由 Git 状态代替线上部署确认。
-- 修复进度漂移根因：静态文档不再声明动态推送状态；恢复脚本明确显示完整本地 HEAD、GitHub 引用来源、同步关系、本地主分支，并将 EdgeOne 状态标为必须从部署记录核对。
-
-## 最新增量：EdgeOne Blob 初始化修复
-
-- 用户截图确认 `geo-site` 根目录、`dist` 输出、`npm run build`、`npm ci`、全部 7 个环境变量和 Node 22.17.1 均已配置，因此不再重复要求修改这些项目。
-- 根因定位为代码与官方 Cloud Functions Blob 示例不一致：项目把 `@edgeone/pages-blob` 动态导入且列为 `externalNodeModules`，导致其构建时部署凭据占位符无法随函数 bundle 注入。
-- 修复为函数入口静态导入 `getStore`，并仅 external 化确实含静态/原生依赖的 `mammoth` 和 `pdfjs-server`；存储初始化错误只记录异常名与代码，不记录 message、stack 或密钥。
-- TDD 回归先以 2 项失败复现，修复后通过。后端相关测试 18/18 通过；Node 20 目标函数按 EdgeOne external 配置打包成功，Blob SDK 已进入 73.6KB bundle、保留平台部署凭据注入标记，bundle 导入成功。
-- 线上是否恢复必须以新提交部署后的真实登录验证为准，本地不能冒充 EdgeOne 运行时。
-
-## 最新增量：EdgeOne 登录写入兼容性
-
-- 新函数上线后，线上 `GET /api/auth/session` 已返回预期的 `401 LOGIN_REQUIRED`，证明 Blob 凭据注入、读取和 7 项登录配置均已生效；`POST /api/auth/login` 使用无效凭据仍稳定复现 `503 SERVER_ERROR`，因此问题与用户账号、密码内容无关，范围收敛到登录前的 Blob 条件写入。
-- 对照 EdgeOne 官方 Node Cloud Function Blob 示例，移除项目额外添加的 `Cache-Control: no-store` 写入选项；强一致性继续只用于读取，条件创建继续使用 SDK 官方的 `onlyIfNew`，不削弱并发锁和幂等语义。
-- 为所有 Blob 操作附加仅含 `get/set/create/delete/list` 的安全操作标签；意外异常记录 `api_request_failed`、EdgeOne 请求 UUID、接口路径、HTTP 方法、异常名和代码，不记录 message、stack、正文或密钥。以后可用单条云端日志直接定位，不再只剩笼统 503。
-- 定向 TDD 共 4 项先失败、修复后 6/6 通过；服务端相关测试 16/16 通过，生产构建成功。当前增量仍须以 EdgeOne 新部署后的真实登录结果验收，不能由本地结果替代。
+- 原生联网搜索没有启用。
+- 浏览器关闭后已完成的批次步骤仍持久化，但不会后台无限自动推进。
+- 模型失败/超时不自动重发；只有用户明确恢复超时步骤才会继续，避免重复计费。
+- IMA 证据最多读取前六份完整原文；超长或不支持格式明确报错，不静默截断。

@@ -7,6 +7,11 @@ function download(article) {
   const url=URL.createObjectURL(new Blob([article.markdown],{type:'text/markdown;charset=utf-8'}));
   const a=document.createElement('a');a.href=url;a.download=`${article.index}-${article.brand}-${article.title}`.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,120)+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+export async function bootstrapAuthenticatedWorkspace({showWorkspace,refreshSettings,loadHistory,showServiceFailure}) {
+  showWorkspace();
+  try {await refreshSettings();await loadHistory();return true;}
+  catch(error) {showServiceFailure(error);return false;}
+}
 export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
   let csrf='',settings=null,activeBatch=null,driving=false,pauseRequested=false,pendingCreate=null;
   const shell=document.querySelector('.geo-shell');
@@ -16,7 +21,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     let response;
     try {response=await fetch('/api/'+path,{method:body===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(125000)});}
     catch {throw new Error('连接中断或请求超时，未自动重试。批次可在历史记录中读取进度。');}
-    let data;try{data=await response.json();}catch{throw new Error('运行接口未部署，请管理员检查 EdgeOne 的项目根目录和 Node Functions。');}
+    let data;try{data=await response.json();}catch{throw new Error('运行接口未部署，请管理员检查 EdgeOne 的 Python Cloud Functions 与 PostgreSQL 配置。');}
     if(!response.ok){if(response.status===401&&path!=='auth/login')showLogin();const e=new Error(data.error||'请求失败。');e.code=data.code;e.status=response.status;throw e;}
     return data;
   }
@@ -40,7 +45,12 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     $('ima-expiry').textContent=expiry?`到期日期：${expiry}${Date.parse(expiry)-Date.now()<7*86400000?' · 即将到期或已过期，请管理员更新':''}`:'到期日期尚未登记。共享凭据由管理员维护。';
   }
   async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();renderConnections();}
-  async function enter() {await refreshSettings();$('login-page').hidden=true;shell.hidden=false;$('login-password').value='';await history();}
+  async function enter() {return bootstrapAuthenticatedWorkspace({
+    showWorkspace(){ $('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
+    refreshSettings,
+    loadHistory:history,
+    showServiceFailure(error){toast(error.message);},
+  });}
   async function action(button,id,fn) {
     if(button.disabled)return;button.disabled=true;message(id,'处理中…');
     try{await fn();}catch(error){message(id,error.message,true);}finally{button.disabled=false;}
@@ -51,7 +61,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
   $('toggle-password').addEventListener('click',()=>{const input=$('login-password'),shown=input.type==='password';input.type=shown?'text':'password';$('toggle-password').textContent=shown?'隐藏':'显示';$('toggle-password').setAttribute('aria-pressed',String(shown));$('toggle-password').setAttribute('aria-label',shown?'隐藏密码':'显示密码');});
   $('logout-button').addEventListener('click',async()=>{
     if(driving){toast('请先暂停批次，等待当前步骤结束后退出。');return;}
-    if(!confirm('退出后本次会话的密钥和历史将无法再次访问，请先下载文章。确认退出？'))return;
+    if(!confirm('确认退出工作台？模型设置、批次历史和已完成文章仍保存在当前账号中。'))return;
     try{await api('auth/logout',{});location.reload();}catch(error){toast(error.message);}
   });
   document.querySelectorAll('input[name="model-option"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked){$('model-key').value='';$('custom-model-id').value='';renderCredentials();renderConnections();message('model-message','选择已更改，请保存后用于新批次。');}}));

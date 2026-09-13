@@ -3,9 +3,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cloudFunctions": {
-    "nodejs": {
-      "maxDuration": 120,
-      "externalNodeModules": ["mammoth", "pdfjs-server"]
+    "python": {
+      "maxDuration": 120
     }
   },
   "headers": [
