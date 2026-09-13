@@ -17,6 +17,8 @@ class FakeRepository:
         self.batches = {}
         self.batch_claims = set()
         self.batch_recoveries = set()
+        self.ima_cache_generation = 1
+        self.ima_cache_values = {}
 
     def health(self):
         return {"database": "available", "schemaVersion": 1, "ready": True}
@@ -76,6 +78,19 @@ class FakeRepository:
 
     def save_ima(self, value, _master_key):
         self.ima = dict(value)
+
+    def get_ima_cache_generation(self):
+        return self.ima_cache_generation
+
+    def get_ima_cache(self, kind, key, generation, _master_key=None):
+        return copy.deepcopy(self.ima_cache_values.get((kind, key, generation)))
+
+    def put_ima_cache(self, kind, key, generation, value, _metadata, _master_key=None):
+        self.ima_cache_values[(kind, key, generation)] = copy.deepcopy(value)
+
+    def clear_ima_cache_generation(self, _user_id=None):
+        self.ima_cache_generation += 1
+        return self.ima_cache_generation
 
     def take_admin_attempt(self, _scope_hash, _now, limit=5):
         if self.admin_attempts >= limit:

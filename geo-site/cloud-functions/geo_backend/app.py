@@ -18,6 +18,7 @@ from .ima import load_ima_credentials, update_ima_credentials
 from .models import SettingsService
 from .providers import complete
 from .repository import postgres_repository
+from .tenant_access import TenantAccessService
 
 
 LOGGER = logging.getLogger("lxue_geo")
@@ -123,12 +124,19 @@ def create_app(
             request.cookies.get(SESSION_COOKIE), request.headers.get("x-csrf-token"), request.method
         )
 
-    def batch_service(repository: object) -> BatchService:
+    def tenant_context(repository: object, user_id: str, *, active: bool = False):
+        if not hasattr(repository, "get_tenant_context"):
+            return None
+        service = TenantAccessService(repository)
+        return service.require(user_id) if active else service.context(user_id)
+
+    def batch_service(repository: object, context: dict[str, object] | None = None) -> BatchService:
         return BatchService(
             repository,
             config.geo_master_key,
             {"clientId": config.ima_client_id, "apiKey": config.ima_api_key},
             model_complete=model_complete,
+            tenant_context=context,
         )
 
     @app.get("/health")
@@ -174,14 +182,25 @@ def create_app(
         with factory() as repository:
             current = authentication(request, repository)
             ima = load_ima_credentials(repository, config.geo_master_key, config.ima_client_id, config.ima_api_key)
-            return SettingsService(repository, config.geo_master_key).public(
+            result = SettingsService(repository, config.geo_master_key).public(
                 current.user_id, ima, _epoch_ms(current.expires_at)
             )
+            context = tenant_context(repository, current.user_id)
+            if context:
+                result["subscription"] = {
+                    "active": bool(context.get("active")),
+                    "expiresAt": _epoch_ms(context["expiresAt"]) if context.get("expiresAt") else None,
+                    "role": context.get("role"),
+                }
+                if hasattr(repository, "credit_balance"):
+                    result["credits"] = {"balance": repository.credit_balance(str(context["tenantId"]))}
+            return result
 
     @app.post("/settings/model")
     def settings_model(body: ModelBody, request: Request):
         with factory() as repository:
             current = authentication(request, repository)
+            tenant_context(repository, current.user_id, active=True)
             return SettingsService(repository, config.geo_master_key).save_model(
                 current.user_id,
                 body.provider,
@@ -195,6 +214,7 @@ def create_app(
     async def test_model(request: Request):
         with factory() as repository:
             current = authentication(request, repository)
+            tenant_context(repository, current.user_id, active=True)
             private = SettingsService(repository, config.geo_master_key).private(current.user_id)
             model = private["model"]
             key = private["keys"].get(model["id"])
@@ -204,7 +224,10 @@ def create_app(
     @app.post("/ima/update")
     async def ima_update(body: ImaBody, request: Request):
         with factory() as repository:
-            authentication(request, repository)
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            if context:
+                TenantAccessService.require_manager(context)
             return await update_ima_credentials(
                 repository,
                 config.geo_master_key,
@@ -216,24 +239,27 @@ def create_app(
     def batches_list(request: Request):
         with factory() as repository:
             current = authentication(request, repository)
-            return {"batches": batch_service(repository).list(current.user_id)}
+            return {"batches": batch_service(repository, tenant_context(repository, current.user_id)).list(current.user_id)}
 
     @app.post("/batches")
     def batches_create(body: BatchBody, request: Request):
         with factory() as repository:
             current = authentication(request, repository)
-            return batch_service(repository).create(body.model_dump(), current.user_id, current.expires_at)
+            context = tenant_context(repository, current.user_id, active=True)
+            expires_at = context["expiresAt"] if context and context.get("expiresAt") else current.expires_at
+            return batch_service(repository, context).create(body.model_dump(), current.user_id, expires_at)
 
     @app.get("/batches/{batch_id}")
     def batches_get(batch_id: str, request: Request):
         with factory() as repository:
             current = authentication(request, repository)
-            return batch_service(repository).get(batch_id, current.user_id)
+            return batch_service(repository, tenant_context(repository, current.user_id)).get(batch_id, current.user_id)
 
     @app.post("/batches/{batch_id}/step")
     async def batches_step(batch_id: str, body: BatchStepBody, request: Request):
         with factory() as repository:
             current = authentication(request, repository)
-            return await batch_service(repository).advance(batch_id, body.model_dump(), current.user_id)
+            context = tenant_context(repository, current.user_id, active=True)
+            return await batch_service(repository, context).advance(batch_id, body.model_dump(), current.user_id)
 
     return app

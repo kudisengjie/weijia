@@ -48,6 +48,9 @@ class AuthService:
             raise ApiError(401, "账号或密码不正确。", "LOGIN_FAILED")
         self.repository.clear_login_failures(scope_hash)
         user = self.repository.upsert_configured_user(self.settings.geo_account, self.settings.geo_password_hash)
+        ensure_owner_tenant = getattr(self.repository, "ensure_owner_tenant", None)
+        if ensure_owner_tenant:
+            ensure_owner_tenant(str(user["id"]))
         material = new_session_material(self.settings.geo_master_key, now)
         self.repository.create_session(str(user["id"]), material.stored)
         return LoginResult(True, material.cookie_token, material.csrf_token, material.expires_at)

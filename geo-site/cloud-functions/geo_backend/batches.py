@@ -7,7 +7,9 @@ import re
 from datetime import datetime, timezone
 
 from .errors import ApiError
-from .ima import ima_post, load_ima_credentials, next_cursor, normalize, read_media
+from .artifacts import ArtifactService
+from .credits import CreditService
+from .ima import ImaCache, ima_post, load_ima_credentials, next_cursor, normalize, read_media
 from .models import SettingsService
 from .providers import complete
 from .tasks import audit_result, parse_tasks
@@ -57,12 +59,25 @@ class BatchService:
         *,
         client=None,
         model_complete=complete,
+        tenant_context: dict[str, object] | None = None,
     ) -> None:
         self.repository = repository
         self.master_key = master_key
         self.ima_environment = ima_environment
         self.client = client
         self.model_complete = model_complete
+        self.tenant_context = tenant_context
+        self.credit_service = (
+            CreditService(repository)
+            if tenant_context and hasattr(repository, "reserve_task_credits")
+            else None
+        )
+        self.artifact_service = (
+            ArtifactService(repository, master_key)
+            if tenant_context and hasattr(repository, "save_article_artifact")
+            else None
+        )
+        self.ima_cache = ImaCache(repository, master_key) if hasattr(repository, "get_ima_cache_generation") else None
 
     def _ima(self) -> dict[str, object]:
         return load_ima_credentials(
@@ -85,6 +100,13 @@ class BatchService:
         if not ima.get("clientId") or not ima.get("apiKey"):
             raise ApiError(503, "管理员尚未配置 IMA。")
         batch_id = _digest(request_id)[:32]
+        if self.credit_service:
+            self.credit_service.reserve(
+                str(self.tenant_context["tenantId"]),
+                user_id,
+                batch_id,
+                [str(index + 1) for index in range(len(tasks))],
+            )
         batch = {
             "id": batch_id,
             "model": model,
@@ -109,6 +131,9 @@ class BatchService:
             "repairCount": 0,
             "error": "",
         }
+        if self.tenant_context:
+            batch["tenantId"] = self.tenant_context["tenantId"]
+            batch["creditTaskIds"] = [str(index + 1) for index in range(len(tasks))]
         stored = self.repository.create_or_get_batch(user_id, batch_id, _digest(request_id), batch)
         return _summary(stored)
 
@@ -172,6 +197,12 @@ class BatchService:
             raise ApiError(502, "IMA 文件信息不完整。")
         return {"media_id": raw["media_id"], "title": raw["title"], "media_type": raw.get("media_type")}
 
+    async def _read_media_counted(
+        self, batch: dict[str, object], credentials: dict[str, object], media: dict[str, object]
+    ) -> dict[str, str]:
+        batch["requests"] += 2
+        return await read_media(credentials, media, client=self.client)
+
     @staticmethod
     def _find_base(batch: dict[str, object], name: str) -> str:
         matches = [item for item in batch["bases"] if normalize(item.get("name") or item.get("kb_name")) == normalize(name)]
@@ -228,8 +259,31 @@ class BatchService:
             batch["requests"] += 1
             return await ima_post(credentials, path, payload, client=self.client)
 
+        async def cached_post(kind: str, payload: dict[str, object], path: str):
+            if self.ima_cache is None:
+                return await post(path, payload)
+            return await self.ima_cache.get_or_fetch(
+                kind,
+                payload,
+                lambda: post(path, payload),
+            )
+
+        async def cached_media(media: dict[str, object]):
+            if self.ima_cache is None:
+                batch["requests"] += 2
+                return await read_media(credentials, media, client=self.client)
+            return await self.ima_cache.get_or_fetch(
+                "media",
+                {"knowledgeBaseId": media.get("kbId") or media.get("knowledge_base_id") or batch.get("copilot") or "", "mediaId": media["media_id"]},
+                lambda: self._read_media_counted(batch, credentials, media),
+            )
+
         if batch["phase"] == "bases":
-            data = await post("openapi/wiki/v1/search_knowledge_base", {"query": "", "cursor": batch["cursor"], "limit": 20})
+            data = await cached_post(
+                "search",
+                {"kind": "bases", "query": "", "cursor": batch["cursor"], "limit": 20},
+                "openapi/wiki/v1/search_knowledge_base",
+            )
             batch["bases"].extend(data.get("info_list", []))
             if len(batch["bases"]) > 400:
                 raise ApiError(422, "知识库数量超过批次扫描上限，请联系管理员。")
@@ -249,9 +303,10 @@ class BatchService:
             payload = {"knowledge_base_id": batch["copilot"], "cursor": job["cursor"], "limit": 50}
             if job["folder"]:
                 payload["folder_id"] = job["folder"]
-            data = await post("openapi/wiki/v1/get_knowledge_list", payload)
+            data = await cached_post("rules", payload, "openapi/wiki/v1/get_knowledge_list")
             for raw in data.get("knowledge_list", []):
                 item = self._media(raw)
+                item["kbId"] = batch["copilot"]
                 if item["media_type"] == 99:
                     role = job["role"]
                     if role == "root":
@@ -291,17 +346,21 @@ class BatchService:
             return
         if batch["phase"] == "ruleText":
             item = batch["ruleFiles"][0]
-            batch["requests"] += 2
-            batch["rules"][item["role"]].append(await read_media(credentials, item, client=self.client))
+            batch["rules"][item["role"]].append(await cached_media(item))
             batch["ruleFiles"].pop(0)
             if not batch["ruleFiles"]:
                 self._prepare_task(batch)
             return
         if batch["phase"] == "search":
             task = batch["tasks"][batch["taskIndex"]]
-            data = await post("openapi/wiki/v1/search_knowledge", {"knowledge_base_id": task["kbId"], "query": task["question"], "cursor": batch["cursor"]})
+            data = await cached_post(
+                "search",
+                {"knowledgeBaseId": task["kbId"], "query": task["question"], "cursor": batch["cursor"]},
+                "openapi/wiki/v1/search_knowledge",
+            )
             for raw in data.get("info_list", []):
                 item = self._media(raw)
+                item["kbId"] = task["kbId"]
                 if item["media_type"] != 99 and not any(candidate["media_id"] == item["media_id"] for candidate in batch["sourceCandidates"]):
                     batch["sourceCandidates"].append(item)
             cursor = next_cursor(data, batch["cursor"])
@@ -314,8 +373,7 @@ class BatchService:
             batch["phase"] = "evidence"
             return
         if batch["phase"] == "evidence":
-            batch["requests"] += 2
-            batch["sources"].append(await read_media(credentials, batch["sourceCandidates"][0], client=self.client))
+            batch["sources"].append(await cached_media(batch["sourceCandidates"][0]))
             batch["sourceCandidates"].pop(0)
             if not batch["sourceCandidates"]:
                 task = batch["tasks"][batch["taskIndex"]]
@@ -343,16 +401,35 @@ class BatchService:
             batch["phase"] = "repair"
             return
         task = batch["tasks"][batch["taskIndex"]]
-        batch["articles"].append(
-            {
-                "index": batch["taskIndex"] + 1,
-                "title": task["question"],
-                "brand": task["brand"],
-                "markdown": batch["draft"],
-                "model": batch["model"]["label"],
-                "sources": [source["title"] for source in batch["sources"]],
-            }
-        )
+        article = {
+            "index": batch["taskIndex"] + 1,
+            "title": task["question"],
+            "brand": task["brand"],
+            "model": batch["model"]["label"],
+            "sources": [source["title"] for source in batch["sources"]],
+        }
+        if self.artifact_service:
+            artifact = self.artifact_service.save_complete(
+                tenant_id=str(self.tenant_context["tenantId"]),
+                batch_id=str(batch["id"]),
+                task_id=str(batch["taskIndex"] + 1),
+                user_id=user_id,
+                filename=f"{batch['taskIndex'] + 1}-{task['brand']}.md",
+                markdown=str(batch["draft"]),
+                audit_status="accepted",
+            )
+            article["artifactId"] = artifact["id"]
+            article["filename"] = artifact["filename"]
+            article["byteLength"] = artifact["byteLength"]
+            self.credit_service.finalize(
+                str(self.tenant_context["tenantId"]),
+                str(batch["id"]),
+                str(batch["taskIndex"] + 1),
+                complete=True,
+            )
+        else:
+            article["markdown"] = batch["draft"]
+        batch["articles"].append(article)
         batch["taskIndex"] += 1
         if batch["taskIndex"] == len(batch["tasks"]):
             batch["phase"] = "done"

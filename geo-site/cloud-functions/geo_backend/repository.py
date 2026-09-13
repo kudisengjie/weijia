@@ -61,6 +61,387 @@ class PostgresRepository:
         ).fetchone()
         return {"id": str(row[0]), "username": row[1]}
 
+    def ensure_owner_tenant(self, user_id: str, slug: str = "owner") -> dict[str, object]:
+        with self.conn.transaction():
+            tenant = self.conn.execute(
+                """
+                INSERT INTO tenants (slug, name, owner_user_id)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (slug) DO UPDATE SET owner_user_id = COALESCE(tenants.owner_user_id, EXCLUDED.owner_user_id)
+                RETURNING id, slug, name
+                """,
+                (slug, "零雪 GEO", user_id),
+            ).fetchone()
+            tenant_id = str(tenant[0])
+            self.conn.execute(
+                """
+                INSERT INTO tenant_members (tenant_id, user_id, role)
+                VALUES (%s, %s, 'owner')
+                ON CONFLICT (tenant_id, user_id) DO UPDATE SET role = 'owner'
+                """,
+                (tenant_id, user_id),
+            )
+            self.conn.execute(
+                """
+                INSERT INTO subscriptions (tenant_id, starts_at, expires_at)
+                SELECT %s, NOW(), NOW() + INTERVAL '30 days'
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM subscriptions
+                    WHERE tenant_id = %s AND status = 'active' AND expires_at > NOW()
+                )
+                """,
+                (tenant_id, tenant_id),
+            )
+            self.conn.execute(
+                """
+                INSERT INTO credit_accounts (tenant_id, balance)
+                VALUES (%s, 0)
+                ON CONFLICT (tenant_id) DO NOTHING
+                """,
+                (tenant_id,),
+            )
+        return {"tenantId": tenant_id, "slug": tenant[1], "name": tenant[2], "role": "owner"}
+
+    def get_tenant_context(self, user_id: str, now: datetime) -> dict[str, object] | None:
+        row = self.conn.execute(
+            """
+            SELECT t.id, tm.role, s.starts_at, s.expires_at,
+                   (s.status = 'active' AND s.starts_at <= %s AND s.expires_at > %s) AS active
+            FROM tenant_members tm
+            JOIN tenants t ON t.id = tm.tenant_id
+            LEFT JOIN LATERAL (
+                SELECT starts_at, expires_at, status
+                FROM subscriptions
+                WHERE tenant_id = t.id
+                ORDER BY expires_at DESC
+                LIMIT 1
+            ) s ON TRUE
+            WHERE tm.user_id = %s
+            ORDER BY CASE tm.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,
+                     s.expires_at DESC NULLS LAST
+            LIMIT 1
+            """,
+            (now, now, user_id),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "tenantId": str(row[0]),
+            "role": row[1],
+            "startsAt": row[2],
+            "expiresAt": row[3],
+            "active": bool(row[4]),
+        }
+
+    def reserve_task_credits(
+        self, tenant_id: str, user_id: str, batch_id: str, task_ids: list[str]
+    ) -> dict[str, object]:
+        from psycopg.types.json import Jsonb
+
+        with self.conn.transaction():
+            new_ids = []
+            for task_id in task_ids:
+                existing = self.conn.execute(
+                    "SELECT 1 FROM credit_task_states WHERE batch_id = %s AND task_id = %s",
+                    (batch_id, task_id),
+                ).fetchone()
+                if not existing:
+                    new_ids.append(task_id)
+            account = self.conn.execute(
+                "SELECT balance FROM credit_accounts WHERE tenant_id = %s FOR UPDATE",
+                (tenant_id,),
+            ).fetchone()
+            balance = int(account[0]) if account else 0
+            if balance < len(new_ids):
+                raise ValueError("INSUFFICIENT_CREDITS")
+            reserved = 0
+            for task_id in new_ids:
+                inserted = self.conn.execute(
+                    """
+                    INSERT INTO credit_task_states (tenant_id, batch_id, task_id, user_id, status)
+                    VALUES (%s, %s, %s, %s, 'reserved')
+                    ON CONFLICT (batch_id, task_id) DO NOTHING
+                    RETURNING task_id
+                    """,
+                    (tenant_id, batch_id, task_id, user_id),
+                ).fetchone()
+                if not inserted:
+                    continue
+                reserved += 1
+                self.conn.execute(
+                    "UPDATE credit_accounts SET balance = balance - 1, updated_at = NOW() WHERE tenant_id = %s",
+                    (tenant_id,),
+                )
+                self.conn.execute(
+                    """
+                    INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata)
+                    VALUES (%s, %s, %s, %s, 'reserve', -1, %s, %s)
+                    ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+                    """,
+                    (tenant_id, user_id, batch_id, task_id, f"{batch_id}:{task_id}:reserve", Jsonb({"reason": "batch_start"})),
+                )
+            return {"reserved": reserved, "balance": balance - reserved}
+
+    def settle_task_credit(
+        self, tenant_id: str, batch_id: str, task_id: str, complete: bool
+    ) -> dict[str, object]:
+        from psycopg.types.json import Jsonb
+
+        with self.conn.transaction():
+            row = self.conn.execute(
+                """
+                SELECT status, user_id FROM credit_task_states
+                WHERE tenant_id = %s AND batch_id = %s AND task_id = %s
+                FOR UPDATE
+                """,
+                (tenant_id, batch_id, task_id),
+            ).fetchone()
+            if not row:
+                return {"status": "missing", "refunded": False}
+            status, user_id = row
+            if status != "reserved":
+                return {"status": status, "refunded": False}
+            if complete:
+                self.conn.execute(
+                    "UPDATE credit_task_states SET status = 'complete', updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
+                    (batch_id, task_id),
+                )
+                return {"status": "complete", "refunded": False}
+            self.conn.execute(
+                "UPDATE credit_task_states SET status = 'refunded', updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
+                (batch_id, task_id),
+            )
+            self.conn.execute(
+                "UPDATE credit_accounts SET balance = balance + 1, updated_at = NOW() WHERE tenant_id = %s",
+                (tenant_id,),
+            )
+            self.conn.execute(
+                """
+                INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata)
+                VALUES (%s, %s, %s, %s, 'refund', 1, %s, %s)
+                ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+                """,
+                (tenant_id, user_id, batch_id, task_id, f"{batch_id}:{task_id}:refund", Jsonb({"reason": "incomplete_artifact"})),
+            )
+            return {"status": "refunded", "refunded": True}
+
+    def release_unstarted_credits(
+        self, tenant_id: str, batch_id: str, task_ids: list[str]
+    ) -> dict[str, object]:
+        from psycopg.types.json import Jsonb
+
+        with self.conn.transaction():
+            released = 0
+            for task_id in task_ids:
+                row = self.conn.execute(
+                    "SELECT status, user_id FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND task_id = %s FOR UPDATE",
+                    (tenant_id, batch_id, task_id),
+                ).fetchone()
+                if not row or row[0] != "reserved":
+                    continue
+                self.conn.execute(
+                    "UPDATE credit_task_states SET status = 'released', updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
+                    (batch_id, task_id),
+                )
+                self.conn.execute(
+                    "UPDATE credit_accounts SET balance = balance + 1, updated_at = NOW() WHERE tenant_id = %s",
+                    (tenant_id,),
+                )
+                self.conn.execute(
+                    """
+                    INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata)
+                    VALUES (%s, %s, %s, %s, 'release', 1, %s, %s)
+                    ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+                    """,
+                    (tenant_id, row[1], batch_id, task_id, f"{batch_id}:{task_id}:release", Jsonb({"reason": "not_started"})),
+                )
+                released += 1
+            account = self.conn.execute(
+                "SELECT balance FROM credit_accounts WHERE tenant_id = %s",
+                (tenant_id,),
+            ).fetchone()
+            return {"released": released, "balance": int(account[0]) if account else 0}
+
+    def credit_balance(self, tenant_id: str) -> int:
+        row = self.conn.execute("SELECT balance FROM credit_accounts WHERE tenant_id = %s", (tenant_id,)).fetchone()
+        return int(row[0]) if row else 0
+
+    def adjust_credits(
+        self, tenant_id: str, user_id: str, amount: int, idempotency_key: str, kind: str, metadata: dict[str, object] | None = None
+    ) -> dict[str, object]:
+        from psycopg.types.json import Jsonb
+
+        if not amount or kind not in {"grant", "revoke"}:
+            raise ValueError("INVALID_CREDIT_ADJUSTMENT")
+        signed = abs(int(amount)) if kind == "grant" else -abs(int(amount))
+        with self.conn.transaction():
+            existing = self.conn.execute(
+                "SELECT amount FROM credit_ledger WHERE tenant_id = %s AND idempotency_key = %s",
+                (tenant_id, idempotency_key),
+            ).fetchone()
+            if existing:
+                return {"applied": False, "amount": int(existing[0]), "balance": self.credit_balance(tenant_id)}
+            account = self.conn.execute(
+                "SELECT balance FROM credit_accounts WHERE tenant_id = %s FOR UPDATE",
+                (tenant_id,),
+            ).fetchone()
+            balance = int(account[0]) if account else 0
+            if balance + signed < 0:
+                raise ValueError("INSUFFICIENT_CREDITS")
+            self.conn.execute(
+                "INSERT INTO credit_accounts (tenant_id, balance) VALUES (%s, %s) ON CONFLICT (tenant_id) DO UPDATE SET balance = credit_accounts.balance + EXCLUDED.balance, updated_at = NOW()",
+                (tenant_id, signed),
+            )
+            self.conn.execute(
+                "INSERT INTO credit_ledger (tenant_id, user_id, kind, amount, idempotency_key, metadata) VALUES (%s, %s, %s, %s, %s, %s)",
+                (tenant_id, user_id, kind, signed, idempotency_key, Jsonb(metadata or {})),
+            )
+            return {"applied": True, "amount": signed, "balance": balance + signed}
+
+    def get_ima_cache_generation(self) -> int:
+        row = self.conn.execute("SELECT generation FROM ima_cache_meta WHERE singleton").fetchone()
+        return int(row[0]) if row else 1
+
+    def clear_ima_cache_generation(self, user_id: str | None = None) -> int:
+        row = self.conn.execute(
+            """
+            INSERT INTO ima_cache_meta (singleton, generation, updated_by)
+            VALUES (TRUE, 2, %s)
+            ON CONFLICT (singleton) DO UPDATE SET generation = ima_cache_meta.generation + 1,
+                                                  updated_by = EXCLUDED.updated_by,
+                                                  updated_at = NOW()
+            RETURNING generation
+            """,
+            (user_id,),
+        ).fetchone()
+        return int(row[0])
+
+    def get_ima_cache(self, kind: str, cache_key: str, generation: int, master_key: str) -> object | None:
+        table = {"search": "ima_search_cache", "media": "ima_media_cache", "rules": "ima_search_cache"}.get(kind)
+        if not table:
+            raise ValueError("INVALID_IMA_CACHE_KIND")
+        row = self.conn.execute(
+            f"SELECT pgp_sym_decrypt(payload_cipher, %s)::TEXT FROM {table} WHERE cache_key = %s AND generation = %s AND (expires_at IS NULL OR expires_at > NOW())",
+            (master_key, cache_key, generation),
+        ).fetchone()
+        if not row:
+            return None
+        self.conn.execute(f"UPDATE {table} SET hit_count = hit_count + 1 WHERE cache_key = %s", (cache_key,))
+        return json.loads(row[0])
+
+    def put_ima_cache(
+        self,
+        kind: str,
+        cache_key: str,
+        generation: int,
+        value: object,
+        metadata: dict[str, object],
+        master_key: str,
+    ) -> None:
+        from psycopg.types.json import Jsonb
+
+        table = {"search": "ima_search_cache", "media": "ima_media_cache", "rules": "ima_search_cache"}.get(kind)
+        if not table:
+            raise ValueError("INVALID_IMA_CACHE_KIND")
+        external_id = str(metadata.get("knowledgeBaseId") or metadata.get("knowledge_base_id") or "unknown")
+        with self.conn.transaction():
+            kb = self.conn.execute(
+                """
+                INSERT INTO ima_knowledge_bases (external_id, name)
+                VALUES (%s, %s)
+                ON CONFLICT (external_id) DO UPDATE SET updated_at = NOW()
+                RETURNING id
+                """,
+                (external_id, external_id),
+            ).fetchone()
+            payload = json.dumps(value, ensure_ascii=False)
+            if table == "ima_media_cache":
+                self.conn.execute(
+                    """
+                    INSERT INTO ima_media_cache (cache_key, generation, knowledge_base_id, media_id, payload_cipher)
+                    VALUES (%s, %s, %s, %s, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'))
+                    ON CONFLICT (cache_key) DO UPDATE SET generation = EXCLUDED.generation,
+                        payload_cipher = EXCLUDED.payload_cipher, content_version = EXCLUDED.content_version
+                    """,
+                    (cache_key, generation, str(kb[0]), str(metadata.get("mediaId") or metadata.get("media_id") or cache_key), payload, master_key),
+                )
+            else:
+                request_key = json.dumps(metadata, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                self.conn.execute(
+                    """
+                    INSERT INTO ima_search_cache (cache_key, generation, knowledge_base_id, request_key, payload_cipher)
+                    VALUES (%s, %s, %s, %s, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'))
+                    ON CONFLICT (cache_key) DO UPDATE SET generation = EXCLUDED.generation,
+                        payload_cipher = EXCLUDED.payload_cipher, request_key = EXCLUDED.request_key
+                    """,
+                    (cache_key, generation, str(kb[0]), request_key, payload, master_key),
+                )
+
+    def save_article_artifact(self, **kwargs: object) -> dict[str, object]:
+        row = self.conn.execute(
+            """
+            INSERT INTO article_artifacts (
+                tenant_id, batch_id, task_id, user_id, filename, content_cipher,
+                byte_length, sha256, status, audit_status
+            )
+            VALUES (%s, %s, %s, %s, %s, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s, %s, %s)
+            ON CONFLICT (batch_id, task_id) DO UPDATE SET
+                filename = EXCLUDED.filename,
+                content_cipher = EXCLUDED.content_cipher,
+                byte_length = EXCLUDED.byte_length,
+                sha256 = EXCLUDED.sha256,
+                status = EXCLUDED.status,
+                audit_status = EXCLUDED.audit_status
+            RETURNING id, filename, byte_length, sha256, status, audit_status
+            """,
+            (
+                kwargs["tenant_id"],
+                kwargs["batch_id"],
+                kwargs["task_id"],
+                kwargs["user_id"],
+                kwargs["filename"],
+                kwargs["markdown"],
+                kwargs["master_key"],
+                kwargs["byte_length"],
+                kwargs["sha256"],
+                kwargs["status"],
+                kwargs["audit_status"],
+            ),
+        ).fetchone()
+        return {
+            "id": str(row[0]),
+            "filename": row[1],
+            "byteLength": int(row[2]),
+            "sha256": row[3],
+            "status": row[4],
+            "auditStatus": row[5],
+        }
+
+    def get_article_artifact(self, tenant_id: str, artifact_id: str, master_key: str = "") -> dict[str, object] | None:
+        row = self.conn.execute(
+            """
+            SELECT id, batch_id, task_id, filename, pgp_sym_decrypt(content_cipher, %s)::TEXT,
+                   byte_length, sha256, status, audit_status, created_at
+            FROM article_artifacts
+            WHERE tenant_id = %s AND id = %s AND status = 'complete'
+            """,
+            (master_key, tenant_id, artifact_id),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "id": str(row[0]),
+            "batchId": row[1],
+            "taskId": row[2],
+            "filename": row[3],
+            "markdown": row[4],
+            "byteLength": int(row[5]),
+            "sha256": row[6],
+            "status": row[7],
+            "auditStatus": row[8],
+            "createdAt": row[9],
+        }
+
     def create_session(self, user_id: str, stored: dict[str, object]) -> None:
         self.conn.execute(
             """

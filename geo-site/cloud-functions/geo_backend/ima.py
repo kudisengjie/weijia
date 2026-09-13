@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hmac
+import json
 import re
 from io import BytesIO
 from datetime import date, datetime, timezone
@@ -14,6 +15,42 @@ from .security import digest
 
 def normalize(value: object) -> str:
     return re.sub(r"\s+", "", str(value or "")).casefold()
+
+
+class ImaCache:
+    """Site-wide IMA cache facade backed by the repository and cache generation."""
+
+    def __init__(self, repository: object, master_key: str = "") -> None:
+        self.repository = repository
+        self.master_key = master_key
+
+    @staticmethod
+    def key(kind: str, request: dict[str, object]) -> str:
+        normalized = {
+            str(name): normalize(value) if isinstance(value, str) else value
+            for name, value in sorted(request.items())
+        }
+        return digest(kind + ":" + json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+
+    async def get_or_fetch(
+        self,
+        kind: str,
+        request: dict[str, object],
+        fetch,
+    ) -> object:
+        generation = int(self.repository.get_ima_cache_generation())
+        cache_key = self.key(kind, request)
+        cached = self.repository.get_ima_cache(kind, cache_key, generation, self.master_key)
+        if cached is not None:
+            return cached
+        value = await fetch()
+        if value is None:
+            raise ApiError(502, "IMA 返回空内容，未写入缓存。", "IMA_EMPTY")
+        self.repository.put_ima_cache(kind, cache_key, generation, value, request, self.master_key)
+        return value
+
+    def clear_generation(self, user_id: str | None = None) -> int:
+        return int(self.repository.clear_ima_cache_generation(user_id))
 
 
 def load_ima_credentials(repository: object, master_key: str, client_id: str, api_key: str) -> dict[str, object]:
