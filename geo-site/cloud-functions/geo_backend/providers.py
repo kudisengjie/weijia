@@ -42,7 +42,7 @@ async def complete(model: dict[str, str], key: str, messages: list[dict[str, str
     owned = client is None
     http = client or httpx.AsyncClient(timeout=httpx.Timeout(100.0), follow_redirects=False)
     try:
-        response = await http.post(ENDPOINTS[model["id"]], headers=headers, json=payload)
+        response = await http.post(model.get("endpoint") or ENDPOINTS[model["id"]], headers=headers, json=payload)
     except httpx.TransportError:
         raise ApiError(502, "模型连接中断或超过 100 秒，结果不确定，未自动重试。", "MODEL_TIMEOUT")
     finally:

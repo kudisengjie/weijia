@@ -3,7 +3,12 @@ import { getModelPresentation, MODEL_PROVIDER_IDS } from './model-switch.js';
 const $ = id => document.getElementById(id);
 function node(tag, text, className) { const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n; }
 function message(id,text,error=false) { $(id).textContent=text;$(id).classList.toggle('is-error',error); }
-function download(article) {
+async function download(article) {
+  if(article.artifactId){
+    const response=await fetch('/api/artifacts/'+encodeURIComponent(article.artifactId),{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(125000)});
+    if(!response.ok){let data={};try{data=await response.json();}catch{}throw new Error(data.error||'文章文件读取失败。');}
+    const blob=await response.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=article.filename||`article-${article.index}.md`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
+  }
   const url=URL.createObjectURL(new Blob([article.markdown],{type:'text/markdown;charset=utf-8'}));
   const a=document.createElement('a');a.href=url;a.download=`${article.index}-${article.brand}-${article.title}`.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,120)+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
@@ -47,6 +52,9 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     const chip=document.querySelector('.geo-service-chips > span');chip.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 未配置';
     const expiry=settings.ima.expiresAt;
     $('ima-expiry').textContent=expiry?`到期日期：${expiry}${Date.parse(expiry)-Date.now()<7*86400000?' · 即将到期或已过期，请管理员更新':''}`:'到期日期尚未登记。共享凭据由管理员维护。';
+    document.querySelectorAll('[data-credit-balance]').forEach(n=>n.textContent=`积分：${settings.credits?.balance??'—'}`);
+    document.querySelectorAll('[data-subscription-expiry]').forEach(n=>n.textContent=settings.subscription?.expiresAt?`有效期至：${new Date(settings.subscription.expiresAt).toLocaleDateString('zh-CN')}`:'有效期：未配置');
+    const admin=$('tenant-admin');if(admin)admin.hidden=!['owner','admin'].includes(settings.subscription?.role);
   }
   async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();renderConnections();}
   async function enter() {return bootstrapAuthenticatedWorkspace({
@@ -82,6 +90,16 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
   $('ima-form').addEventListener('submit',event=>{event.preventDefault();action(event.submitter,'ima-message',async()=>{
     const body=Object.fromEntries(new FormData(event.currentTarget));await api('ima/update',body);$('ima-form').reset();await refreshSettings();message('ima-message','IMA 新凭据已验证并保存，后续请求立即使用。');
   });});
+  $('clear-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
+    const result=await api('ima/cache/clear',{});message('ima-cache-message',`共享 IMA 缓存已清除，当前代数 ${result.generation}。`);
+  }));
+  $('member-form').addEventListener('submit',event=>{event.preventDefault();action(event.submitter,'member-message',async()=>{
+    const values=Object.fromEntries(new FormData(event.currentTarget));const iso=value=>new Date(value).toISOString();
+    await api('tenant/members',{username:values.username,password:values.password,role:values.role,startsAt:iso(values.startsAt),expiresAt:iso(values.expiresAt)});event.currentTarget.reset();message('member-message','子账号已创建，可使用自己的模型 API 登录。');
+  });});
+  $('credit-form').addEventListener('submit',event=>{event.preventDefault();action(event.submitter,'credit-message',async()=>{
+    const values=Object.fromEntries(new FormData(event.currentTarget));const result=await api('credits/adjust',{amount:Number(values.amount),kind:values.kind,idempotencyKey:crypto.randomUUID(),note:values.note});message('credit-message',`积分调整成功，当前余额 ${result.balance}。`);await refreshSettings();
+  });});
   function renderBatch(b) {
     activeBatch=b;const panel=$('batch-progress');panel.hidden=false;panel.replaceChildren();
     panel.append(node('span',b.model.label,'login-eyebrow'),node('h2',`${b.phaseLabel} · ${b.completed}/${b.total} 篇`));
@@ -97,8 +115,9 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
       const refresh=node('button','读取一次最新状态');refresh.disabled=driving;refresh.addEventListener('click',async()=>{try{renderBatch(await api('batches/'+b.id));}catch(error){toast(error.message);}});controls.append(refresh);
       if(!driving&&b.status!=='failed'){const recover=node('button','恢复超时步骤');recover.addEventListener('click',async()=>{if(!confirm('仅用于步骤已提交但超过 150 秒无进展的情况。上次调用可能已计费，确认手动恢复？'))return;try{renderBatch(await api(`batches/${b.id}/step`,{seq:b.seq,retry:true}));}catch(error){toast(error.message);}});controls.append(recover);}
     }
-    panel.append(controls,node('p','请保持页面打开。关闭页面不会丢失已完成步骤，但不会继续启动下一步。登录会话有效期为 7 天，请及时下载文章。','runtime-hint'));
-    for(const article of b.articles||[]){const row=node('div',undefined,'runtime-article');row.append(node('strong',article.title));const button=node('button','下载 MD');button.addEventListener('click',()=>download(article));row.append(button);panel.append(row);}
+    panel.append(controls,node('p','任务状态与文章文件已保存到服务端；关闭页面后可从历史批次继续查看或下载。','runtime-hint'));
+    const modelLocked=b.status!=='completed';document.querySelectorAll('input[name="model-option"], #model-key, #custom-model-id, #model-form button').forEach(input=>{input.disabled=modelLocked;});
+    for(const article of b.articles||[]){const row=node('div',undefined,'runtime-article');row.append(node('strong',article.title));const button=node('button','下载 MD');button.addEventListener('click',()=>download(article).catch(error=>toast(error.message)));row.append(button);panel.append(row);}
     $('cabin-state').textContent=b.status==='failed'?'需要处理':b.phaseLabel;$('status-task').textContent=`${b.completed}/${b.total}`;
     const apiCounter=document.querySelector('.geo-status-list > div:last-child dd');apiCounter.textContent=`${b.requests} 次请求步骤`;
     renderConnections();
@@ -107,7 +126,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     if(driving)return;driving=true;pauseRequested=false;$('run-task').disabled=true;
     try{
       while(!pauseRequested&&b.status==='ready'){
-        renderBatch(b);b=await api(`batches/${b.id}/step`,{seq:b.seq});
+        renderBatch(b);const response=await api(`batches/${b.id}/run`,{seq:b.seq,maxSteps:2});b=response.batch;
       }
       b=await api('batches/'+b.id);renderBatch(b);
     }catch(error){toast(error.message);}
@@ -127,7 +146,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     for(const b of batches){
       const row=node('article',undefined,'runtime-panel runtime-history');row.append(node('h2',b.title),node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${b.phaseLabel}`));
       const button=node('button','打开批次');button.addEventListener('click',async()=>{if(driving){toast('请先暂停当前批次。');return;}try{renderBatch(await api('batches/'+b.id));changeView('workspace');$('batch-progress').scrollIntoView({behavior:'smooth',block:'center'});}catch(error){toast(error.message);}});row.append(button);list.append(row);
-      if(b.completed){const group=node('article',undefined,'runtime-panel');group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>download(article));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);completed.append(group);}
+      if(b.completed){const group=node('article',undefined,'runtime-panel');group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>download(article).catch(error=>toast(error.message)));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);completed.append(group);}
     }
     if(!completed.childElementCount)completed.append(node('p','还没有通过审核的文章。','runtime-panel'));
   }

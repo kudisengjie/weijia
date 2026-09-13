@@ -61,6 +61,65 @@ class PostgresRepository:
         ).fetchone()
         return {"id": str(row[0]), "username": row[1]}
 
+    def get_user_login(self, username: str) -> dict[str, object] | None:
+        row = self.conn.execute(
+            "SELECT id, username, password_hash FROM users WHERE LOWER(username) = LOWER(%s)",
+            (username,),
+        ).fetchone()
+        if not row:
+            return None
+        return {"id": str(row[0]), "username": row[1], "password_hash": row[2]}
+
+    def create_member(
+        self,
+        *,
+        tenant_id: str,
+        username: str,
+        password_hash: str,
+        role: str,
+        starts_at: datetime,
+        expires_at: datetime,
+    ) -> dict[str, object]:
+        with self.conn.transaction():
+            existing = self.conn.execute(
+                "SELECT id FROM users WHERE LOWER(username) = LOWER(%s)",
+                (username,),
+            ).fetchone()
+            if existing:
+                raise ValueError("ACCOUNT_EXISTS")
+            row = self.conn.execute(
+                "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id, username",
+                (username, password_hash),
+            ).fetchone()
+            user_id = str(row[0])
+            self.conn.execute(
+                "INSERT INTO tenant_members (tenant_id, user_id, role) VALUES (%s, %s, %s)",
+                (tenant_id, user_id, role),
+            )
+            self.conn.execute(
+                "INSERT INTO subscriptions (tenant_id, user_id, starts_at, expires_at) VALUES (%s, %s, %s, %s)",
+                (tenant_id, user_id, starts_at, expires_at),
+            )
+            self.conn.execute(
+                "INSERT INTO credit_accounts (tenant_id, balance) VALUES (%s, 0) ON CONFLICT (tenant_id) DO NOTHING",
+                (tenant_id,),
+            )
+        return {"id": user_id, "username": row[1], "role": role, "expiresAt": expires_at}
+
+    def set_subscription(
+        self, tenant_id: str, user_id: str | None, starts_at: datetime, expires_at: datetime
+    ) -> dict[str, object]:
+        with self.conn.transaction():
+            self.conn.execute(
+                "UPDATE subscriptions SET status = 'revoked' WHERE tenant_id = %s AND user_id IS NOT DISTINCT FROM %s AND status = 'active'",
+                (tenant_id, user_id),
+            )
+            row = self.conn.execute(
+                "INSERT INTO subscriptions (tenant_id, user_id, starts_at, expires_at, status) VALUES (%s, %s, %s, %s, 'active') RETURNING id, expires_at",
+                (tenant_id, user_id, starts_at, expires_at),
+            ).fetchone()
+        return {"id": str(row[0]), "expiresAt": row[1]}
+
     def ensure_owner_tenant(self, user_id: str, slug: str = "owner") -> dict[str, object]:
         with self.conn.transaction():
             tenant = self.conn.execute(
@@ -83,14 +142,14 @@ class PostgresRepository:
             )
             self.conn.execute(
                 """
-                INSERT INTO subscriptions (tenant_id, starts_at, expires_at)
-                SELECT %s, NOW(), NOW() + INTERVAL '30 days'
+                INSERT INTO subscriptions (tenant_id, user_id, starts_at, expires_at)
+                SELECT %s, %s, NOW(), NOW() + INTERVAL '30 days'
                 WHERE NOT EXISTS (
                     SELECT 1 FROM subscriptions
-                    WHERE tenant_id = %s AND status = 'active' AND expires_at > NOW()
+                    WHERE tenant_id = %s AND user_id = %s AND status = 'active' AND expires_at > NOW()
                 )
                 """,
-                (tenant_id, tenant_id),
+                (tenant_id, user_id, tenant_id, user_id),
             )
             self.conn.execute(
                 """
@@ -110,10 +169,11 @@ class PostgresRepository:
             FROM tenant_members tm
             JOIN tenants t ON t.id = tm.tenant_id
             LEFT JOIN LATERAL (
-                SELECT starts_at, expires_at, status
+                SELECT user_id, starts_at, expires_at, status
                 FROM subscriptions
-                WHERE tenant_id = t.id
-                ORDER BY expires_at DESC
+                WHERE tenant_id = t.id AND (user_id = tm.user_id OR user_id IS NULL)
+                ORDER BY CASE WHEN user_id = tm.user_id THEN 0 ELSE 1 END,
+                         expires_at DESC NULLS LAST
                 LIMIT 1
             ) s ON TRUE
             WHERE tm.user_id = %s
@@ -262,6 +322,60 @@ class PostgresRepository:
             ).fetchone()
             return {"released": released, "balance": int(account[0]) if account else 0}
 
+    def settle_batch_incomplete(self, tenant_id: str, batch_id: str) -> dict[str, object]:
+        from psycopg.types.json import Jsonb
+
+        with self.conn.transaction():
+            rows = self.conn.execute(
+                "SELECT task_id, user_id FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND status = 'reserved' FOR UPDATE",
+                (tenant_id, batch_id),
+            ).fetchall()
+            for task_id, user_id in rows:
+                self.conn.execute(
+                    "UPDATE credit_task_states SET status = 'refunded', updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
+                    (batch_id, task_id),
+                )
+                self.conn.execute(
+                    "INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata) VALUES (%s, %s, %s, %s, 'refund', 1, %s, %s) ON CONFLICT (tenant_id, idempotency_key) DO NOTHING",
+                    (tenant_id, user_id, batch_id, task_id, f"{batch_id}:{task_id}:refund", Jsonb({"reason": "batch_failed"})),
+                )
+            if rows:
+                self.conn.execute(
+                    "UPDATE credit_accounts SET balance = balance + %s, updated_at = NOW() WHERE tenant_id = %s",
+                    (len(rows), tenant_id),
+                )
+            account = self.conn.execute("SELECT balance FROM credit_accounts WHERE tenant_id = %s", (tenant_id,)).fetchone()
+            return {"refunded": len(rows), "balance": int(account[0]) if account else 0}
+
+    def reopen_batch_credits(self, tenant_id: str, user_id: str, batch_id: str) -> dict[str, object]:
+        from psycopg.types.json import Jsonb
+
+        with self.conn.transaction():
+            rows = self.conn.execute(
+                "SELECT task_id, attempt FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND status IN ('refunded', 'released') FOR UPDATE",
+                (tenant_id, batch_id),
+            ).fetchall()
+            account = self.conn.execute("SELECT balance FROM credit_accounts WHERE tenant_id = %s FOR UPDATE", (tenant_id,)).fetchone()
+            balance = int(account[0]) if account else 0
+            if balance < len(rows):
+                raise ValueError("INSUFFICIENT_CREDITS")
+            for task_id, attempt in rows:
+                next_attempt = int(attempt) + 1
+                self.conn.execute(
+                    "UPDATE credit_task_states SET status = 'reserved', attempt = %s, updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
+                    (next_attempt, batch_id, task_id),
+                )
+                self.conn.execute(
+                    "INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata) VALUES (%s, %s, %s, %s, 'reserve', -1, %s, %s) ON CONFLICT (tenant_id, idempotency_key) DO NOTHING",
+                    (tenant_id, user_id, batch_id, task_id, f"{batch_id}:{task_id}:reserve:{next_attempt}", Jsonb({"reason": "batch_retry"})),
+                )
+            if rows:
+                self.conn.execute(
+                    "UPDATE credit_accounts SET balance = balance - %s, updated_at = NOW() WHERE tenant_id = %s",
+                    (len(rows), tenant_id),
+                )
+            return {"reopened": len(rows), "balance": balance - len(rows)}
+
     def credit_balance(self, tenant_id: str) -> int:
         row = self.conn.execute("SELECT balance FROM credit_accounts WHERE tenant_id = %s", (tenant_id,)).fetchone()
         return int(row[0]) if row else 0
@@ -315,6 +429,26 @@ class PostgresRepository:
             (user_id,),
         ).fetchone()
         return int(row[0])
+
+    def acquire_ima_cache_lock(self, cache_key: str, generation: int, owner_token: str, lock_seconds: int = 30) -> bool:
+        with self.conn.transaction():
+            self.conn.execute("DELETE FROM ima_cache_locks WHERE locked_until <= NOW()")
+            row = self.conn.execute(
+                """
+                INSERT INTO ima_cache_locks (cache_key, generation, locked_until, owner_token)
+                VALUES (%s, %s, NOW() + (%s || ' seconds')::INTERVAL, %s)
+                ON CONFLICT (cache_key) DO NOTHING
+                RETURNING cache_key
+                """,
+                (cache_key, generation, lock_seconds, owner_token),
+            ).fetchone()
+            return bool(row)
+
+    def release_ima_cache_lock(self, cache_key: str, owner_token: str) -> None:
+        self.conn.execute(
+            "DELETE FROM ima_cache_locks WHERE cache_key = %s AND owner_token = %s",
+            (cache_key, owner_token),
+        )
 
     def get_ima_cache(self, kind: str, cache_key: str, generation: int, master_key: str) -> object | None:
         table = {"search": "ima_search_cache", "media": "ima_media_cache", "rules": "ima_search_cache"}.get(kind)
@@ -441,6 +575,104 @@ class PostgresRepository:
             "auditStatus": row[8],
             "createdAt": row[9],
         }
+
+    def create_job(self, tenant_id: str, batch_id: str, idempotency_key: str) -> None:
+        self.conn.execute(
+            """
+            INSERT INTO jobs (tenant_id, batch_id, status, idempotency_key)
+            VALUES (%s, %s, 'queued', %s)
+            ON CONFLICT (batch_id) DO NOTHING
+            """,
+            (tenant_id, batch_id, idempotency_key),
+        )
+
+    def save_model_snapshot(
+        self,
+        *,
+        batch_id: str,
+        tenant_id: str,
+        user_id: str,
+        model: dict[str, object],
+        api_key: str,
+        endpoint: str,
+        master_key: str,
+    ) -> None:
+        self.conn.execute(
+            """
+            INSERT INTO batch_model_snapshots (batch_id, tenant_id, user_id, provider, model_id, endpoint, api_key_cipher)
+            VALUES (%s, %s, %s, %s, %s, %s, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'))
+            ON CONFLICT (batch_id) DO NOTHING
+            """,
+            (batch_id, tenant_id, user_id, model["id"], model["modelId"], endpoint, api_key, master_key),
+        )
+
+    def get_model_snapshot(
+        self,
+        *,
+        batch_id: str,
+        tenant_id: str,
+        user_id: str,
+        master_key: str,
+    ) -> dict[str, object] | None:
+        row = self.conn.execute(
+            """
+            SELECT provider, model_id, endpoint,
+                   CASE WHEN api_key_cipher IS NULL THEN NULL
+                        ELSE pgp_sym_decrypt(api_key_cipher, %s, 'cipher-algo=aes256')
+                   END
+            FROM batch_model_snapshots
+            WHERE batch_id = %s AND tenant_id = %s AND user_id = %s
+            """,
+            (master_key, batch_id, tenant_id, user_id),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "provider": row[0],
+            "modelId": row[1],
+            "endpoint": row[2],
+            "apiKey": row[3],
+        }
+
+    def claim_next_job(self, lease_seconds: int = 90) -> dict[str, object] | None:
+        with self.conn.transaction():
+            row = self.conn.execute(
+                """
+                SELECT j.id, j.batch_id, b.user_id, b.seq
+                FROM jobs j
+                JOIN batches b ON b.id = j.batch_id
+                WHERE j.status IN ('queued', 'running') AND (j.lease_until IS NULL OR j.lease_until < NOW())
+                ORDER BY j.next_run_at, j.created_at
+                FOR UPDATE OF j SKIP LOCKED
+                LIMIT 1
+                """
+            ).fetchone()
+            if not row:
+                return None
+            updated = self.conn.execute(
+                """
+                UPDATE jobs SET status = 'running', attempts = attempts + 1,
+                    locked_at = NOW(), lease_until = NOW() + (%s || ' seconds')::INTERVAL,
+                    updated_at = NOW()
+                WHERE id = %s
+                RETURNING attempts
+                """,
+                (lease_seconds, row[0]),
+            ).fetchone()
+            return {"id": str(row[0]), "batchId": row[1], "userId": str(row[2]), "seq": int(row[3]), "attempts": int(updated[0])}
+
+    def finish_job(self, job_id: str, status: str) -> None:
+        final_status = status if status in {"completed", "failed", "cancelled"} else "queued"
+        self.conn.execute(
+            "UPDATE jobs SET status = %s, lease_until = NULL, locked_at = NULL, next_run_at = NOW(), updated_at = NOW() WHERE id = %s",
+            (final_status, job_id),
+        )
+
+    def fail_job(self, job_id: str, message: str) -> None:
+        self.conn.execute(
+            "UPDATE jobs SET status = 'failed', last_error = %s, lease_until = NULL, locked_at = NULL, updated_at = NOW() WHERE id = %s",
+            (message[:4000], job_id),
+        )
 
     def create_session(self, user_id: str, stored: dict[str, object]) -> None:
         self.conn.execute(
@@ -582,11 +814,11 @@ class PostgresRepository:
         with self.conn.transaction():
             self.conn.execute(
                 """
-                INSERT INTO batches (id, user_id, request_id_hash, state, seq, status)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, seq, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (user_id, request_id_hash) DO NOTHING
                 """,
-                (batch_id, user_id, request_id_hash, Jsonb(state), state["seq"], state["status"]),
+                (batch_id, user_id, state.get("tenantId"), request_id_hash, Jsonb(state), state["seq"], state["status"]),
             )
             row = self.conn.execute(
                 "SELECT state FROM batches WHERE user_id = %s AND request_id_hash = %s",
@@ -605,6 +837,13 @@ class PostgresRepository:
             "SELECT state FROM batches WHERE user_id = %s ORDER BY created_at DESC LIMIT 500", (user_id,)
         ).fetchall()
         return [row[0] for row in rows]
+
+    def has_active_batch(self, user_id: str) -> bool:
+        row = self.conn.execute(
+            "SELECT 1 FROM batches WHERE user_id = %s AND status = 'ready' LIMIT 1",
+            (user_id,),
+        ).fetchone()
+        return bool(row)
 
     def claim_step(self, batch_id: str, seq: int) -> bool:
         row = self.conn.execute(

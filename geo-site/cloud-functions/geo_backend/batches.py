@@ -11,7 +11,7 @@ from .artifacts import ArtifactService
 from .credits import CreditService
 from .ima import ImaCache, ima_post, load_ima_credentials, next_cursor, normalize, read_media
 from .models import SettingsService
-from .providers import complete
+from .providers import ENDPOINTS, complete
 from .tasks import audit_result, parse_tasks
 
 
@@ -135,6 +135,18 @@ class BatchService:
             batch["tenantId"] = self.tenant_context["tenantId"]
             batch["creditTaskIds"] = [str(index + 1) for index in range(len(tasks))]
         stored = self.repository.create_or_get_batch(user_id, batch_id, _digest(request_id), batch)
+        if self.tenant_context and hasattr(self.repository, "create_job"):
+            self.repository.create_job(str(self.tenant_context["tenantId"]), batch_id, f"batch:{batch_id}:run")
+        if self.tenant_context and hasattr(self.repository, "save_model_snapshot"):
+            self.repository.save_model_snapshot(
+                batch_id=batch_id,
+                tenant_id=str(self.tenant_context["tenantId"]),
+                user_id=user_id,
+                model=model,
+                api_key=str(private["keys"].get(model["id"])),
+                endpoint=ENDPOINTS.get(model["id"], ""),
+                master_key=self.master_key,
+            )
         return _summary(stored)
 
     def get(self, batch_id: str, user_id: str) -> dict[str, object]:
@@ -147,6 +159,27 @@ class BatchService:
 
     def list(self, user_id: str) -> list[dict[str, object]]:
         return sorted((_summary(batch) for batch in self.repository.list_batches(user_id)), key=lambda item: item["createdAt"], reverse=True)
+
+    def _execution_model(self, batch: dict[str, object], user_id: str) -> tuple[dict[str, object], str | None]:
+        if self.tenant_context and hasattr(self.repository, "get_model_snapshot"):
+            snapshot = self.repository.get_model_snapshot(
+                batch_id=str(batch["id"]),
+                tenant_id=str(self.tenant_context["tenantId"]),
+                user_id=user_id,
+                master_key=self.master_key,
+            )
+            if snapshot:
+                return (
+                    {
+                        **batch["model"],
+                        "id": str(snapshot["provider"]),
+                        "modelId": str(snapshot["modelId"]),
+                        "endpoint": str(snapshot["endpoint"]),
+                    },
+                    str(snapshot["apiKey"]) if snapshot.get("apiKey") is not None else None,
+                )
+        private = SettingsService(self.repository, self.master_key).private(user_id)
+        return batch["model"], private["keys"].get(batch["model"]["id"])
 
     async def advance(self, batch_id: str, body: dict[str, object], user_id: str) -> dict[str, object]:
         batch = self.repository.get_batch(user_id, batch_id)
@@ -162,6 +195,12 @@ class BatchService:
         now = datetime.now(timezone.utc)
         if body.get("retry") is True:
             allow_failed = batch["status"] == "failed"
+            if allow_failed and self.credit_service and self.tenant_context:
+                self.credit_service.reopen_batch(
+                    str(self.tenant_context["tenantId"]),
+                    user_id,
+                    batch_id,
+                )
             if not allow_failed and not self.repository.claim_is_stale(batch_id, seq, now):
                 raise ApiError(409, "当前请求尚未结束，不能重复执行。")
             if not self.repository.recover_step(batch_id, seq, now, allow_failed=allow_failed):
@@ -186,6 +225,8 @@ class BatchService:
             batch["requests"] = requests
             batch["status"] = "failed"
             batch["error"] = str(error) if isinstance(error, ApiError) else "本步骤异常中断，未自动重试。请检查服务端配置。"
+            if self.credit_service and self.tenant_context:
+                self.credit_service.refund_batch(str(self.tenant_context["tenantId"]), batch_id)
         batch["seq"] += 1
         if not self.repository.save_batch(user_id, batch_id, batch, seq):
             raise ApiError(409, "批次进度已变化，请刷新状态。")
@@ -381,11 +422,11 @@ class BatchService:
                 batch["phase"] = "generate"
             return
         self._validate_context(batch)
-        private = SettingsService(self.repository, self.master_key).private(user_id)
+        execution_model, execution_key = self._execution_model(batch, user_id)
         batch["requests"] += 1
         result = await self.model_complete(
-            batch["model"],
-            private["keys"].get(batch["model"]["id"]),
+            execution_model,
+            execution_key,
             self._prompt(batch, batch["phase"]),
             client=self.client,
         )
@@ -421,12 +462,13 @@ class BatchService:
             article["artifactId"] = artifact["id"]
             article["filename"] = artifact["filename"]
             article["byteLength"] = artifact["byteLength"]
-            self.credit_service.finalize(
-                str(self.tenant_context["tenantId"]),
-                str(batch["id"]),
-                str(batch["taskIndex"] + 1),
-                complete=True,
-            )
+            if self.credit_service:
+                self.credit_service.finalize(
+                    str(self.tenant_context["tenantId"]),
+                    str(batch["id"]),
+                    str(batch["taskIndex"] + 1),
+                    complete=True,
+                )
         else:
             article["markdown"] = batch["draft"]
         batch["articles"].append(article)

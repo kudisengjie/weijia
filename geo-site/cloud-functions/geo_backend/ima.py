@@ -3,6 +3,8 @@ from __future__ import annotations
 import hmac
 import json
 import re
+import asyncio
+import uuid
 from io import BytesIO
 from datetime import date, datetime, timezone
 from urllib.parse import urlparse
@@ -43,11 +45,30 @@ class ImaCache:
         cached = self.repository.get_ima_cache(kind, cache_key, generation, self.master_key)
         if cached is not None:
             return cached
-        value = await fetch()
-        if value is None:
-            raise ApiError(502, "IMA 返回空内容，未写入缓存。", "IMA_EMPTY")
-        self.repository.put_ima_cache(kind, cache_key, generation, value, request, self.master_key)
-        return value
+        acquire = getattr(self.repository, "acquire_ima_cache_lock", None)
+        release = getattr(self.repository, "release_ima_cache_lock", None)
+        owner_token = uuid.uuid4().hex
+        owns_lock = False
+        if acquire and release:
+            for _ in range(121):
+                owns_lock = bool(acquire(cache_key, generation, owner_token, 30))
+                if owns_lock:
+                    break
+                await asyncio.sleep(0.25)
+                cached = self.repository.get_ima_cache(kind, cache_key, generation, self.master_key)
+                if cached is not None:
+                    return cached
+            if not owns_lock:
+                raise ApiError(503, "IMA 缓存正在由其他任务更新，请稍后继续。", "IMA_CACHE_BUSY")
+        try:
+            value = await fetch()
+            if value is None:
+                raise ApiError(502, "IMA 返回空内容，未写入缓存。", "IMA_EMPTY")
+            self.repository.put_ima_cache(kind, cache_key, generation, value, request, self.master_key)
+            return value
+        finally:
+            if owns_lock:
+                release(cache_key, owner_token)
 
     def clear_generation(self, user_id: str | None = None) -> int:
         return int(self.repository.clear_ima_cache_generation(user_id))
@@ -125,6 +146,9 @@ async def update_ima_credentials(
     if not any(normalize(item.get("name") or item.get("kb_name")) == "copilot" for item in data.get("info_list", [])):
         raise ApiError(422, "新凭据无法访问 copilot 知识库，已保留旧凭据。")
     repository.save_ima(value, master_key)
+    clear_cache = getattr(repository, "clear_ima_cache_generation", None)
+    if clear_cache:
+        clear_cache(None)
     return {"saved": True, "expiresAt": value["expiresAt"]}
 
 

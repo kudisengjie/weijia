@@ -15,8 +15,42 @@ class TenantRepository:
     def get_tenant_context(self, user_id, _now):
         return self.context.get(user_id)
 
+    def create_member(self, **kwargs):
+        return {"id": "user-2", "username": kwargs["username"], "role": kwargs["role"], "expiresAt": kwargs["expires_at"]}
+
 
 class TenantAccessTests(unittest.TestCase):
+    def test_manager_can_create_a_member_with_a_thirty_day_expiry(self):
+        from geo_backend.tenant_access import TenantAccessService
+
+        now = datetime.now(timezone.utc)
+        member = TenantAccessService(TenantRepository({})).create_member(
+            {"tenantId": "tenant-1", "role": "owner"},
+            username="member",
+            password="member-secret",
+            role="member",
+            starts_at=now,
+            expires_at=now + timedelta(days=30),
+        )
+
+        self.assertEqual("member", member["username"])
+        self.assertEqual("member", member["role"])
+
+    def test_member_cannot_create_another_member(self):
+        from geo_backend.errors import ApiError
+        from geo_backend.tenant_access import TenantAccessService
+
+        with self.assertRaises(ApiError) as rejected:
+            TenantAccessService(TenantRepository({})).create_member(
+                {"tenantId": "tenant-1", "role": "member"},
+                username="member",
+                password="member-secret",
+                role="member",
+                starts_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+            )
+
+        self.assertEqual("TENANT_MANAGER_REQUIRED", rejected.exception.code)
     def test_active_member_context_is_returned(self):
         from geo_backend.tenant_access import TenantAccessService
 

@@ -9,6 +9,15 @@ sys.path.insert(0, str(FUNCTIONS_DIR))
 
 
 class SecurityTests(unittest.TestCase):
+    def test_password_hash_round_trips_for_subaccount_creation(self):
+        from geo_backend.security import hash_password, verify_password
+
+        encoded = hash_password("member-secret")
+
+        self.assertTrue(encoded.startswith("scrypt:"))
+        self.assertTrue(verify_password("member-secret", encoded))
+        self.assertFalse(verify_password("wrong", encoded))
+
     def test_node_scrypt_hash_is_verified_by_python(self):
         from geo_backend.security import verify_password
 

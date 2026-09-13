@@ -38,6 +38,19 @@ class AuthServiceTests(unittest.TestCase):
         self.assertEqual(1, len(repository.sessions))
         self.assertNotIn(result.cookie_token, repository.sessions)
 
+    def test_configured_subaccount_can_login_with_its_own_password(self):
+        from geo_backend.auth import AuthService
+        from geo_backend.security import hash_password
+
+        repository = FakeRepository()
+        repository.users["member"] = {"id": "user-2", "username": "member", "password_hash": hash_password("member-secret")}
+
+        result = AuthService(settings(), repository).login("member", "member-secret")
+
+        self.assertTrue(result.authenticated)
+        session = AuthService(settings(), repository).authenticate(result.cookie_token, result.csrf_token, "GET")
+        self.assertEqual("user-2", session.user_id)
+
     def test_five_bad_passwords_block_the_next_attempt(self):
         from geo_backend.auth import AuthService
         from geo_backend.errors import ApiError

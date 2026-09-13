@@ -41,16 +41,25 @@ class AuthService:
         now = datetime.now(timezone.utc)
         if self.repository.login_blocked(scope_hash, now):
             raise ApiError(429, "登录尝试过多，请 15 分钟后再试。", "LOGIN_THROTTLED")
-        if not verify_password(password, self.settings.geo_password_hash) or not hmac.compare_digest(
-            account_text, self.settings.geo_account
-        ):
+        candidate = None
+        lookup = getattr(self.repository, "get_user_login", None)
+        if lookup and account_text:
+            candidate = lookup(account_text)
+        valid_owner = hmac.compare_digest(account_text, self.settings.geo_account) and verify_password(
+            password, self.settings.geo_password_hash
+        )
+        valid_member = bool(candidate and verify_password(password, candidate.get("password_hash")))
+        if not valid_owner and not valid_member:
             self.repository.record_login_failure(scope_hash, now)
             raise ApiError(401, "账号或密码不正确。", "LOGIN_FAILED")
         self.repository.clear_login_failures(scope_hash)
-        user = self.repository.upsert_configured_user(self.settings.geo_account, self.settings.geo_password_hash)
-        ensure_owner_tenant = getattr(self.repository, "ensure_owner_tenant", None)
-        if ensure_owner_tenant:
-            ensure_owner_tenant(str(user["id"]))
+        if valid_member:
+            user = candidate
+        else:
+            user = self.repository.upsert_configured_user(self.settings.geo_account, self.settings.geo_password_hash)
+            ensure_owner_tenant = getattr(self.repository, "ensure_owner_tenant", None)
+            if ensure_owner_tenant:
+                ensure_owner_tenant(str(user["id"]))
         material = new_session_material(self.settings.geo_master_key, now)
         self.repository.create_session(str(user["id"]), material.stored)
         return LoginResult(True, material.cookie_token, material.csrf_token, material.expires_at)

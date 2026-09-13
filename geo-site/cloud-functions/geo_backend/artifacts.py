@@ -54,7 +54,7 @@ class ArtifactService:
         }
 
     def get(self, tenant_id: str, artifact_id: str) -> dict[str, object]:
-        row = self.repository.get_article_artifact(tenant_id, artifact_id)
+        row = self.repository.get_article_artifact(tenant_id, artifact_id, self.master_key)
         if not row:
             raise ApiError(404, "文章文件不存在或不属于当前工作区。", "ARTIFACT_NOT_FOUND")
         return row

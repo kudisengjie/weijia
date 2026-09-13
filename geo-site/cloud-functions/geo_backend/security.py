@@ -40,6 +40,21 @@ def verify_password(password: object, encoded: object) -> bool:
     return hmac.compare_digest(actual, bytes.fromhex(expected_hex))
 
 
+def hash_password(password: str) -> str:
+    if not isinstance(password, str) or not 8 <= len(password) <= 128:
+        raise ValueError("INVALID_PASSWORD")
+    salt = secrets.token_hex(16)
+    value = hashlib.scrypt(
+        password.encode("utf-8"),
+        salt=salt.encode("ascii"),
+        n=16384,
+        r=8,
+        p=1,
+        dklen=64,
+    ).hex()
+    return f"scrypt:{salt}:{value}"
+
+
 @dataclass(frozen=True)
 class SessionMaterial:
     cookie_token: str

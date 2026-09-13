@@ -36,3 +36,10 @@ test('settings bootstrap failure stays in workspace and does not trigger duplica
   assert.equal(result, false);
   assert.deepEqual(calls, ['workspace', 'settings', ['failure', 'STORAGE_GET_FAILED', 'request-1']]);
 });
+
+test('runtime uses bounded runs and server-side article artifacts', () => {
+  assert.match(source, /batches\/\$\{b\.id\}\/run/);
+  assert.match(source, /maxSteps:2/);
+  assert.match(source, /artifacts\/'\+encodeURIComponent/);
+  assert.match(source, /modelLocked=b\.status!==\'completed\'/);
+});

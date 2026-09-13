@@ -162,6 +162,14 @@ class AppContractTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([], detail["articles"])
         self.assertEqual("定位知识库", detail["phaseLabel"])
 
+        locked = await self.client.post(
+            "/settings/model",
+            headers=headers,
+            json={"provider": "deepseek", "slot": "primary", "modelId": "", "apiKey": "another-key"},
+        )
+        self.assertEqual(409, locked.status_code)
+        self.assertEqual("MODEL_LOCKED_DURING_BATCH", locked.json()["code"])
+
 
 if __name__ == "__main__":
     unittest.main()

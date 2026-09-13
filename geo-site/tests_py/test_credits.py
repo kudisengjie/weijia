@@ -47,6 +47,26 @@ class CreditRepository:
                 released += 1
         return {"released": released, "balance": self.balance[tenant_id]}
 
+    def settle_batch_incomplete(self, tenant_id, batch_id):
+        refunded = 0
+        for (stored_batch, task_id), status in list(self.states.items()):
+            if stored_batch == batch_id and status == "reserved":
+                self.states[(stored_batch, task_id)] = "refunded"
+                self.balance[tenant_id] += 1
+                refunded += 1
+        return {"refunded": refunded, "balance": self.balance[tenant_id]}
+
+    def reopen_batch_credits(self, tenant_id, _user_id, batch_id):
+        reopened = 0
+        for (stored_batch, task_id), status in list(self.states.items()):
+            if stored_batch == batch_id and status == "refunded":
+                if self.balance[tenant_id] < 1:
+                    raise ValueError("INSUFFICIENT_CREDITS")
+                self.states[(stored_batch, task_id)] = "reserved"
+                self.balance[tenant_id] -= 1
+                reopened += 1
+        return {"reopened": reopened, "balance": self.balance[tenant_id]}
+
 
 class CreditServiceTests(unittest.TestCase):
     def test_reserves_once_and_refunds_an_incomplete_task_once(self):
@@ -89,6 +109,20 @@ class CreditServiceTests(unittest.TestCase):
 
         self.assertEqual(1, result["released"])
         self.assertEqual(4, repository.balance["tenant-1"])
+
+    def test_failed_batch_refunds_all_incomplete_tasks_and_retry_reopens_them(self):
+        from geo_backend.credits import CreditService
+
+        repository = CreditRepository()
+        service = CreditService(repository)
+        service.reserve("tenant-1", "user-1", "batch-1", ["1", "2"])
+
+        failed = service.refund_batch("tenant-1", "batch-1")
+        reopened = service.reopen_batch("tenant-1", "user-1", "batch-1")
+
+        self.assertEqual(2, failed["refunded"])
+        self.assertEqual(2, reopened["reopened"])
+        self.assertEqual(3, repository.balance["tenant-1"])
 
 
 if __name__ == "__main__":

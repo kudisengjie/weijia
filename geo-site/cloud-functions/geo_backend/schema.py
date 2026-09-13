@@ -95,6 +95,7 @@ CREATE INDEX IF NOT EXISTS tenant_members_user_idx ON tenant_members (user_id, t
 CREATE TABLE IF NOT EXISTS subscriptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     starts_at TIMESTAMPTZ NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
     status VARCHAR(16) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'revoked')),
@@ -102,6 +103,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     CHECK (expires_at > starts_at)
 );
 CREATE INDEX IF NOT EXISTS subscriptions_tenant_expiry_idx ON subscriptions (tenant_id, expires_at DESC);
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS subscriptions_user_expiry_idx ON subscriptions (tenant_id, user_id, expires_at DESC);
 
 CREATE TABLE IF NOT EXISTS credit_accounts (
     tenant_id UUID PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
@@ -130,9 +133,11 @@ CREATE TABLE IF NOT EXISTS credit_task_states (
     task_id VARCHAR(160) NOT NULL,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status VARCHAR(16) NOT NULL CHECK (status IN ('reserved', 'complete', 'refunded', 'released')),
+    attempt INTEGER NOT NULL DEFAULT 0 CHECK (attempt >= 0),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (batch_id, task_id)
 );
+ALTER TABLE credit_task_states ADD COLUMN IF NOT EXISTS attempt INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS ima_cache_meta (
     singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),

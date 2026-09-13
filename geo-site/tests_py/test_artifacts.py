@@ -16,7 +16,7 @@ class ArtifactRepository:
         self.rows.setdefault(key, {"id": "artifact-1", **kwargs, "status": "complete"})
         return self.rows[key]
 
-    def get_article_artifact(self, tenant_id, artifact_id):
+    def get_article_artifact(self, tenant_id, artifact_id, _master_key=None):
         return next((row for row in self.rows.values() if row["tenant_id"] == tenant_id and row["id"] == artifact_id), None)
 
 

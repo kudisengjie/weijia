@@ -19,6 +19,8 @@ class FakeRepository:
         self.batch_recoveries = set()
         self.ima_cache_generation = 1
         self.ima_cache_values = {}
+        self.model_snapshots = {}
+        self.ima_cache_locks = set()
 
     def health(self):
         return {"database": "available", "schemaVersion": 1, "ready": True}
@@ -40,6 +42,10 @@ class FakeRepository:
         self.users.setdefault(username, {"id": "user-1", "username": username})
         self.users[username]["password_hash"] = password_hash
         return self.users[username]
+
+    def get_user_login(self, username):
+        value = self.users.get(username)
+        return dict(value) if value else None
 
     def create_session(self, user_id, stored):
         self.sessions[stored["token_hash"]] = {"user_id": user_id, **stored, "revoked_at": None}
@@ -73,6 +79,17 @@ class FakeRepository:
             "selected": True,
         }
 
+    def save_model_snapshot(self, **kwargs):
+        self.model_snapshots[kwargs["batch_id"]] = {
+            "provider": kwargs["model"]["id"],
+            "modelId": kwargs["model"]["modelId"],
+            "endpoint": kwargs["endpoint"],
+            "apiKey": kwargs["api_key"],
+        }
+
+    def get_model_snapshot(self, *, batch_id, tenant_id, user_id, master_key):
+        return copy.deepcopy(self.model_snapshots.get(batch_id))
+
     def load_ima(self, _master_key):
         return dict(self.ima) if self.ima else None
 
@@ -91,6 +108,15 @@ class FakeRepository:
     def clear_ima_cache_generation(self, _user_id=None):
         self.ima_cache_generation += 1
         return self.ima_cache_generation
+
+    def acquire_ima_cache_lock(self, cache_key, _generation, _owner_token, _lock_seconds=30):
+        if cache_key in self.ima_cache_locks:
+            return False
+        self.ima_cache_locks.add(cache_key)
+        return True
+
+    def release_ima_cache_lock(self, cache_key, _owner_token):
+        self.ima_cache_locks.discard(cache_key)
 
     def take_admin_attempt(self, _scope_hash, _now, limit=5):
         if self.admin_attempts >= limit:
@@ -117,6 +143,9 @@ class FakeRepository:
 
     def list_batches(self, user_id):
         return [copy.deepcopy(value["state"]) for value in self.batches.values() if value["user_id"] == user_id]
+
+    def has_active_batch(self, user_id):
+        return any(value["user_id"] == user_id and value["state"].get("status") == "ready" for value in self.batches.values())
 
     def claim_step(self, batch_id, seq):
         key = (batch_id, seq)

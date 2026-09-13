@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import datetime, timezone
 from contextlib import AbstractContextManager
 from typing import Callable
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict
 
 from .auth import AuthService
+from .artifacts import ArtifactService
 from .batches import BatchService
 from .config import Settings
 from .errors import ApiError
@@ -63,6 +65,37 @@ class BatchStepBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     seq: int
     retry: bool = False
+
+
+class BatchRunBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    seq: int
+    retry: bool = False
+    maxSteps: int = 8
+
+
+class CreditAdjustmentBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    amount: int
+    kind: str
+    idempotencyKey: str
+    note: str = ""
+
+
+class MemberBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    username: str
+    password: str
+    role: str = "member"
+    startsAt: str
+    expiresAt: str
+
+
+class SubscriptionBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    userId: str | None = None
+    startsAt: str
+    expiresAt: str
 
 
 def _epoch_ms(value) -> int:
@@ -129,6 +162,16 @@ def create_app(
             return None
         service = TenantAccessService(repository)
         return service.require(user_id) if active else service.context(user_id)
+
+    @staticmethod
+    def parse_datetime(value: str) -> datetime:
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ApiError(400, "日期格式不正确，请使用 ISO 8601。", "INVALID_DATE") from error
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
 
     def batch_service(repository: object, context: dict[str, object] | None = None) -> BatchService:
         return BatchService(
@@ -201,6 +244,8 @@ def create_app(
         with factory() as repository:
             current = authentication(request, repository)
             tenant_context(repository, current.user_id, active=True)
+            if hasattr(repository, "has_active_batch") and repository.has_active_batch(current.user_id):
+                raise ApiError(409, "批次正在运行，完成或停止后才能切换模型。", "MODEL_LOCKED_DURING_BATCH")
             return SettingsService(repository, config.geo_master_key).save_model(
                 current.user_id,
                 body.provider,
@@ -235,6 +280,97 @@ def create_app(
                 body.model_dump(),
             )
 
+    @app.get("/ima/cache")
+    def ima_cache_status(request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            if context:
+                TenantAccessService.require_manager(context)
+            generation = repository.get_ima_cache_generation() if hasattr(repository, "get_ima_cache_generation") else None
+            return {"generation": generation}
+
+    @app.post("/ima/cache/clear")
+    def ima_cache_clear(request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            if context:
+                TenantAccessService.require_manager(context)
+            generation = repository.clear_ima_cache_generation(current.user_id)
+            return {"cleared": True, "generation": generation}
+
+    @app.get("/credits")
+    def credits_view(request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id)
+            if not context:
+                return {"balance": None, "subscription": None}
+            return {
+                "balance": repository.credit_balance(str(context["tenantId"])) if hasattr(repository, "credit_balance") else None,
+                "subscription": {
+                    "active": bool(context.get("active")),
+                    "expiresAt": _epoch_ms(context["expiresAt"]) if context.get("expiresAt") else None,
+                    "role": context.get("role"),
+                },
+            }
+
+    @app.post("/credits/adjust")
+    def credits_adjust(body: CreditAdjustmentBody, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            if context:
+                TenantAccessService.require_manager(context)
+            if not context or not hasattr(repository, "adjust_credits"):
+                raise ApiError(503, "积分服务尚未初始化。", "CREDITS_SETUP_REQUIRED")
+            try:
+                return repository.adjust_credits(
+                    str(context["tenantId"]),
+                    current.user_id,
+                    body.amount,
+                    body.idempotencyKey,
+                    body.kind,
+                    {"note": body.note},
+                )
+            except ValueError as error:
+                if str(error) == "INSUFFICIENT_CREDITS":
+                    raise ApiError(402, "积分余额不足，无法收回。", "INSUFFICIENT_CREDITS") from error
+                raise ApiError(400, "积分调整参数不正确。", "INVALID_CREDIT_ADJUSTMENT") from error
+
+    @app.post("/tenant/members")
+    def tenant_member_create(body: MemberBody, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            if not context:
+                raise ApiError(403, "当前账号没有工作区。", "TENANT_ACCESS_REQUIRED")
+            return TenantAccessService(repository).create_member(
+                context,
+                username=body.username,
+                password=body.password,
+                role=body.role,
+                starts_at=parse_datetime(body.startsAt),
+                expires_at=parse_datetime(body.expiresAt),
+            )
+
+    @app.post("/tenant/subscription")
+    def tenant_subscription_update(body: SubscriptionBody, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id)
+            if not context:
+                raise ApiError(403, "当前账号没有工作区。", "TENANT_ACCESS_REQUIRED")
+            TenantAccessService.require_manager(context)
+            if not hasattr(repository, "set_subscription"):
+                raise ApiError(503, "订阅服务尚未初始化。", "SUBSCRIPTION_SETUP_REQUIRED")
+            starts_at = parse_datetime(body.startsAt)
+            expires_at = parse_datetime(body.expiresAt)
+            if expires_at <= starts_at:
+                raise ApiError(400, "有效期必须晚于开始时间。", "INVALID_MEMBER_EXPIRY")
+            return repository.set_subscription(str(context["tenantId"]), body.userId, starts_at, expires_at)
+
     @app.get("/batches")
     def batches_list(request: Request):
         with factory() as repository:
@@ -261,5 +397,35 @@ def create_app(
             current = authentication(request, repository)
             context = tenant_context(repository, current.user_id, active=True)
             return await batch_service(repository, context).advance(batch_id, body.model_dump(), current.user_id)
+
+    @app.post("/batches/{batch_id}/run")
+    async def batches_run(batch_id: str, body: BatchRunBody, request: Request):
+        if body.maxSteps < 1 or body.maxSteps > 8:
+            raise ApiError(400, "单次运行步数必须为 1–8。", "INVALID_RUN_BUDGET")
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            service = batch_service(repository, context)
+            state = {"seq": body.seq, "retry": body.retry}
+            result = None
+            for index in range(body.maxSteps):
+                result = await service.advance(batch_id, state, current.user_id)
+                if result.get("status") in {"completed", "failed"}:
+                    break
+                state = {"seq": int(result["seq"]), "retry": False}
+            return {"batch": result, "nextPollMs": 1200 if result and result.get("status") == "ready" else None}
+
+    @app.get("/artifacts/{artifact_id}")
+    def artifact_download(artifact_id: str, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id)
+            if not context or not hasattr(repository, "get_article_artifact"):
+                raise ApiError(404, "文章文件不存在或不属于当前工作区。", "ARTIFACT_NOT_FOUND")
+            artifact = ArtifactService(repository, config.geo_master_key).get(str(context["tenantId"]), artifact_id)
+            response = PlainTextResponse(str(artifact["markdown"]), media_type="text/markdown; charset=utf-8")
+            response.headers["Content-Disposition"] = f'attachment; filename="{artifact["filename"]}"'
+            response.headers["X-Artifact-SHA256"] = str(artifact["sha256"])
+            return response
 
     return app
