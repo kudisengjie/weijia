@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import uuid
 
 from .errors import ApiError
 
@@ -53,8 +54,15 @@ class ArtifactService:
             "auditStatus": audit_status,
         }
 
-    def get(self, tenant_id: str, artifact_id: str) -> dict[str, object]:
-        row = self.repository.get_article_artifact(tenant_id, artifact_id, self.master_key)
+    def get(self, tenant_id: str, artifact_id: str, user_id: str) -> dict[str, object]:
+        try:
+            uuid.UUID(artifact_id)
+        except (ValueError, TypeError, AttributeError):
+            raise ApiError(404, '文章文件不存在。', 'ARTIFACT_NOT_FOUND')
+        row = self.repository.get_article_artifact(tenant_id, artifact_id, self.master_key, user_id=user_id)
         if not row:
             raise ApiError(404, "文章文件不存在或不属于当前工作区。", "ARTIFACT_NOT_FOUND")
+        payload = str(row['markdown']).encode('utf-8')
+        if len(payload) != row['byteLength'] or hashlib.sha256(payload).hexdigest() != row['sha256'] or row['auditStatus'] != 'accepted':
+            raise ApiError(503, '文章文件校验失败，请联系管理员恢复文件。', 'ARTIFACT_INTEGRITY_ERROR')
         return row

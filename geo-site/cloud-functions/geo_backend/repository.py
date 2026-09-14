@@ -13,6 +13,16 @@ class PostgresRepository:
     def __init__(self, conn: object) -> None:
         self.conn = conn
 
+    def transaction(self):
+        return self.conn.transaction()
+
+    def lock_user(self, user_id: str) -> None:
+        self.conn.execute('SELECT id FROM users WHERE id = %s FOR UPDATE', (user_id,))
+
+    def get_request_batch(self, user_id: str, request_hash: str):
+        row = self.conn.execute('SELECT state FROM batches WHERE user_id = %s AND request_id_hash = %s', (user_id, request_hash)).fetchone()
+        return row[0] if row else None
+
     def health(self) -> dict[str, object]:
         return database_health(self.conn)
 
@@ -122,6 +132,11 @@ class PostgresRepository:
 
     def ensure_owner_tenant(self, user_id: str, slug: str = "owner") -> dict[str, object]:
         with self.conn.transaction():
+            existing = self.conn.execute(
+                "SELECT id, slug, name FROM tenants WHERE owner_user_id = %s ORDER BY created_at LIMIT 1", (user_id,)
+            ).fetchone()
+            if existing:
+                return {"tenantId": str(existing[0]), "slug": existing[1], "name": existing[2], "role": "owner"}
             tenant = self.conn.execute(
                 """
                 INSERT INTO tenants (slug, name, owner_user_id)
@@ -173,7 +188,7 @@ class PostgresRepository:
                 FROM subscriptions
                 WHERE tenant_id = t.id AND (user_id = tm.user_id OR user_id IS NULL)
                 ORDER BY CASE WHEN user_id = tm.user_id THEN 0 ELSE 1 END,
-                         expires_at DESC NULLS LAST
+                         created_at DESC, id DESC
                 LIMIT 1
             ) s ON TRUE
             WHERE tm.user_id = %s
@@ -193,224 +208,189 @@ class PostgresRepository:
             "active": bool(row[4]),
         }
 
-    def reserve_task_credits(
-        self, tenant_id: str, user_id: str, batch_id: str, task_ids: list[str]
-    ) -> dict[str, object]:
-        from psycopg.types.json import Jsonb
+    def _credit_account(self, tenant_id: str, user_id: str) -> int:
+        from .errors import ApiError
+        member = self.conn.execute(
+            "SELECT 1 FROM tenant_members WHERE tenant_id = %s AND user_id = %s", (tenant_id, user_id)
+        ).fetchone()
+        if not member:
+            raise ApiError(404, "子账号不存在或不属于当前工作区。", "MEMBER_NOT_FOUND")
+        self.conn.execute(
+            "INSERT INTO member_credit_accounts (tenant_id, user_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+            (tenant_id, user_id),
+        )
+        return int(self.conn.execute(
+            "SELECT balance FROM member_credit_accounts WHERE tenant_id = %s AND user_id = %s FOR UPDATE",
+            (tenant_id, user_id),
+        ).fetchone()[0])
 
+    def _credit_delta(self, tenant_id, user_id, amount):
+        self.conn.execute(
+            "UPDATE member_credit_accounts SET balance = balance + %s, updated_at = NOW() WHERE tenant_id = %s AND user_id = %s",
+            (amount, tenant_id, user_id),
+        )
+
+    def _credit_entry(self, tenant_id, user_id, batch_id, task_id, kind, amount, key, metadata=None):
+        from psycopg.types.json import Jsonb
+        self.conn.execute(
+            """INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+            (tenant_id, user_id, batch_id, task_id, kind, amount, key, Jsonb(metadata or {})),
+        )
+
+    def _batch_owner(self, tenant_id, batch_id):
+        from .errors import ApiError
+        row = self.conn.execute("SELECT user_id FROM batches WHERE tenant_id = %s AND id = %s", (tenant_id, batch_id)).fetchone()
+        if not row:
+            raise ApiError(404, "批次不存在。", "BATCH_NOT_FOUND")
+        return str(row[0])
+
+    def reserve_task_credits(self, tenant_id, user_id, batch_id, task_ids):
         with self.conn.transaction():
-            new_ids = []
-            for task_id in task_ids:
-                existing = self.conn.execute(
-                    "SELECT 1 FROM credit_task_states WHERE batch_id = %s AND task_id = %s",
-                    (batch_id, task_id),
-                ).fetchone()
-                if not existing:
-                    new_ids.append(task_id)
-            account = self.conn.execute(
-                "SELECT balance FROM credit_accounts WHERE tenant_id = %s FOR UPDATE",
-                (tenant_id,),
-            ).fetchone()
-            balance = int(account[0]) if account else 0
+            if self._batch_owner(tenant_id, batch_id) != user_id:
+                raise ValueError("BATCH_OWNER_MISMATCH")
+            balance = self._credit_account(tenant_id, user_id)
+            existing = {row[0] for row in self.conn.execute(
+                "SELECT task_id FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s", (tenant_id, batch_id)
+            ).fetchall()}
+            new_ids = list(dict.fromkeys(str(t) for t in task_ids if str(t) not in existing))
             if balance < len(new_ids):
                 raise ValueError("INSUFFICIENT_CREDITS")
-            reserved = 0
             for task_id in new_ids:
-                inserted = self.conn.execute(
-                    """
-                    INSERT INTO credit_task_states (tenant_id, batch_id, task_id, user_id, status)
-                    VALUES (%s, %s, %s, %s, 'reserved')
-                    ON CONFLICT (batch_id, task_id) DO NOTHING
-                    RETURNING task_id
-                    """,
-                    (tenant_id, batch_id, task_id, user_id),
-                ).fetchone()
-                if not inserted:
-                    continue
-                reserved += 1
                 self.conn.execute(
-                    "UPDATE credit_accounts SET balance = balance - 1, updated_at = NOW() WHERE tenant_id = %s",
-                    (tenant_id,),
+                    """INSERT INTO credit_task_states (tenant_id, user_id, batch_id, task_id, status)
+                       VALUES (%s, %s, %s, %s, 'reserved')""", (tenant_id, user_id, batch_id, task_id)
                 )
-                self.conn.execute(
-                    """
-                    INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata)
-                    VALUES (%s, %s, %s, %s, 'reserve', -1, %s, %s)
-                    ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
-                    """,
-                    (tenant_id, user_id, batch_id, task_id, f"{batch_id}:{task_id}:reserve", Jsonb({"reason": "batch_start"})),
-                )
-            return {"reserved": reserved, "balance": balance - reserved}
+                self._credit_entry(tenant_id, user_id, batch_id, task_id, 'reserve', -1, f"{batch_id}:{task_id}:reserve:0")
+            self._credit_delta(tenant_id, user_id, -len(new_ids))
+            return {"reserved": len(new_ids), "balance": balance - len(new_ids)}
 
-    def settle_task_credit(
-        self, tenant_id: str, batch_id: str, task_id: str, complete: bool
-    ) -> dict[str, object]:
-        from psycopg.types.json import Jsonb
+    def _task_artifacts_complete(self, tenant_id, batch_id, task_id):
+        row = self.conn.execute("SELECT state FROM batches WHERE tenant_id = %s AND id = %s", (tenant_id, batch_id)).fetchone()
+        if not row:
+            return False
+        expected = [str(i + 1) for i, task in enumerate(row[0]["tasks"]) if str(task.get("billingTaskId", i + 1)) == task_id]
+        if not expected:
+            return False
+        found = self.conn.execute(
+            """SELECT COUNT(*) FROM article_artifacts WHERE tenant_id = %s AND batch_id = %s
+               AND task_id = ANY(%s) AND status = 'complete' AND audit_status = 'accepted' AND byte_length > 0""",
+            (tenant_id, batch_id, expected),
+        ).fetchone()[0]
+        return found == len(expected)
 
+    def settle_task_credit(self, tenant_id, batch_id, task_id, complete, *, release=False):
+        from .errors import ApiError
         with self.conn.transaction():
+            user_id = self._batch_owner(tenant_id, batch_id)
+            self._credit_account(tenant_id, user_id)
             row = self.conn.execute(
-                """
-                SELECT status, user_id FROM credit_task_states
-                WHERE tenant_id = %s AND batch_id = %s AND task_id = %s
-                FOR UPDATE
-                """,
+                "SELECT status, attempt FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND task_id = %s FOR UPDATE",
                 (tenant_id, batch_id, task_id),
             ).fetchone()
-            if not row:
-                return {"status": "missing", "refunded": False}
-            status, user_id = row
-            if status != "reserved":
-                return {"status": status, "refunded": False}
-            if complete:
-                self.conn.execute(
-                    "UPDATE credit_task_states SET status = 'complete', updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
-                    (batch_id, task_id),
-                )
-                return {"status": "complete", "refunded": False}
+            if not row or row[0] != 'reserved':
+                return {"status": row[0] if row else "missing", "refunded": False}
+            artifact_complete = self._task_artifacts_complete(tenant_id, batch_id, task_id)
+            if complete and not artifact_complete:
+                raise ApiError(409, "完整文章尚未保存，不能确认扣分。", "ARTIFACT_NOT_PERSISTED")
+            final_status = "complete" if artifact_complete else "released" if release else "refunded"
             self.conn.execute(
-                "UPDATE credit_task_states SET status = 'refunded', updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
-                (batch_id, task_id),
+                "UPDATE credit_task_states SET status = %s, updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
+                (final_status, batch_id, task_id),
             )
-            self.conn.execute(
-                "UPDATE credit_accounts SET balance = balance + 1, updated_at = NOW() WHERE tenant_id = %s",
-                (tenant_id,),
-            )
-            self.conn.execute(
-                """
-                INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata)
-                VALUES (%s, %s, %s, %s, 'refund', 1, %s, %s)
-                ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
-                """,
-                (tenant_id, user_id, batch_id, task_id, f"{batch_id}:{task_id}:refund", Jsonb({"reason": "incomplete_artifact"})),
-            )
-            return {"status": "refunded", "refunded": True}
+            if final_status != 'complete':
+                kind = 'release' if release else 'refund'
+                self._credit_entry(tenant_id, user_id, batch_id, task_id, kind, 1, f"{batch_id}:{task_id}:{kind}:{row[1]}")
+                self._credit_delta(tenant_id, user_id, 1)
+            return {"status": final_status, "refunded": final_status == 'refunded'}
 
-    def release_unstarted_credits(
-        self, tenant_id: str, batch_id: str, task_ids: list[str]
-    ) -> dict[str, object]:
-        from psycopg.types.json import Jsonb
-
+    def release_unstarted_credits(self, tenant_id, batch_id, task_ids):
         with self.conn.transaction():
+            user_id = self._batch_owner(tenant_id, batch_id)
+            self._credit_account(tenant_id, user_id)
             released = 0
             for task_id in task_ids:
-                row = self.conn.execute(
-                    "SELECT status, user_id FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND task_id = %s FOR UPDATE",
-                    (tenant_id, batch_id, task_id),
-                ).fetchone()
-                if not row or row[0] != "reserved":
-                    continue
-                self.conn.execute(
-                    "UPDATE credit_task_states SET status = 'released', updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
-                    (batch_id, task_id),
-                )
-                self.conn.execute(
-                    "UPDATE credit_accounts SET balance = balance + 1, updated_at = NOW() WHERE tenant_id = %s",
-                    (tenant_id,),
-                )
-                self.conn.execute(
-                    """
-                    INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata)
-                    VALUES (%s, %s, %s, %s, 'release', 1, %s, %s)
-                    ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
-                    """,
-                    (tenant_id, row[1], batch_id, task_id, f"{batch_id}:{task_id}:release", Jsonb({"reason": "not_started"})),
-                )
-                released += 1
-            account = self.conn.execute(
-                "SELECT balance FROM credit_accounts WHERE tenant_id = %s",
-                (tenant_id,),
-            ).fetchone()
-            return {"released": released, "balance": int(account[0]) if account else 0}
+                before = self.conn.execute("SELECT status FROM credit_task_states WHERE batch_id = %s AND task_id = %s", (batch_id, task_id)).fetchone()
+                result = self.settle_task_credit(tenant_id, batch_id, str(task_id), False, release=True)
+                released += int(bool(before and before[0] == 'reserved' and result['status'] == 'released'))
+            return {"released": released, "balance": self.credit_balance(tenant_id, user_id)}
 
-    def settle_batch_incomplete(self, tenant_id: str, batch_id: str) -> dict[str, object]:
-        from psycopg.types.json import Jsonb
-
+    def settle_batch_incomplete(self, tenant_id, batch_id):
         with self.conn.transaction():
-            rows = self.conn.execute(
-                "SELECT task_id, user_id FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND status = 'reserved' FOR UPDATE",
+            user_id = self._batch_owner(tenant_id, batch_id)
+            self._credit_account(tenant_id, user_id)
+            tasks = self.conn.execute(
+                "SELECT task_id FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND status = 'reserved'",
                 (tenant_id, batch_id),
             ).fetchall()
-            for task_id, user_id in rows:
-                self.conn.execute(
-                    "UPDATE credit_task_states SET status = 'refunded', updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
-                    (batch_id, task_id),
-                )
-                self.conn.execute(
-                    "INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata) VALUES (%s, %s, %s, %s, 'refund', 1, %s, %s) ON CONFLICT (tenant_id, idempotency_key) DO NOTHING",
-                    (tenant_id, user_id, batch_id, task_id, f"{batch_id}:{task_id}:refund", Jsonb({"reason": "batch_failed"})),
-                )
-            if rows:
-                self.conn.execute(
-                    "UPDATE credit_accounts SET balance = balance + %s, updated_at = NOW() WHERE tenant_id = %s",
-                    (len(rows), tenant_id),
-                )
-            account = self.conn.execute("SELECT balance FROM credit_accounts WHERE tenant_id = %s", (tenant_id,)).fetchone()
-            return {"refunded": len(rows), "balance": int(account[0]) if account else 0}
+            refunded = sum(int(self.settle_task_credit(tenant_id, batch_id, task_id, False)['refunded']) for (task_id,) in tasks)
+            return {"refunded": refunded, "balance": self.credit_balance(tenant_id, user_id)}
 
-    def reopen_batch_credits(self, tenant_id: str, user_id: str, batch_id: str) -> dict[str, object]:
-        from psycopg.types.json import Jsonb
-
+    def reopen_batch_credits(self, tenant_id, user_id, batch_id):
         with self.conn.transaction():
+            if self._batch_owner(tenant_id, batch_id) != user_id:
+                raise ValueError("BATCH_OWNER_MISMATCH")
+            balance = self._credit_account(tenant_id, user_id)
             rows = self.conn.execute(
                 "SELECT task_id, attempt FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND status IN ('refunded', 'released') FOR UPDATE",
                 (tenant_id, batch_id),
             ).fetchall()
-            account = self.conn.execute("SELECT balance FROM credit_accounts WHERE tenant_id = %s FOR UPDATE", (tenant_id,)).fetchone()
-            balance = int(account[0]) if account else 0
             if balance < len(rows):
                 raise ValueError("INSUFFICIENT_CREDITS")
             for task_id, attempt in rows:
-                next_attempt = int(attempt) + 1
                 self.conn.execute(
-                    "UPDATE credit_task_states SET status = 'reserved', attempt = %s, updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
-                    (next_attempt, batch_id, task_id),
+                    "UPDATE credit_task_states SET status = 'reserved', attempt = attempt + 1, updated_at = NOW() WHERE batch_id = %s AND task_id = %s",
+                    (batch_id, task_id),
                 )
-                self.conn.execute(
-                    "INSERT INTO credit_ledger (tenant_id, user_id, batch_id, task_id, kind, amount, idempotency_key, metadata) VALUES (%s, %s, %s, %s, 'reserve', -1, %s, %s) ON CONFLICT (tenant_id, idempotency_key) DO NOTHING",
-                    (tenant_id, user_id, batch_id, task_id, f"{batch_id}:{task_id}:reserve:{next_attempt}", Jsonb({"reason": "batch_retry"})),
-                )
-            if rows:
-                self.conn.execute(
-                    "UPDATE credit_accounts SET balance = balance - %s, updated_at = NOW() WHERE tenant_id = %s",
-                    (len(rows), tenant_id),
-                )
+                self._credit_entry(tenant_id, user_id, batch_id, task_id, 'reserve', -1, f"{batch_id}:{task_id}:reserve:{attempt + 1}")
+            self._credit_delta(tenant_id, user_id, -len(rows))
             return {"reopened": len(rows), "balance": balance - len(rows)}
 
-    def credit_balance(self, tenant_id: str) -> int:
-        row = self.conn.execute("SELECT balance FROM credit_accounts WHERE tenant_id = %s", (tenant_id,)).fetchone()
+    def credit_balance(self, tenant_id, user_id=None):
+        if user_id is None:
+            row = self.conn.execute("SELECT COALESCE(SUM(balance), 0) FROM member_credit_accounts WHERE tenant_id = %s", (tenant_id,)).fetchone()
+        else:
+            row = self.conn.execute("SELECT balance FROM member_credit_accounts WHERE tenant_id = %s AND user_id = %s", (tenant_id, user_id)).fetchone()
         return int(row[0]) if row else 0
 
-    def adjust_credits(
-        self, tenant_id: str, user_id: str, amount: int, idempotency_key: str, kind: str, metadata: dict[str, object] | None = None
-    ) -> dict[str, object]:
-        from psycopg.types.json import Jsonb
-
-        if not amount or kind not in {"grant", "revoke"}:
+    def adjust_credits(self, tenant_id, user_id, amount, idempotency_key, kind, metadata=None):
+        from .errors import ApiError
+        if isinstance(amount, bool) or not isinstance(amount, int) or not 1 <= amount <= 1000000 or kind not in {'grant', 'revoke'}:
             raise ValueError("INVALID_CREDIT_ADJUSTMENT")
-        signed = abs(int(amount)) if kind == "grant" else -abs(int(amount))
+        if not 16 <= len(idempotency_key) <= 200:
+            raise ValueError("INVALID_CREDIT_ADJUSTMENT")
+        signed = amount if kind == 'grant' else -amount
         with self.conn.transaction():
+            balance = self._credit_account(tenant_id, user_id)
             existing = self.conn.execute(
-                "SELECT amount FROM credit_ledger WHERE tenant_id = %s AND idempotency_key = %s",
+                "SELECT user_id, amount, kind FROM credit_ledger WHERE tenant_id = %s AND idempotency_key = %s",
                 (tenant_id, idempotency_key),
             ).fetchone()
             if existing:
-                return {"applied": False, "amount": int(existing[0]), "balance": self.credit_balance(tenant_id)}
-            account = self.conn.execute(
-                "SELECT balance FROM credit_accounts WHERE tenant_id = %s FOR UPDATE",
-                (tenant_id,),
-            ).fetchone()
-            balance = int(account[0]) if account else 0
+                if (str(existing[0]), int(existing[1]), existing[2]) != (user_id, signed, kind):
+                    raise ApiError(409, "该调整编号已用于其他操作。", "IDEMPOTENCY_CONFLICT")
+                return {"applied": False, "amount": signed, "balance": balance}
             if balance + signed < 0:
                 raise ValueError("INSUFFICIENT_CREDITS")
-            self.conn.execute(
-                "INSERT INTO credit_accounts (tenant_id, balance) VALUES (%s, %s) ON CONFLICT (tenant_id) DO UPDATE SET balance = credit_accounts.balance + EXCLUDED.balance, updated_at = NOW()",
-                (tenant_id, signed),
-            )
-            self.conn.execute(
-                "INSERT INTO credit_ledger (tenant_id, user_id, kind, amount, idempotency_key, metadata) VALUES (%s, %s, %s, %s, %s, %s)",
-                (tenant_id, user_id, kind, signed, idempotency_key, Jsonb(metadata or {})),
-            )
+            self._credit_entry(tenant_id, user_id, None, None, kind, signed, idempotency_key, metadata)
+            self._credit_delta(tenant_id, user_id, signed)
             return {"applied": True, "amount": signed, "balance": balance + signed}
+
+    def list_credit_ledger(self, tenant_id, user_id=None, limit=100):
+        rows = self.conn.execute(
+            """SELECT id, user_id, batch_id, task_id, kind, amount, created_at FROM credit_ledger
+               WHERE tenant_id = %s AND (%s::uuid IS NULL OR user_id = %s::uuid)
+               ORDER BY created_at DESC, id DESC LIMIT %s""", (tenant_id, user_id, user_id, min(limit, 200))
+        ).fetchall()
+        return [dict(zip(('id', 'userId', 'batchId', 'taskId', 'kind', 'amount', 'createdAt'),
+                        (str(r[0]), str(r[1]), r[2], r[3], r[4], r[5], r[6].isoformat()))) for r in rows]
+
+    def task_credit_outcomes(self, tenant_id, batch_id):
+        rows = self.conn.execute(
+            "SELECT task_id, status FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s ORDER BY task_id",
+            (tenant_id, batch_id),
+        ).fetchall()
+        return [{"taskId": r[0], "status": r[1]} for r in rows]
 
     def get_ima_cache_generation(self) -> int:
         row = self.conn.execute("SELECT generation FROM ima_cache_meta WHERE singleton").fetchone()
@@ -500,7 +480,7 @@ class PostgresRepository:
                     (cache_key, generation, str(kb[0]), str(metadata.get("mediaId") or metadata.get("media_id") or cache_key), payload, master_key),
                 )
             else:
-                request_key = json.dumps(metadata, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                request_key = cache_key
                 self.conn.execute(
                     """
                     INSERT INTO ima_search_cache (cache_key, generation, knowledge_base_id, request_key, payload_cipher)
@@ -512,6 +492,9 @@ class PostgresRepository:
                 )
 
     def save_article_artifact(self, **kwargs: object) -> dict[str, object]:
+        from .errors import ApiError
+        if self._batch_owner(str(kwargs['tenant_id']), str(kwargs['batch_id'])) != kwargs['user_id']:
+            raise ApiError(404, '批次不存在。', 'BATCH_NOT_FOUND')
         row = self.conn.execute(
             """
             INSERT INTO article_artifacts (
@@ -519,13 +502,12 @@ class PostgresRepository:
                 byte_length, sha256, status, audit_status
             )
             VALUES (%s, %s, %s, %s, %s, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s, %s, %s)
-            ON CONFLICT (batch_id, task_id) DO UPDATE SET
-                filename = EXCLUDED.filename,
-                content_cipher = EXCLUDED.content_cipher,
-                byte_length = EXCLUDED.byte_length,
-                sha256 = EXCLUDED.sha256,
-                status = EXCLUDED.status,
-                audit_status = EXCLUDED.audit_status
+            ON CONFLICT (batch_id, task_id) DO UPDATE SET id = article_artifacts.id
+            WHERE article_artifacts.sha256 = EXCLUDED.sha256
+              AND article_artifacts.filename = EXCLUDED.filename
+              AND article_artifacts.byte_length = EXCLUDED.byte_length
+              AND article_artifacts.status = 'complete' AND article_artifacts.audit_status = 'accepted'
+              AND article_artifacts.tenant_id = EXCLUDED.tenant_id AND article_artifacts.user_id = EXCLUDED.user_id
             RETURNING id, filename, byte_length, sha256, status, audit_status
             """,
             (
@@ -542,6 +524,8 @@ class PostgresRepository:
                 kwargs["audit_status"],
             ),
         ).fetchone()
+        if not row:
+            raise ApiError(409, '完整文章已保存，不能覆盖。', 'ARTIFACT_IMMUTABLE')
         return {
             "id": str(row[0]),
             "filename": row[1],
@@ -551,15 +535,15 @@ class PostgresRepository:
             "auditStatus": row[5],
         }
 
-    def get_article_artifact(self, tenant_id: str, artifact_id: str, master_key: str = "") -> dict[str, object] | None:
+    def get_article_artifact(self, tenant_id: str, artifact_id: str, master_key: str = "", *, user_id: str) -> dict[str, object] | None:
         row = self.conn.execute(
             """
             SELECT id, batch_id, task_id, filename, pgp_sym_decrypt(content_cipher, %s)::TEXT,
                    byte_length, sha256, status, audit_status, created_at
             FROM article_artifacts
-            WHERE tenant_id = %s AND id = %s AND status = 'complete'
+            WHERE tenant_id = %s AND id = %s AND user_id = %s AND status = 'complete'
             """,
-            (master_key, tenant_id, artifact_id),
+            (master_key, tenant_id, artifact_id, user_id),
         ).fetchone()
         if not row:
             return None
@@ -585,6 +569,9 @@ class PostgresRepository:
             """,
             (tenant_id, batch_id, idempotency_key),
         )
+
+    def set_batch_job_status(self, batch_id: str, status: str):
+        self.conn.execute("UPDATE jobs SET status = %s, lease_until = NULL, locked_at = NULL, next_run_at = NOW(), updated_at = NOW() WHERE batch_id = %s", (status, batch_id))
 
     def save_model_snapshot(
         self,
@@ -641,7 +628,8 @@ class PostgresRepository:
                 SELECT j.id, j.batch_id, b.user_id, b.seq
                 FROM jobs j
                 JOIN batches b ON b.id = j.batch_id
-                WHERE j.status IN ('queued', 'running') AND (j.lease_until IS NULL OR j.lease_until < NOW())
+                WHERE j.status IN ('queued', 'running') AND j.next_run_at <= NOW()
+                  AND b.status = 'ready' AND (j.lease_until IS NULL OR j.lease_until < NOW())
                 ORDER BY j.next_run_at, j.created_at
                 FOR UPDATE OF j SKIP LOCKED
                 LIMIT 1
@@ -653,26 +641,36 @@ class PostgresRepository:
                 """
                 UPDATE jobs SET status = 'running', attempts = attempts + 1,
                     locked_at = NOW(), lease_until = NOW() + (%s || ' seconds')::INTERVAL,
-                    updated_at = NOW()
+                    updated_at = NOW(), heartbeat_at = NOW(), lease_token = gen_random_uuid()
                 WHERE id = %s
-                RETURNING attempts
+                RETURNING attempts, lease_token
                 """,
                 (lease_seconds, row[0]),
             ).fetchone()
-            return {"id": str(row[0]), "batchId": row[1], "userId": str(row[2]), "seq": int(row[3]), "attempts": int(updated[0])}
+            return {"id": str(row[0]), "batchId": row[1], "userId": str(row[2]), "seq": int(row[3]), "attempts": int(updated[0]), 'leaseToken': str(updated[1])}
 
-    def finish_job(self, job_id: str, status: str) -> None:
+    def finish_job(self, job_id: str, status: str, lease_token: str, delay_seconds: int = 0) -> bool:
         final_status = status if status in {"completed", "failed", "cancelled"} else "queued"
-        self.conn.execute(
-            "UPDATE jobs SET status = %s, lease_until = NULL, locked_at = NULL, next_run_at = NOW(), updated_at = NOW() WHERE id = %s",
-            (final_status, job_id),
-        )
+        return self.conn.execute(
+            """UPDATE jobs SET status = %s, lease_until = NULL, locked_at = NULL, lease_token = NULL,
+               next_run_at = NOW() + (%s || ' seconds')::INTERVAL, updated_at = NOW()
+               WHERE id = %s AND lease_token = %s AND status = 'running'""",
+            (final_status, delay_seconds, job_id, lease_token),
+        ).rowcount == 1
 
-    def fail_job(self, job_id: str, message: str) -> None:
-        self.conn.execute(
-            "UPDATE jobs SET status = 'failed', last_error = %s, lease_until = NULL, locked_at = NULL, updated_at = NOW() WHERE id = %s",
-            (message[:4000], job_id),
-        )
+    def fail_job(self, job_id: str, message: str, lease_token: str) -> bool:
+        return self.conn.execute(
+            "UPDATE jobs SET status = 'failed', last_error = %s, lease_until = NULL, locked_at = NULL, lease_token = NULL, updated_at = NOW() WHERE id = %s AND lease_token = %s AND status = 'running'",
+            (message[:4000], job_id, lease_token),
+        ).rowcount == 1
+
+    def heartbeat_job(self, job_id: str, lease_token: str, lease_seconds: int = 90) -> bool:
+        return self.conn.execute(
+            """UPDATE jobs SET lease_until = NOW() + (%s || ' seconds')::INTERVAL,
+               heartbeat_at = NOW(), updated_at = NOW()
+               WHERE id = %s AND lease_token = %s AND status = 'running' AND lease_until > NOW()""",
+            (lease_seconds, job_id, lease_token),
+        ).rowcount == 1
 
     def create_session(self, user_id: str, stored: dict[str, object]) -> None:
         self.conn.execute(
@@ -840,7 +838,7 @@ class PostgresRepository:
 
     def has_active_batch(self, user_id: str) -> bool:
         row = self.conn.execute(
-            "SELECT 1 FROM batches WHERE user_id = %s AND status = 'ready' LIMIT 1",
+            "SELECT 1 FROM batches WHERE user_id = %s AND status NOT IN ('completed', 'cancelled') LIMIT 1",
             (user_id,),
         ).fetchone()
         return bool(row)

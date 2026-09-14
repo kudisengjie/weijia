@@ -5,6 +5,8 @@ import os
 from datetime import datetime, timezone
 from contextlib import AbstractContextManager
 from typing import Callable
+from urllib.parse import quote
+from uuid import UUID
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -71,7 +73,7 @@ class BatchRunBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     seq: int
     retry: bool = False
-    maxSteps: int = 8
+    maxSteps: int = 1
 
 
 class CreditAdjustmentBody(BaseModel):
@@ -80,6 +82,7 @@ class CreditAdjustmentBody(BaseModel):
     kind: str
     idempotencyKey: str
     note: str = ""
+    userId: UUID | None = None
 
 
 class MemberBody(BaseModel):
@@ -93,7 +96,7 @@ class MemberBody(BaseModel):
 
 class SubscriptionBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    userId: str | None = None
+    userId: UUID | None = None
     startsAt: str
     expiresAt: str
 
@@ -236,7 +239,8 @@ def create_app(
                     "role": context.get("role"),
                 }
                 if hasattr(repository, "credit_balance"):
-                    result["credits"] = {"balance": repository.credit_balance(str(context["tenantId"]))}
+                    result["credits"] = {"balance": repository.credit_balance(str(context["tenantId"]), current.user_id)}
+                result['modelLocked'] = repository.has_active_batch(current.user_id)
             return result
 
     @app.post("/settings/model")
@@ -272,7 +276,7 @@ def create_app(
             current = authentication(request, repository)
             context = tenant_context(repository, current.user_id, active=True)
             if context:
-                TenantAccessService.require_manager(context)
+                TenantAccessService.require_owner(context)
             return await update_ima_credentials(
                 repository,
                 config.geo_master_key,
@@ -286,7 +290,7 @@ def create_app(
             current = authentication(request, repository)
             context = tenant_context(repository, current.user_id, active=True)
             if context:
-                TenantAccessService.require_manager(context)
+                TenantAccessService.require_owner(context)
             generation = repository.get_ima_cache_generation() if hasattr(repository, "get_ima_cache_generation") else None
             return {"generation": generation}
 
@@ -296,7 +300,7 @@ def create_app(
             current = authentication(request, repository)
             context = tenant_context(repository, current.user_id, active=True)
             if context:
-                TenantAccessService.require_manager(context)
+                TenantAccessService.require_owner(context)
             generation = repository.clear_ima_cache_generation(current.user_id)
             return {"cleared": True, "generation": generation}
 
@@ -308,7 +312,8 @@ def create_app(
             if not context:
                 return {"balance": None, "subscription": None}
             return {
-                "balance": repository.credit_balance(str(context["tenantId"])) if hasattr(repository, "credit_balance") else None,
+                "balance": repository.credit_balance(str(context["tenantId"]), current.user_id) if hasattr(repository, "credit_balance") else None,
+                "ledger": repository.list_credit_ledger(str(context['tenantId']), current.user_id),
                 "subscription": {
                     "active": bool(context.get("active")),
                     "expiresAt": _epoch_ms(context["expiresAt"]) if context.get("expiresAt") else None,
@@ -322,17 +327,17 @@ def create_app(
             current = authentication(request, repository)
             context = tenant_context(repository, current.user_id, active=True)
             if context:
-                TenantAccessService.require_manager(context)
+                TenantAccessService.require_owner(context)
             if not context or not hasattr(repository, "adjust_credits"):
                 raise ApiError(503, "积分服务尚未初始化。", "CREDITS_SETUP_REQUIRED")
             try:
                 return repository.adjust_credits(
                     str(context["tenantId"]),
-                    current.user_id,
+                    str(body.userId) if body.userId else current.user_id,
                     body.amount,
                     body.idempotencyKey,
                     body.kind,
-                    {"note": body.note},
+                    {"note": body.note[:1000], "actorId": current.user_id},
                 )
             except ValueError as error:
                 if str(error) == "INSUFFICIENT_CREDITS":
@@ -346,6 +351,7 @@ def create_app(
             context = tenant_context(repository, current.user_id, active=True)
             if not context:
                 raise ApiError(403, "当前账号没有工作区。", "TENANT_ACCESS_REQUIRED")
+            TenantAccessService.require_owner(context)
             return TenantAccessService(repository).create_member(
                 context,
                 username=body.username,
@@ -362,14 +368,14 @@ def create_app(
             context = tenant_context(repository, current.user_id)
             if not context:
                 raise ApiError(403, "当前账号没有工作区。", "TENANT_ACCESS_REQUIRED")
-            TenantAccessService.require_manager(context)
+            TenantAccessService.require_owner(context)
             if not hasattr(repository, "set_subscription"):
                 raise ApiError(503, "订阅服务尚未初始化。", "SUBSCRIPTION_SETUP_REQUIRED")
             starts_at = parse_datetime(body.startsAt)
             expires_at = parse_datetime(body.expiresAt)
             if expires_at <= starts_at:
                 raise ApiError(400, "有效期必须晚于开始时间。", "INVALID_MEMBER_EXPIRY")
-            return repository.set_subscription(str(context["tenantId"]), body.userId, starts_at, expires_at)
+            return repository.set_subscription(str(context["tenantId"]), str(body.userId) if body.userId else current.user_id, starts_at, expires_at)
 
     @app.get("/batches")
     def batches_list(request: Request):
@@ -408,12 +414,19 @@ def create_app(
             service = batch_service(repository, context)
             state = {"seq": body.seq, "retry": body.retry}
             result = None
-            for index in range(body.maxSteps):
+            # One potentially billable upstream phase per HTTP request.
+            for index in range(min(body.maxSteps, 1)):
                 result = await service.advance(batch_id, state, current.user_id)
                 if result.get("status") in {"completed", "failed"}:
                     break
                 state = {"seq": int(result["seq"]), "retry": False}
             return {"batch": result, "nextPollMs": 1200 if result and result.get("status") == "ready" else None}
+
+    @app.post('/batches/{batch_id}/cancel')
+    def batches_cancel(batch_id: str, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            return batch_service(repository, tenant_context(repository, current.user_id)).cancel(batch_id, current.user_id)
 
     @app.get("/artifacts/{artifact_id}")
     def artifact_download(artifact_id: str, request: Request):
@@ -422,9 +435,9 @@ def create_app(
             context = tenant_context(repository, current.user_id)
             if not context or not hasattr(repository, "get_article_artifact"):
                 raise ApiError(404, "文章文件不存在或不属于当前工作区。", "ARTIFACT_NOT_FOUND")
-            artifact = ArtifactService(repository, config.geo_master_key).get(str(context["tenantId"]), artifact_id)
+            artifact = ArtifactService(repository, config.geo_master_key).get(str(context["tenantId"]), artifact_id, current.user_id)
             response = PlainTextResponse(str(artifact["markdown"]), media_type="text/markdown; charset=utf-8")
-            response.headers["Content-Disposition"] = f'attachment; filename="{artifact["filename"]}"'
+            response.headers['Content-Disposition'] = "attachment; filename=article.md; filename*=UTF-8''" + quote(str(artifact['filename']), safe='')
             response.headers["X-Artifact-SHA256"] = str(artifact["sha256"])
             return response
 

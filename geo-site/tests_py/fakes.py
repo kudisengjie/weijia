@@ -141,6 +141,10 @@ class FakeRepository:
             return None
         return copy.deepcopy(value["state"])
 
+    def get_request_batch(self, user_id, request_hash):
+        return next((copy.deepcopy(value['state']) for value in self.batches.values()
+                     if value['user_id'] == user_id and value['request_id_hash'] == request_hash), None)
+
     def list_batches(self, user_id):
         return [copy.deepcopy(value["state"]) for value in self.batches.values() if value["user_id"] == user_id]
 

@@ -13,7 +13,8 @@ _SCHEMA_LOCK_ID = 4_768_636_619
 def connection(database_url: str) -> Iterator[object]:
     import psycopg
 
-    with psycopg.connect(database_url, connect_timeout=10) as conn:
+    # Explicit transactions cover writes; never hold a transaction across a model request.
+    with psycopg.connect(database_url, connect_timeout=10, autocommit=True) as conn:
         yield conn
 
 

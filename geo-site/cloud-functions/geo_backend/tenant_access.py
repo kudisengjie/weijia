@@ -35,6 +35,11 @@ class TenantAccessService:
         if not TenantAccessService.can_manage(context):
             raise ApiError(403, "只有工作区管理员可以执行此操作。", "TENANT_MANAGER_REQUIRED")
 
+    @staticmethod
+    def require_owner(context: dict[str, object]) -> None:
+        if context.get('role') != 'owner':
+            raise ApiError(403, '只有站点所有者可以执行此操作。', 'OWNER_REQUIRED')
+
     def create_member(
         self,
         context: dict[str, object],

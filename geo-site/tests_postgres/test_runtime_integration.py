@@ -1,0 +1,417 @@
+"""Real PostgreSQL checks. Only the isolated loopback test database is allowed."""
+import asyncio
+import json
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
+import os
+from pathlib import Path
+import sys
+import unittest
+import uuid
+
+import psycopg
+import httpx
+from psycopg import sql
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'cloud-functions'))
+from geo_backend.batches import BatchService
+from geo_backend.database import ensure_schema
+from geo_backend.models import SettingsService
+from geo_backend.repository import PostgresRepository
+from geo_backend.security import hash_password
+
+
+TEST_URL = 'postgresql://geo_test@127.0.0.1:55483/postgres?connect_timeout=5'
+MASTER = 'a' * 64
+
+
+class PostgresRuntimeTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.schema = 'geo_test_' + uuid.uuid4().hex
+        with psycopg.connect(TEST_URL, autocommit=True) as conn:
+            conn.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
+            conn.execute(sql.SQL('CREATE SCHEMA {}').format(sql.Identifier(cls.schema)))
+        with cls.connect() as conn:
+            ensure_schema(conn)
+            ensure_schema(conn)  # A deployment restart must be safe.
+
+    @classmethod
+    def connect(cls):
+        return psycopg.connect(TEST_URL, autocommit=True, options=f'-c search_path={cls.schema},public')
+
+    @classmethod
+    def tearDownClass(cls):
+        if not cls.schema.startswith('geo_test_'):
+            raise AssertionError('Unsafe test schema')
+        with psycopg.connect(TEST_URL, autocommit=True) as conn:
+            conn.execute(sql.SQL('DROP SCHEMA {} CASCADE').format(sql.Identifier(cls.schema)))
+
+    def setUp(self):
+        self.conn = self.connect()
+        self.addCleanup(self.conn.close)
+        self.repo = PostgresRepository(self.conn)
+        self.owner = self.repo.upsert_configured_user('owner-' + uuid.uuid4().hex, hash_password('test-password'))['id']
+        self.tenant = self.repo.ensure_owner_tenant(self.owner, 'tenant-' + uuid.uuid4().hex)['tenantId']
+        self.context = self.repo.get_tenant_context(self.owner, datetime.now(timezone.utc))
+        SettingsService(self.repo, MASTER).save_model(self.owner, 'qwen', 'primary', '', 'test-model-key', False)
+
+    def service(self, **options):
+        return BatchService(self.repo, MASTER, {'clientId': 'test-client', 'apiKey': 'test-ima-key'}, tenant_context=self.context, **options)
+
+    def config(self):
+        from geo_backend.config import Settings
+        account = self.conn.execute('SELECT username FROM users WHERE id = %s', (self.owner,)).fetchone()[0]
+        return Settings.from_mapping({'APP_ORIGIN': 'http://localhost', 'GEO_LOCAL_DEV': '1',
+            'GEO_ACCOUNT': account, 'GEO_PASSWORD_HASH': hash_password('test-password'),
+            'GEO_MASTER_KEY': MASTER, 'DATABASE_URL': TEST_URL,
+            'IMA_OPENAPI_CLIENTID': 'test-client', 'IMA_OPENAPI_APIKEY': 'test-ima'})
+
+    def http_client(self):
+        from geo_backend.app import create_app
+        @contextmanager
+        def factory():
+            with self.connect() as conn:
+                yield PostgresRepository(conn)
+        return httpx.AsyncClient(transport=httpx.ASGITransport(app=create_app(self.config(), factory)),
+            base_url='http://localhost', headers={'origin': 'http://localhost'})
+
+    def save_artifact(self, batch_id):
+        from geo_backend.artifacts import ArtifactService
+        return ArtifactService(self.repo, MASTER).save_complete(tenant_id=self.tenant,
+            user_id=self.owner, batch_id=batch_id, task_id='1', filename='1-零雪.md',
+            markdown='# 完整文章\n零雪内容服务。', audit_status='accepted')
+
+    def test_http_download_preserves_chinese_filename(self):
+        batch = self.prepared_batch(1)
+        artifact = self.save_artifact(batch['id'])
+        async def run():
+            async with self.http_client() as client:
+                response = await client.post('/auth/login', json={'account': self.config().geo_account, 'password': 'test-password'})
+                self.assertEqual(200, response.status_code)
+                return await client.get('/artifacts/' + artifact['id'])
+        response = asyncio.run(run())
+        self.assertEqual(200, response.status_code)
+        self.assertIn('零雪内容服务', response.text)
+        self.assertIn("filename*=UTF-8''", response.headers['content-disposition'])
+
+    def test_http_member_cannot_download_other_members_artifact(self):
+        batch = self.prepared_batch(1)
+        artifact = self.save_artifact(batch['id'])
+        now = datetime.now(timezone.utc)
+        member = self.repo.create_member(tenant_id=self.tenant, username='m-' + uuid.uuid4().hex,
+            password_hash=hash_password('member-password'), role='member', starts_at=now, expires_at=now + timedelta(days=30))
+        async def run():
+            async with self.http_client() as client:
+                await client.post('/auth/login', json={'account': member['username'], 'password': 'member-password'})
+                return await client.get('/artifacts/' + artifact['id'])
+        self.assertEqual(404, asyncio.run(run()).status_code)
+
+    def test_complete_artifact_is_immutable(self):
+        from geo_backend.artifacts import ArtifactService
+        from geo_backend.errors import ApiError
+        batch = self.prepared_batch(1)
+        first = self.save_artifact(batch['id'])
+        self.assertEqual(first['id'], self.save_artifact(batch['id'])['id'])
+        with self.assertRaises(ApiError):
+            ArtifactService(self.repo, MASTER).save_complete(tenant_id=self.tenant, user_id=self.owner,
+                batch_id=batch['id'], task_id='1', filename='覆盖.md', markdown='不一样的正文', audit_status='accepted')
+
+    def test_old_owner_login_initializes_tenant_and_rejects_replaced_password(self):
+        from dataclasses import replace
+        from geo_backend.auth import AuthService
+        from geo_backend.errors import ApiError
+        user = self.repo.upsert_configured_user('old-' + uuid.uuid4().hex, hash_password('old-password'))
+        config = replace(self.config(), geo_account=user['username'], geo_password_hash=hash_password('old-password'))
+        AuthService(config, self.repo).login(user['username'], 'old-password')
+        self.assertIsNotNone(self.repo.get_tenant_context(user['id'], datetime.now(timezone.utc)))
+        config = replace(config, geo_password_hash=hash_password('new-password'))
+        with self.assertRaises(ApiError):
+            AuthService(config, self.repo).login(user['username'], 'old-password')
+
+    def test_renewal_uses_latest_subscription_not_longest_old_one(self):
+        now = datetime.now(timezone.utc)
+        member = self.repo.create_member(tenant_id=self.tenant, username='m-' + uuid.uuid4().hex,
+            password_hash=hash_password('member-password'), role='member', starts_at=now, expires_at=now + timedelta(days=30))
+        expires = now + timedelta(days=2)
+        self.repo.set_subscription(self.tenant, member['id'], now, expires)
+        context = self.repo.get_tenant_context(member['id'], now)
+        self.assertTrue(context['active'])
+        self.assertEqual(expires, context['expiresAt'])
+
+    def test_http_owner_assigns_credits_to_selected_member_only(self):
+        now = datetime.now(timezone.utc)
+        member = self.repo.create_member(tenant_id=self.tenant, username='m-' + uuid.uuid4().hex,
+            password_hash=hash_password('member-password'), role='member', starts_at=now, expires_at=now + timedelta(days=30))
+        self.fund(amount=10)
+        async def run():
+            async with self.http_client() as client:
+                login = await client.post('/auth/login', json={'account': self.config().geo_account, 'password': 'test-password'})
+                client.headers['x-csrf-token'] = login.json()['csrf']
+                body = {'userId': member['id'], 'amount': 3, 'kind': 'grant', 'idempotencyKey': str(uuid.uuid4())}
+                first = await client.post('/credits/adjust', json=body)
+                self.assertEqual(200, first.status_code, first.text)
+                replay = await client.post('/credits/adjust', json=body)
+                self.assertFalse(replay.json()['applied'])
+                await client.post('/auth/login', json={'account': member['username'], 'password': 'member-password'})
+                return await client.get('/settings')
+        response = asyncio.run(run())
+        self.assertEqual(3, response.json()['credits']['balance'])
+        self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner))
+
+    def test_http_admin_cannot_mint_credits_or_clear_shared_ima(self):
+        now = datetime.now(timezone.utc)
+        admin = self.repo.create_member(tenant_id=self.tenant, username='admin-' + uuid.uuid4().hex,
+            password_hash=hash_password('member-password'), role='admin', starts_at=now, expires_at=now + timedelta(days=30))
+        async def run():
+            async with self.http_client() as client:
+                login = await client.post('/auth/login', json={'account': admin['username'], 'password': 'member-password'})
+                client.headers['x-csrf-token'] = login.json()['csrf']
+                for path, body in [('/credits/adjust', {'amount': 3, 'kind': 'grant', 'idempotencyKey': str(uuid.uuid4())}), ('/ima/cache/clear', {})]:
+                    response = await client.post(path, json=body)
+                    self.assertEqual(403, response.status_code, path)
+        asyncio.run(run())
+
+    def test_running_batch_blocks_model_change_and_second_batch(self):
+        from geo_backend.errors import ApiError
+        self.prepared_batch(1)
+        with self.assertRaises(ApiError):
+            SettingsService(self.repo, MASTER).save_model(self.owner, 'deepseek', 'primary', '', 'new-key', False)
+        with self.assertRaises(ApiError):
+            self.service().create(self.body(1), self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+
+    def test_expired_member_stops_before_any_provider_call(self):
+        from geo_backend.errors import ApiError
+        batch = self.prepared_batch(1)
+        now = datetime.now(timezone.utc)
+        self.repo.set_subscription(self.tenant, self.owner, now - timedelta(days=3), now - timedelta(days=1))
+        calls = []
+        async def model(*args, **kwargs):
+            calls.append(True)
+            return '# body'
+        with self.assertRaises(ApiError):
+            asyncio.run(self.service(model_complete=model).advance(batch['id'], {'seq': 0}, self.owner))
+        self.assertEqual([], calls)
+
+    def test_concurrent_create_and_refund_are_exactly_once(self):
+        from concurrent.futures import ThreadPoolExecutor
+        self.fund()
+        body = self.body()
+        def create(_):
+            with self.connect() as conn:
+                return BatchService(PostgresRepository(conn), MASTER, {'clientId': 'test-client', 'apiKey': 'test-key'},
+                    tenant_context=self.context).create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))['id']
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            ids = list(pool.map(create, range(2)))
+        self.assertEqual(ids[0], ids[1])
+        self.assertEqual(5, self.repo.credit_balance(self.tenant, self.owner))
+        def refund(_):
+            with self.connect() as conn:
+                return PostgresRepository(conn).settle_batch_incomplete(self.tenant, ids[0])
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            list(pool.map(refund, range(2)))
+        self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertEqual(5, self.conn.execute("SELECT COUNT(*) FROM credit_ledger WHERE batch_id = %s AND kind = 'refund'", (ids[0],)).fetchone()[0])
+
+    def test_stale_claim_refunds_uncertain_task_without_repeating_provider(self):
+        batch = self.prepared_batch(2)
+        self.repo.claim_step(batch['id'], batch['seq'])
+        self.conn.execute("UPDATE batch_claims SET claimed_at = NOW() - INTERVAL '200 seconds' WHERE batch_id = %s", (batch['id'],))
+        calls = []
+        async def model(*args, **kwargs):
+            calls.append(True)
+            return '# body'
+        result = asyncio.run(self.service(model_complete=model).advance(batch['id'], {'seq': 0}, self.owner))
+        self.assertEqual([], calls)
+        self.assertEqual('ready', result['status'])
+        self.assertEqual(1, len(result['failedTasks']))
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+
+    def test_cancellation_refunds_unfinished_tasks_and_unlocks_model(self):
+        batch = self.prepared_batch(2)
+        self.service().cancel(batch['id'], self.owner)
+        self.service().cancel(batch['id'], self.owner)
+        self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertFalse(self.repo.has_active_batch(self.owner))
+        SettingsService(self.repo, MASTER).save_model(self.owner, 'deepseek', 'primary', '', 'new-key', False)
+
+    def test_worker_stale_lease_cannot_finish_new_claim(self):
+        batch = self.prepared_batch(1)
+        self.conn.execute("UPDATE jobs SET next_run_at = NOW() + INTERVAL '1 day' WHERE batch_id <> %s", (batch['id'],))
+        old = self.repo.claim_next_job(90)
+        self.assertEqual(batch['id'], old['batchId'])
+        self.conn.execute("UPDATE jobs SET lease_until = NOW() - INTERVAL '1 second' WHERE id = %s", (old['id'],))
+        fresh = self.repo.claim_next_job(90)
+        self.assertNotEqual(old['leaseToken'], fresh['leaseToken'])
+        self.assertFalse(self.repo.finish_job(old['id'], 'completed', old['leaseToken']))
+        self.assertTrue(self.repo.heartbeat_job(fresh['id'], fresh['leaseToken'], 90))
+        self.assertTrue(self.repo.finish_job(fresh['id'], 'completed', fresh['leaseToken']))
+
+    def test_worker_busy_http_step_is_requeued_not_failed(self):
+        from geo_backend.worker import BatchWorker
+        batch = self.prepared_batch(1)
+        self.conn.execute("UPDATE jobs SET next_run_at = NOW() + INTERVAL '1 day' WHERE batch_id <> %s", (batch['id'],))
+        self.repo.claim_step(batch['id'], batch['seq'])
+        asyncio.run(BatchWorker(self.repo, lambda job: self.service()).run_once())
+        self.assertEqual('queued', self.conn.execute('SELECT status FROM jobs WHERE batch_id = %s', (batch['id'],)).fetchone()[0])
+
+    def test_worker_cli_once_is_executable_without_browser(self):
+        import subprocess
+        self.conn.execute("UPDATE jobs SET next_run_at = NOW() + INTERVAL '1 day'")
+        cfg = self.config()
+        env = {**os.environ, 'GEO_LOCAL_DEV': '1', 'APP_ORIGIN': cfg.app_origin,
+               'GEO_ACCOUNT': cfg.geo_account, 'GEO_PASSWORD_HASH': cfg.geo_password_hash,
+               'GEO_MASTER_KEY': MASTER, 'DATABASE_URL': TEST_URL,
+               'PYTHONPATH': str(Path(__file__).resolve().parents[1] / 'cloud-functions'),
+               'PGOPTIONS': f'-c search_path={self.schema},public'}
+        result = subprocess.run([sys.executable, '-m', 'geo_backend.worker', '--once'],
+            env=env, capture_output=True, text=True, timeout=15)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('idle', result.stdout)
+
+    def test_worker_finishes_articles_without_http_driving(self):
+        from geo_backend.worker import BatchWorker
+        batch = self.prepared_batch(2)
+        self.conn.execute("UPDATE jobs SET next_run_at = NOW() + INTERVAL '1 day' WHERE batch_id <> %s", (batch['id'],))
+        async def model(model, key, messages, **kwargs):
+            payload = json.loads(messages[-1]['content'])
+            return '{"passed": true, "issues": []}' if 'draft' in payload else '# 零雪\n完整文章。'
+        async def run():
+            worker = BatchWorker(self.repo, lambda job: self.service(model_complete=model))
+            for _ in range(4):
+                self.assertTrue(await worker.run_once())
+        asyncio.run(run())
+        result = self.service().get(batch['id'], self.owner)
+        self.assertEqual('completed', result['status'])
+        self.assertEqual(2, len(result['articles']))
+        self.assertEqual(8, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertEqual('completed', self.conn.execute('SELECT status FROM jobs WHERE batch_id = %s', (batch['id'],)).fetchone()[0])
+
+    def body(self, count=5):
+        return {
+            'requestId': str(uuid.uuid4()),
+            'rows': [['品牌名', 'GEO知识库', '问句']] + [['零雪', '品牌库', '零雪是什么？'] for _ in range(count)],
+            'companies': [{'name': 'company.md', 'brand': '零雪', 'text': '零雪内容服务。'}],
+        }
+
+    def fund(self, user_id=None, amount=10):
+        return self.repo.adjust_credits(self.tenant, user_id or self.owner, amount, str(uuid.uuid4()), 'grant')
+
+    def test_create_reserves_credits_after_batch_exists(self):
+        self.fund()
+        body = self.body()
+        result = self.service().create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+        self.assertEqual(5, self.conn.execute('SELECT COUNT(*) FROM credit_task_states WHERE batch_id = %s', (result['id'],)).fetchone()[0])
+        self.assertEqual(1, self.conn.execute('SELECT COUNT(*) FROM jobs WHERE batch_id = %s', (result['id'],)).fetchone()[0])
+        self.service().create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+        self.assertEqual(5, self.conn.execute('SELECT COUNT(*) FROM credit_ledger WHERE batch_id = %s', (result['id'],)).fetchone()[0])
+
+    def test_members_have_separate_balances_and_debits(self):
+        now = datetime.now(timezone.utc)
+        member = self.repo.create_member(tenant_id=self.tenant, username='member-' + uuid.uuid4().hex, password_hash=hash_password('test-password'), role='member', starts_at=now, expires_at=now + timedelta(days=30))
+        self.fund(self.owner, 10)
+        self.fund(member['id'], 3)
+        self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertEqual(3, self.repo.credit_balance(self.tenant, member['id']))
+
+    def test_failed_create_leaves_no_batch_job_or_charge(self):
+        from geo_backend.errors import ApiError
+        with self.assertRaises(ApiError):
+            self.service().create(self.body(), self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+        self.assertEqual(0, self.conn.execute('SELECT COUNT(*) FROM batches WHERE user_id = %s', (self.owner,)).fetchone()[0])
+
+    def test_refund_after_explicit_retry_is_a_new_balanced_ledger_transition(self):
+        self.fund()
+        batch = self.service().create(self.body(1), self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+        for _ in range(2):
+            self.repo.settle_batch_incomplete(self.tenant, batch['id'])
+            self.repo.settle_batch_incomplete(self.tenant, batch['id'])
+            self.repo.reopen_batch_credits(self.tenant, self.owner, batch['id'])
+        self.repo.settle_batch_incomplete(self.tenant, batch['id'])
+        self.assertEqual(0, self.conn.execute('SELECT SUM(amount) FROM credit_ledger WHERE batch_id = %s', (batch['id'],)).fetchone()[0])
+
+    def test_revoke_credits_uses_existing_balance(self):
+        self.fund(amount=10)
+        result = self.repo.adjust_credits(self.tenant, self.owner, 3, str(uuid.uuid4()), 'revoke')
+        self.assertEqual(7, result['balance'])
+
+    def test_long_ima_query_is_cached_without_database_length_error(self):
+        from geo_backend.ima import ImaCache
+        calls = []
+        async def upstream():
+            calls.append(True)
+            return {'text': 'cached evidence'}
+        async def run():
+            cache = ImaCache(self.repo, MASTER)
+            query = {'knowledgeBaseId': 'KB-AbC', 'query': '查询资料 ' * 180}
+            await cache.get_or_fetch('search', query, upstream)
+            return await cache.get_or_fetch('search', query, upstream)
+        self.assertEqual({'text': 'cached evidence'}, asyncio.run(run()))
+        self.assertEqual(1, len(calls))
+
+    def prepared_batch(self, count=5):
+        self.fund()
+        body = self.body(count)
+        for index, row in enumerate(body['rows'][1:]):
+            row[2] = f'问题{index + 1}'
+        result = self.service().create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+        batch = self.repo.get_batch(self.owner, result['id'])
+        batch['phase'] = 'generate'
+        batch['rules'] = {'generation': ['写完整文章'], 'audit': ['检查事实'], 'memory': ['零雪']}
+        batch['sources'] = [{'title': '已缓存证据', 'text': '零雪内容服务'}]
+        batch['evidenceCache'] = {'品牌库|' + task['question']: batch['sources'] for task in batch['tasks']}
+        self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'])
+        return batch
+
+    def test_one_excel_row_multiple_articles_reserves_one_credit(self):
+        self.fund()
+        body = self.body(2)
+        body['rows'][0].append('篇数')
+        body['rows'][1].append(3)
+        body['rows'][2].append(1)
+        result = self.service().create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+        self.assertEqual(4, result['total'])
+        self.assertEqual(8, self.repo.credit_balance(self.tenant, self.owner))
+
+    def test_middle_failure_finishes_remaining_rows_and_refunds_one(self):
+        from geo_backend.errors import ApiError
+        batch = self.prepared_batch()
+        calls = []
+        async def model(model, key, messages, **kwargs):
+            payload = json.loads(messages[-1]['content'])
+            calls.append(payload['task']['question'])
+            if payload['task']['question'] == '问题2':
+                raise ApiError(502, '测试供应商失败')
+            return '{"passed": true, "issues": []}' if 'draft' in payload else '# 完整正文\n零雪内容服务。'
+        async def run():
+            service = self.service(model_complete=model)
+            result = batch
+            for _ in range(20):
+                if result['status'] != 'ready':
+                    break
+                result = await service.advance(batch['id'], {'seq': result['seq']}, self.owner)
+            return result
+        result = asyncio.run(run())
+        self.assertEqual('completed', result['status'])
+        self.assertEqual(4, result['completed'])
+        self.assertEqual(1, len(result['failedTasks']))
+        self.assertEqual(6, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertEqual(1, calls.count('问题2'))
+        self.assertEqual(4, self.conn.execute('SELECT COUNT(*) FROM article_artifacts WHERE batch_id = %s', (batch['id'],)).fetchone()[0])
+
+    def test_artifact_and_state_commit_together(self):
+        from geo_backend.errors import ApiError
+        batch = self.prepared_batch(1)
+        batch.update(phase='audit', draft='# 完整正文\n正文')
+        self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'])
+        async def model(*args, **kwargs):
+            return '{"passed": true, "issues": []}'
+        self.repo.save_batch = lambda *args: False
+        with self.assertRaises(ApiError):
+            asyncio.run(self.service(model_complete=model).advance(batch['id'], {'seq': batch['seq']}, self.owner))
+        self.assertEqual(0, self.conn.execute('SELECT COUNT(*) FROM article_artifacts WHERE batch_id = %s', (batch['id'],)).fetchone()[0])
+        self.assertEqual('reserved', self.repo.task_credit_outcomes(self.tenant, batch['id'])[0]['status'])
+
+
+if __name__ == '__main__':
+    unittest.main()

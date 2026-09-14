@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from contextlib import nullcontext
 
 from .errors import ApiError
 
@@ -82,5 +83,10 @@ class SettingsService:
         key = str(api_key or "").strip()
         if len(key) > 4096 or any(char in key for char in "\r\n\x00"):
             raise ApiError(400, "API Key 格式不正确。")
-        self.repository.save_model(user_id, model, key or None, remove_key is True, self.master_key)
+        with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
+            if hasattr(self.repository, 'lock_user'):
+                self.repository.lock_user(user_id)
+            if hasattr(self.repository, 'has_active_batch') and self.repository.has_active_batch(user_id):
+                raise ApiError(409, '批次尚未结束，完成或取消后才能切换模型。', 'MODEL_LOCKED_DURING_BATCH')
+            self.repository.save_model(user_id, model, key or None, remove_key is True, self.master_key)
         return {"saved": True}

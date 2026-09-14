@@ -48,7 +48,7 @@ def parse_tasks(rows: object, companies: object) -> tuple[list[dict[str, object]
     if any(columns[field] < 0 for field in ("brand", "kb", "question")):
         raise ApiError(400, "任务表必须包含：品牌名、GEO知识库、问句。")
     tasks: list[dict[str, object]] = []
-    for row in rows[1:]:
+    for row_index, row in enumerate(rows[1:], 1):
         if all(not str(cell or "").strip() for cell in row):
             continue
 
@@ -74,6 +74,7 @@ def parse_tasks(rows: object, companies: object) -> tuple[list[dict[str, object]
                     "ai": cell("ai"),
                     "notes": text_value(cell("notes"), "备注", 2000, False),
                     "variant": variant,
+                    "billingTaskId": str(row_index),
                 }
             )
     if not 1 <= len(tasks) <= 100:

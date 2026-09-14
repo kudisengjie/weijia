@@ -48,12 +48,13 @@ class AuthService:
         valid_owner = hmac.compare_digest(account_text, self.settings.geo_account) and verify_password(
             password, self.settings.geo_password_hash
         )
-        valid_member = bool(candidate and verify_password(password, candidate.get("password_hash")))
+        valid_member = bool(account_text.casefold() != self.settings.geo_account.casefold()
+                            and candidate and verify_password(password, candidate.get("password_hash")))
         if not valid_owner and not valid_member:
             self.repository.record_login_failure(scope_hash, now)
             raise ApiError(401, "账号或密码不正确。", "LOGIN_FAILED")
         self.repository.clear_login_failures(scope_hash)
-        if valid_member:
+        if not valid_owner:
             user = candidate
         else:
             user = self.repository.upsert_configured_user(self.settings.geo_account, self.settings.geo_password_hash)

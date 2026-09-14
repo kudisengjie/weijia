@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import re
+from contextlib import nullcontext
 from datetime import datetime, timezone
 
 from .errors import ApiError
@@ -13,6 +14,7 @@ from .ima import ImaCache, ima_post, load_ima_credentials, next_cursor, normaliz
 from .models import SettingsService
 from .providers import ENDPOINTS, complete
 from .tasks import audit_result, parse_tasks
+from .tenant_access import TenantAccessService
 
 
 LABELS = {
@@ -47,6 +49,8 @@ def _summary(batch: dict[str, object]) -> dict[str, object]:
         "requests": batch["requests"],
         "title": batch["tasks"][0]["brand"],
         "expiresAt": batch["expiresAt"],
+        "billingTasks": len(batch.get("creditTaskIds", batch["tasks"])),
+        "failedTasks": batch.get("failedTasks", []),
     }
 
 
@@ -88,9 +92,22 @@ class BatchService:
         )
 
     def create(self, body: dict[str, object], user_id: str, expires_at: datetime) -> dict[str, object]:
+        with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
+            if hasattr(self.repository, 'lock_user'):
+                self.repository.lock_user(user_id)
+            return self._create(body, user_id, expires_at)
+
+    def _create(self, body: dict[str, object], user_id: str, expires_at: datetime) -> dict[str, object]:
         request_id = body.get("requestId")
         if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9-]{16,80}", request_id):
             raise ApiError(400, "缺少有效的提交标识。")
+        if hasattr(self.repository, 'get_request_batch'):
+            existing = self.repository.get_request_batch(user_id, _digest(request_id))
+            if existing:
+                return _summary(existing)
+        self._require_active(user_id)
+        if hasattr(self.repository, 'has_active_batch') and self.repository.has_active_batch(user_id):
+            raise ApiError(409, '请先完成或取消当前批次。', 'BATCH_ALREADY_ACTIVE')
         tasks, companies = parse_tasks(body.get("rows"), body.get("companies"))
         private = SettingsService(self.repository, self.master_key).private(user_id)
         model = private["model"]
@@ -99,14 +116,7 @@ class BatchService:
         ima = self._ima()
         if not ima.get("clientId") or not ima.get("apiKey"):
             raise ApiError(503, "管理员尚未配置 IMA。")
-        batch_id = _digest(request_id)[:32]
-        if self.credit_service:
-            self.credit_service.reserve(
-                str(self.tenant_context["tenantId"]),
-                user_id,
-                batch_id,
-                [str(index + 1) for index in range(len(tasks))],
-            )
+        batch_id = _digest(user_id + ':' + request_id)[:32]
         batch = {
             "id": batch_id,
             "model": model,
@@ -133,8 +143,10 @@ class BatchService:
         }
         if self.tenant_context:
             batch["tenantId"] = self.tenant_context["tenantId"]
-            batch["creditTaskIds"] = [str(index + 1) for index in range(len(tasks))]
+            batch["creditTaskIds"] = list(dict.fromkeys(str(task["billingTaskId"]) for task in tasks))
         stored = self.repository.create_or_get_batch(user_id, batch_id, _digest(request_id), batch)
+        if self.credit_service:
+            self.credit_service.reserve(str(self.tenant_context['tenantId']), user_id, batch_id, batch['creditTaskIds'])
         if self.tenant_context and hasattr(self.repository, "create_job"):
             self.repository.create_job(str(self.tenant_context["tenantId"]), batch_id, f"batch:{batch_id}:run")
         if self.tenant_context and hasattr(self.repository, "save_model_snapshot"):
@@ -178,40 +190,49 @@ class BatchService:
                     },
                     str(snapshot["apiKey"]) if snapshot.get("apiKey") is not None else None,
                 )
+            raise ApiError(503, '批次模型快照缺失，已停止；不会改用其他密钥。', 'MODEL_SNAPSHOT_MISSING')
         private = SettingsService(self.repository, self.master_key).private(user_id)
         return batch["model"], private["keys"].get(batch["model"]["id"])
+
+    def _require_active(self, user_id):
+        if self.tenant_context and hasattr(self.repository, 'get_tenant_context'):
+            current = TenantAccessService(self.repository).require(user_id)
+            if current['tenantId'] != self.tenant_context['tenantId']:
+                raise ApiError(403, '工作区已变化，请重新登录。', 'TENANT_ACCESS_REQUIRED')
 
     async def advance(self, batch_id: str, body: dict[str, object], user_id: str) -> dict[str, object]:
         batch = self.repository.get_batch(user_id, batch_id)
         if not batch:
             raise ApiError(404, "批次不存在或不属于当前账号。")
+        self._require_active(user_id)
         seq = body.get("seq")
         if not isinstance(seq, int) or isinstance(seq, bool) or seq < 0:
             raise ApiError(400, "批次步骤标识无效。")
-        if seq < batch["seq"] or batch["status"] == "completed":
+        if seq < batch["seq"] or batch["status"] in {'completed', 'cancelled'}:
             return _summary(batch)
         if seq != batch["seq"]:
             raise ApiError(409, "批次进度已变化，请刷新状态。")
         now = datetime.now(timezone.utc)
+        if self.tenant_context and self.repository.claim_is_stale(batch_id, seq, now):
+            with self.repository.transaction():
+                if not self.repository.recover_step(batch_id, seq, now):
+                    return _summary(self.repository.get_batch(user_id, batch_id))
+                self._record_failure(batch, ApiError(503, '执行器中断，无法确认上次调用结果；本任务退款并跳过，未重复调用模型。', 'STEP_INTERRUPTED'))
+                return self._commit_step(batch, user_id, seq)
         if body.get("retry") is True:
             allow_failed = batch["status"] == "failed"
-            if allow_failed and self.credit_service and self.tenant_context:
-                self.credit_service.reopen_batch(
-                    str(self.tenant_context["tenantId"]),
-                    user_id,
-                    batch_id,
-                )
             if not allow_failed and not self.repository.claim_is_stale(batch_id, seq, now):
                 raise ApiError(409, "当前请求尚未结束，不能重复执行。")
-            if not self.repository.recover_step(batch_id, seq, now, allow_failed=allow_failed):
-                latest = self.repository.get_batch(user_id, batch_id)
-                return _summary(latest)
-            batch["seq"] += 1
-            batch["status"] = "ready"
-            batch["error"] = ""
-            if not self.repository.save_batch(user_id, batch_id, batch, seq):
-                raise ApiError(409, "批次进度已变化，请刷新状态。")
-            return _summary(batch)
+            with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
+                if not self.repository.recover_step(batch_id, seq, now, allow_failed=allow_failed):
+                    return _summary(self.repository.get_batch(user_id, batch_id))
+                if allow_failed and self.credit_service:
+                    self.credit_service.reopen_batch(str(self.tenant_context['tenantId']), user_id, batch_id)
+                batch.update(status='ready', error='')
+                result = self._commit_step(batch, user_id, seq)
+                if hasattr(self.repository, 'set_batch_job_status'):
+                    self.repository.set_batch_job_status(batch_id, 'queued')
+                return result
         if batch["status"] == "failed":
             return _summary(batch)
         if not self.repository.claim_step(batch_id, seq):
@@ -223,14 +244,90 @@ class BatchService:
             requests = batch["requests"]
             batch = before
             batch["requests"] = requests
-            batch["status"] = "failed"
-            batch["error"] = str(error) if isinstance(error, ApiError) else "本步骤异常中断，未自动重试。请检查服务端配置。"
+            self._record_failure(batch, error)
+        return self._commit_step(batch, user_id, seq)
+
+    def _commit_step(self, batch, user_id, seq):
+        batch_id = batch['id']
+        with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
+            if batch.get('_pendingArticle'):
+                try:
+                    with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
+                        self._persist_article(batch, user_id)
+                except Exception as error:
+                    batch.pop('_pendingArticle', None)
+                    self._record_failure(batch, error)
             if self.credit_service and self.tenant_context:
-                self.credit_service.refund_batch(str(self.tenant_context["tenantId"]), batch_id)
-        batch["seq"] += 1
-        if not self.repository.save_batch(user_id, batch_id, batch, seq):
-            raise ApiError(409, "批次进度已变化，请刷新状态。")
+                failed_id = batch.pop('_refundTask', None)
+                if failed_id:
+                    self.credit_service.finalize(str(self.tenant_context['tenantId']), batch_id, failed_id, complete=False)
+                if batch['status'] == 'failed':
+                    self.credit_service.refund_batch(str(self.tenant_context['tenantId']), batch_id)
+            batch["seq"] += 1
+            if not self.repository.save_batch(user_id, batch_id, batch, seq):
+                raise ApiError(409, "批次进度已变化，请刷新状态。")
         return _summary(batch)
+
+    def cancel(self, batch_id, user_id):
+        with self.repository.transaction():
+            self.repository.lock_user(user_id)
+            batch = self.repository.get_batch(user_id, batch_id)
+            if not batch:
+                raise ApiError(404, '批次不存在。', 'BATCH_NOT_FOUND')
+            if batch['status'] in {'completed', 'cancelled'}:
+                return _summary(batch)
+            seq = batch['seq']
+            if self.credit_service:
+                self.credit_service.refund_batch(str(self.tenant_context['tenantId']), batch_id)
+            batch.update(status='cancelled', error='批次已取消，未完成的任务积分已返还。', seq=seq + 1)
+            if not self.repository.save_batch(user_id, batch_id, batch, seq):
+                raise ApiError(409, '进度已变化，请刷新后取消。', 'BATCH_CONFLICT')
+            self.repository.set_batch_job_status(batch_id, 'cancelled')
+            return _summary(batch)
+
+    @staticmethod
+    def _billing_id(batch, index):
+        return str(batch['tasks'][index].get('billingTaskId', index + 1))
+
+    def _record_failure(self, batch, error):
+        message = str(error) if isinstance(error, ApiError) else '本步骤异常中断，未自动重试。请检查服务端日志。'
+        batch['error'] = message
+        if not self.tenant_context or batch['phase'] not in {'search', 'evidence', 'generate', 'audit', 'repair'}:
+            batch['status'] = 'failed'
+            return
+        task_id = self._billing_id(batch, batch['taskIndex'])
+        batch.setdefault('failedTasks', []).append({'taskId': task_id, 'error': message})
+        batch['_refundTask'] = task_id
+        while batch['taskIndex'] < len(batch['tasks']) and self._billing_id(batch, batch['taskIndex']) == task_id:
+            batch['taskIndex'] += 1
+        self._next_task(batch)
+
+    def _next_task(self, batch):
+        if batch['taskIndex'] == len(batch['tasks']):
+            batch.update(phase='done', status='completed')
+            batch.pop('draft', None)
+        else:
+            self._prepare_task(batch)
+
+    def _persist_article(self, batch, user_id):
+        article = batch.pop('_pendingArticle')
+        index = batch['taskIndex']
+        billing_id = self._billing_id(batch, index)
+        if self.artifact_service:
+            artifact = self.artifact_service.save_complete(
+                tenant_id=str(self.tenant_context['tenantId']), batch_id=str(batch['id']),
+                task_id=str(index + 1), user_id=user_id,
+                filename=f"{index + 1}-{batch['tasks'][index]['brand']}.md",
+                markdown=str(batch['draft']), audit_status='accepted',
+            )
+            article.update(artifactId=artifact['id'], filename=artifact['filename'], byteLength=artifact['byteLength'])
+            if self.credit_service and (index + 1 == len(batch['tasks']) or self._billing_id(batch, index + 1) != billing_id):
+                self.credit_service.finalize(str(self.tenant_context['tenantId']), str(batch['id']), billing_id, complete=True)
+        else:
+            article['markdown'] = batch['draft']
+        batch['articles'].append(article)
+        batch['taskIndex'] += 1
+        self._next_task(batch)
 
     @staticmethod
     def _media(raw: dict[str, object]) -> dict[str, object]:
@@ -449,33 +546,4 @@ class BatchService:
             "model": batch["model"]["label"],
             "sources": [source["title"] for source in batch["sources"]],
         }
-        if self.artifact_service:
-            artifact = self.artifact_service.save_complete(
-                tenant_id=str(self.tenant_context["tenantId"]),
-                batch_id=str(batch["id"]),
-                task_id=str(batch["taskIndex"] + 1),
-                user_id=user_id,
-                filename=f"{batch['taskIndex'] + 1}-{task['brand']}.md",
-                markdown=str(batch["draft"]),
-                audit_status="accepted",
-            )
-            article["artifactId"] = artifact["id"]
-            article["filename"] = artifact["filename"]
-            article["byteLength"] = artifact["byteLength"]
-            if self.credit_service:
-                self.credit_service.finalize(
-                    str(self.tenant_context["tenantId"]),
-                    str(batch["id"]),
-                    str(batch["taskIndex"] + 1),
-                    complete=True,
-                )
-        else:
-            article["markdown"] = batch["draft"]
-        batch["articles"].append(article)
-        batch["taskIndex"] += 1
-        if batch["taskIndex"] == len(batch["tasks"]):
-            batch["phase"] = "done"
-            batch["status"] = "completed"
-            batch.pop("draft", None)
-        else:
-            self._prepare_task(batch)
+        batch['_pendingArticle'] = article

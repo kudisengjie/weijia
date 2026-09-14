@@ -112,6 +112,31 @@ CREATE TABLE IF NOT EXISTS credit_accounts (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS member_credit_accounts (
+    tenant_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    balance INTEGER NOT NULL DEFAULT 0 CHECK (balance >= 0),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (tenant_id, user_id),
+    FOREIGN KEY (tenant_id, user_id) REFERENCES tenant_members(tenant_id, user_id) ON DELETE CASCADE
+);
+-- Preserve any prototype tenant balance once, under that tenant's owner.
+INSERT INTO member_credit_accounts (tenant_id, user_id, balance)
+SELECT t.id, t.owner_user_id, c.balance FROM tenants t
+JOIN credit_accounts c ON c.tenant_id = t.id
+JOIN tenant_members tm ON tm.tenant_id = t.id AND tm.user_id = t.owner_user_id
+ON CONFLICT (tenant_id, user_id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS admin_audit (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id),
+    actor_id UUID NOT NULL REFERENCES users(id),
+    target_user_id UUID REFERENCES users(id),
+    action VARCHAR(64) NOT NULL,
+    details JSONB NOT NULL DEFAULT '{}'::JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS credit_ledger (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -247,6 +272,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS jobs_ready_idx ON jobs (status, next_run_at, lease_until);
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS lease_token UUID;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS heartbeat_at TIMESTAMPTZ;
 
 INSERT INTO schema_migrations (version) VALUES (1) ON CONFLICT (version) DO NOTHING;
 INSERT INTO schema_migrations (version) VALUES (2) ON CONFLICT (version) DO NOTHING;

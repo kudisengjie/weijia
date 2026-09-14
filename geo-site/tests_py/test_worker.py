@@ -9,7 +9,7 @@ sys.path.insert(0, str(FUNCTIONS_DIR))
 
 class WorkerRepository:
     def __init__(self):
-        self.jobs = [{"id": "job-1", "batchId": "batch-1", "userId": "user-1", "seq": 0, "status": "queued"}]
+        self.jobs = [{"id": "job-1", "batchId": "batch-1", "userId": "user-1", "seq": 0, "status": "queued", 'leaseToken': 'lease-1'}]
         self.finished = []
 
     def claim_next_job(self, _lease_seconds=90):
@@ -19,10 +19,10 @@ class WorkerRepository:
                 return dict(job)
         return None
 
-    def finish_job(self, job_id, status):
+    def finish_job(self, job_id, status, lease_token, delay_seconds=0):
         self.finished.append((job_id, status))
 
-    def fail_job(self, job_id, message):
+    def fail_job(self, job_id, message, lease_token):
         self.finished.append((job_id, "failed", message))
 
 
@@ -48,18 +48,19 @@ class WorkerTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_worker_marks_failed_job_without_retrying_external_call(self):
         from geo_backend.worker import BatchWorker
+        from geo_backend.errors import ApiError
 
         repository = WorkerRepository()
 
         class Service:
             async def advance(self, _batch_id, _body, _user_id):
-                raise RuntimeError("provider down")
+                raise ApiError(403, "tenant access revoked", "TENANT_ACCESS_REQUIRED")
 
         result = await BatchWorker(repository, lambda _job: Service()).run_once()
 
         self.assertTrue(result)
         self.assertEqual("failed", repository.finished[0][1])
-        self.assertIn("provider down", repository.finished[0][2])
+        self.assertEqual("TENANT_ACCESS_REQUIRED", repository.finished[0][2])
 
 
 if __name__ == "__main__":
