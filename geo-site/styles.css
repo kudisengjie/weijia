@@ -508,9 +508,16 @@ label:focus-within {
     .geo-home-link, .geo-mode-pill { font-size: 14px; }
     .geo-brand small, .geo-steps small, .geo-sidebar__foot small { font-size: 12px; line-height: 1.55; }
     .geo-heading p { font-size: 14px; line-height: 1.65; }
-    .geo-model-badge { min-width: 126px; padding: 11px 14px; }
-    .geo-model-badge small { font-size: 12px; }
-    .geo-model-badge strong { margin-top: 4px; font-size: 14px; line-height: 1.4; }
+    /* Give the subtitle its own full-width row; badges never compete with it. */
+    .geo-heading--workspace { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; row-gap: 0; }
+    .geo-heading--workspace > div:first-child { display: contents; }
+    .geo-heading--workspace .geo-heading__eyebrow { grid-column: 1; grid-row: 1; }
+    .geo-heading--workspace h1 { grid-column: 1; grid-row: 2; }
+    .geo-heading--workspace p { grid-column: 1 / -1; grid-row: 3; font-size: 13px; white-space: nowrap; }
+    .geo-heading--workspace .geo-model-badges { grid-column: 2; grid-row: 1 / 3; align-self: center; flex-wrap: nowrap; }
+    .geo-model-badge { min-width: 70px; padding: 8px 10px; }
+    .geo-model-badge small { font-size: 11px; white-space: nowrap; }
+    .geo-model-badge strong { margin-top: 2px; font-size: 13px; line-height: 1.4; white-space: nowrap; }
     .geo-upload-card { padding: 22px; }
     .geo-card-heading__index { font-size: 12px; }
     .geo-card-heading h2 { font-size: 18px; }
