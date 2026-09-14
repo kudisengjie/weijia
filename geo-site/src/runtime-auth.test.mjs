@@ -39,7 +39,28 @@ test('settings bootstrap failure stays in workspace and does not trigger duplica
 
 test('runtime uses bounded runs and server-side article artifacts', () => {
   assert.match(source, /batches\/\$\{b\.id\}\/run/);
-  assert.match(source, /maxSteps:2/);
+  assert.match(source, /maxSteps:1/);
   assert.match(source, /artifacts\/'\+encodeURIComponent/);
-  assert.match(source, /modelLocked=b\.status!==\'completed\'/);
+  assert.match(source, /batches\/\$\{b\.id\}\/pause/);
+  assert.match(source, /batches\/\$\{b\.id\}\/cancel/);
+});
+
+test('model lock follows the account, not the historical batch currently viewed', () => {
+  assert.equal(runtime.modelIsLocked({modelLocked:true}, {status:'completed'}), true);
+  assert.equal(runtime.modelIsLocked({modelLocked:false}, {status:'cancelled'}), false);
+  assert.equal(runtime.modelIsLocked({modelLocked:false}, {status:'paused'}), true);
+});
+
+test('uncertain credit submission reuses its ID, while a changed target gets a new ID', () => {
+  let count=0;const id=()=>String(++count);
+  const body={userId:'one',amount:5,kind:'grant',note:''};
+  const first=runtime.pendingOperation(null,body,id);
+  assert.equal(runtime.pendingOperation(first,body,id),first);
+  assert.notEqual(runtime.pendingOperation(first,{...body,userId:'two'},id).body.idempotencyKey,first.body.idempotencyKey);
+});
+
+test('partial output is never labelled all successful', () => {
+  assert.equal(runtime.batchStatusLabel({status:'completed',failedTasks:[{taskId:'2'}]}),'已结束 · 部分任务未完成');
+  assert.equal(runtime.batchStatusLabel({status:'cancelled'}),'已取消');
+  assert.equal(runtime.batchStatusLabel({status:'paused'}),'已暂停');
 });

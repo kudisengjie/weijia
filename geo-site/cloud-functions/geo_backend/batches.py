@@ -51,6 +51,7 @@ def _summary(batch: dict[str, object]) -> dict[str, object]:
         "expiresAt": batch["expiresAt"],
         "billingTasks": len(batch.get("creditTaskIds", batch["tasks"])),
         "failedTasks": batch.get("failedTasks", []),
+        "pauseRequested": bool(batch.get('pauseRequested')),
     }
 
 
@@ -169,7 +170,11 @@ class BatchService:
         batch = self.repository.get_batch(user_id, batch_id)
         if not batch:
             raise ApiError(404, "批次不存在或不属于当前账号。")
-        return {**_summary(batch), "articles": batch["articles"]}
+        result = {**_summary(batch), "articles": batch["articles"]}
+        if self.tenant_context and hasattr(self.repository, 'task_credit_outcomes'):
+            outcomes = self.repository.task_credit_outcomes(str(self.tenant_context['tenantId']), batch_id)
+            result['billing'] = {status: sum(item['status'] == status for item in outcomes) for status in ('reserved', 'complete', 'refunded', 'released')}
+        return result
 
     def list(self, user_id: str) -> list[dict[str, object]]:
         return sorted((_summary(batch) for batch in self.repository.list_batches(user_id)), key=lambda item: item["createdAt"], reverse=True)
@@ -206,12 +211,17 @@ class BatchService:
         batch = self.repository.get_batch(user_id, batch_id)
         if not batch:
             raise ApiError(404, "批次不存在或不属于当前账号。")
-        self._require_active(user_id)
         seq = body.get("seq")
         if not isinstance(seq, int) or isinstance(seq, bool) or seq < 0:
             raise ApiError(400, "批次步骤标识无效。")
         if seq < batch["seq"] or batch["status"] in {'completed', 'cancelled'}:
             return _summary(batch)
+        try:
+            self._require_active(user_id)
+        except ApiError as error:
+            if error.code == 'SUBSCRIPTION_EXPIRED':
+                self.cancel(batch_id, user_id, reason='服务已到期，本批次已停止；未完整输出的任务积分已返还。续期后可新建任务，已有文件仍可下载。')
+            raise
         if seq != batch["seq"]:
             raise ApiError(409, "批次进度已变化，请刷新状态。")
         now = datetime.now(timezone.utc)
@@ -235,9 +245,12 @@ class BatchService:
                 if hasattr(self.repository, 'set_batch_job_status'):
                     self.repository.set_batch_job_status(batch_id, 'queued')
                 return result
-        if batch["status"] == "failed":
+        if batch["status"] in {"failed", "paused"} or batch.get('pauseRequested'):
             return _summary(batch)
         if not self.repository.claim_step(batch_id, seq):
+            current = self.repository.get_batch(user_id, batch_id)
+            if current and (current['seq'] != seq or current['status'] != 'ready' or current.get('pauseRequested')):
+                return _summary(current)
             raise ApiError(409, "这一步已提交，未重复调用。请读取状态；超过 150 秒无进展时可手动恢复。", "STEP_CLAIMED")
         before = copy.deepcopy(batch)
         try:
@@ -256,6 +269,8 @@ class BatchService:
     def _commit_step(self, batch, user_id, seq):
         batch_id = batch['id']
         with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
+            if hasattr(self.repository, 'lock_user'):
+                self.repository.lock_user(user_id)
             if batch.get('_pendingArticle'):
                 try:
                     with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
@@ -269,12 +284,50 @@ class BatchService:
                     self.credit_service.finalize(str(self.tenant_context['tenantId']), batch_id, failed_id, complete=False)
                 if batch['status'] == 'failed':
                     self.credit_service.refund_batch(str(self.tenant_context['tenantId']), batch_id)
+            if hasattr(self.repository, 'pause_requested') and self.repository.pause_requested(batch_id) and batch['status'] == 'ready':
+                batch.update(status='paused', pauseRequested=True)
             batch["seq"] += 1
             if not self.repository.save_batch(user_id, batch_id, batch, seq):
                 raise ApiError(409, "批次进度已变化，请刷新状态。")
         return _summary(batch)
 
-    def cancel(self, batch_id, user_id):
+    def pause(self, batch_id, user_id):
+        with self.repository.transaction():
+            self.repository.lock_user(user_id)
+            self.repository.pause_requested(batch_id)  # Serialize with claiming and committing.
+            batch = self.repository.get_batch(user_id, batch_id)
+            if not batch:
+                raise ApiError(404, '批次不存在。', 'BATCH_NOT_FOUND')
+            if batch['status'] != 'ready':
+                return _summary(batch)
+            self.repository.set_pause_requested(batch_id, True)
+            batch['pauseRequested'] = True
+            if not self.repository.has_step_claim(batch_id, batch['seq']):
+                seq = batch['seq']
+                batch.update(status='paused', seq=seq + 1)
+                if not self.repository.save_batch(user_id, batch_id, batch, seq):
+                    raise ApiError(409, '批次进度已变化，请刷新。', 'BATCH_CONFLICT')
+            return _summary(batch)
+
+    def resume(self, batch_id, user_id):
+        self._require_active(user_id)
+        with self.repository.transaction():
+            self.repository.lock_user(user_id)
+            self.repository.pause_requested(batch_id)
+            batch = self.repository.get_batch(user_id, batch_id)
+            if not batch:
+                raise ApiError(404, '批次不存在。', 'BATCH_NOT_FOUND')
+            if batch['status'] != 'paused':
+                return _summary(batch)
+            seq = batch['seq']
+            self.repository.set_pause_requested(batch_id, False)
+            batch.update(status='ready', pauseRequested=False, seq=seq + 1, error='')
+            if not self.repository.save_batch(user_id, batch_id, batch, seq):
+                raise ApiError(409, '批次进度已变化，请刷新。', 'BATCH_CONFLICT')
+            self.repository.set_batch_job_status(batch_id, 'queued')
+            return _summary(batch)
+
+    def cancel(self, batch_id, user_id, *, reason='批次已取消，未完成的任务积分已返还。'):
         with self.repository.transaction():
             self.repository.lock_user(user_id)
             batch = self.repository.get_batch(user_id, batch_id)
@@ -285,7 +338,7 @@ class BatchService:
             seq = batch['seq']
             if self.credit_service:
                 self.credit_service.refund_batch(str(self.tenant_context['tenantId']), batch_id)
-            batch.update(status='cancelled', error='批次已取消，未完成的任务积分已返还。', seq=seq + 1)
+            batch.update(status='cancelled', error=reason, seq=seq + 1)
             if not self.repository.save_batch(user_id, batch_id, batch, seq):
                 raise ApiError(409, '进度已变化，请刷新后取消。', 'BATCH_CONFLICT')
             self.repository.set_batch_job_status(batch_id, 'cancelled')

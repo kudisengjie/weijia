@@ -117,9 +117,19 @@ class PostgresRepository:
         return {"id": user_id, "username": row[1], "role": role, "expiresAt": expires_at}
 
     def set_subscription(
-        self, tenant_id: str, user_id: str | None, starts_at: datetime, expires_at: datetime
+        self, tenant_id: str, user_id: str | None, starts_at: datetime, expires_at: datetime, *, actor_id: str | None = None
     ) -> dict[str, object]:
         with self.conn.transaction():
+            if user_id is not None:
+                self.require_member(tenant_id, user_id)
+                self.lock_user(user_id)
+            previous = self.conn.execute(
+                """SELECT id, starts_at, expires_at, status FROM subscriptions
+                   WHERE tenant_id = %s AND user_id IS NOT DISTINCT FROM %s
+                   ORDER BY created_at DESC, id DESC LIMIT 1""", (tenant_id, user_id)
+            ).fetchone()
+            if previous and previous[1:] == (starts_at, expires_at, 'active'):
+                return {'id': str(previous[0]), 'expiresAt': previous[2]}
             self.conn.execute(
                 "UPDATE subscriptions SET status = 'revoked' WHERE tenant_id = %s AND user_id IS NOT DISTINCT FROM %s AND status = 'active'",
                 (tenant_id, user_id),
@@ -128,7 +138,36 @@ class PostgresRepository:
                 "INSERT INTO subscriptions (tenant_id, user_id, starts_at, expires_at, status) VALUES (%s, %s, %s, %s, 'active') RETURNING id, expires_at",
                 (tenant_id, user_id, starts_at, expires_at),
             ).fetchone()
+            if actor_id:
+                self.record_admin_audit(tenant_id, actor_id, 'subscription.update', user_id,
+                    {'startsAt': starts_at.isoformat(), 'expiresAt': expires_at.isoformat()})
         return {"id": str(row[0]), "expiresAt": row[1]}
+
+    def require_member(self, tenant_id, user_id):
+        from .errors import ApiError
+        if not self.conn.execute('SELECT 1 FROM tenant_members WHERE tenant_id = %s AND user_id = %s', (tenant_id, user_id)).fetchone():
+            raise ApiError(404, '子账号不存在或不属于当前工作区。', 'MEMBER_NOT_FOUND')
+
+    def record_admin_audit(self, tenant_id, actor_id, action, target_user_id=None, details=None):
+        from psycopg.types.json import Jsonb
+        self.conn.execute('INSERT INTO admin_audit (tenant_id, actor_id, target_user_id, action, details) VALUES (%s, %s, %s, %s, %s)',
+            (tenant_id, actor_id, target_user_id, action, Jsonb(details or {})))
+
+    def list_members(self, tenant_id):
+        rows = self.conn.execute('''
+            SELECT u.id, u.username, tm.role, COALESCE(c.balance, 0), s.starts_at, s.expires_at,
+                   COALESCE(s.status = 'active' AND s.starts_at <= NOW() AND s.expires_at > NOW(), FALSE)
+            FROM tenant_members tm JOIN users u ON u.id = tm.user_id
+            LEFT JOIN member_credit_accounts c ON c.tenant_id = tm.tenant_id AND c.user_id = tm.user_id
+            LEFT JOIN LATERAL (
+                SELECT starts_at, expires_at, status FROM subscriptions
+                WHERE tenant_id = tm.tenant_id AND (user_id = tm.user_id OR user_id IS NULL)
+                ORDER BY CASE WHEN user_id = tm.user_id THEN 0 ELSE 1 END, created_at DESC, id DESC LIMIT 1
+            ) s ON TRUE
+            WHERE tm.tenant_id = %s ORDER BY u.created_at, u.id
+        ''', (tenant_id,)).fetchall()
+        return [dict(zip(('id', 'username', 'role', 'balance', 'startsAt', 'expiresAt', 'active'),
+            (str(r[0]), r[1], r[2], int(r[3]), r[4].isoformat() if r[4] else None, r[5].isoformat() if r[5] else None, r[6]))) for r in rows]
 
     def ensure_owner_tenant(self, user_id: str, slug: str = "owner") -> dict[str, object]:
         with self.conn.transaction():
@@ -136,6 +175,7 @@ class PostgresRepository:
                 "SELECT id, slug, name FROM tenants WHERE owner_user_id = %s ORDER BY created_at LIMIT 1", (user_id,)
             ).fetchone()
             if existing:
+                self.conn.execute("INSERT INTO tenant_members (tenant_id, user_id, role) VALUES (%s, %s, 'owner') ON CONFLICT (tenant_id, user_id) DO NOTHING", (existing[0], user_id))
                 return {"tenantId": str(existing[0]), "slug": existing[1], "name": existing[2], "role": "owner"}
             tenant = self.conn.execute(
                 """
@@ -374,6 +414,9 @@ class PostgresRepository:
                 raise ValueError("INSUFFICIENT_CREDITS")
             self._credit_entry(tenant_id, user_id, None, None, kind, signed, idempotency_key, metadata)
             self._credit_delta(tenant_id, user_id, signed)
+            if metadata and metadata.get('actorId'):
+                self.record_admin_audit(tenant_id, metadata['actorId'], 'credits.' + kind, user_id,
+                    {'amount': signed, 'note': metadata.get('note', ''), 'idempotencyKey': idempotency_key})
             return {"applied": True, "amount": signed, "balance": balance + signed}
 
     def list_credit_ledger(self, tenant_id, user_id=None, limit=100):
@@ -827,9 +870,19 @@ class PostgresRepository:
 
     def get_batch(self, user_id: str, batch_id: str) -> dict[str, object] | None:
         row = self.conn.execute(
-            "SELECT state FROM batches WHERE id = %s AND user_id = %s", (batch_id, user_id)
+            "SELECT state, pause_requested FROM batches WHERE id = %s AND user_id = %s", (batch_id, user_id)
         ).fetchone()
-        return row[0] if row else None
+        return {**row[0], 'pauseRequested': row[1]} if row else None
+
+    def pause_requested(self, batch_id):
+        row = self.conn.execute('SELECT pause_requested FROM batches WHERE id = %s FOR UPDATE', (batch_id,)).fetchone()
+        return bool(row and row[0])
+
+    def set_pause_requested(self, batch_id, requested):
+        self.conn.execute('UPDATE batches SET pause_requested = %s WHERE id = %s', (requested, batch_id))
+
+    def has_step_claim(self, batch_id, seq):
+        return bool(self.conn.execute('SELECT 1 FROM batch_claims WHERE batch_id = %s AND seq = %s AND recovered_at IS NULL', (batch_id, seq)).fetchone())
 
     def list_batches(self, user_id: str) -> list[dict[str, object]]:
         rows = self.conn.execute(
@@ -845,15 +898,15 @@ class PostgresRepository:
         return bool(row)
 
     def claim_step(self, batch_id: str, seq: int) -> bool:
-        row = self.conn.execute(
-            """
-            INSERT INTO batch_claims (batch_id, seq) VALUES (%s, %s)
-            ON CONFLICT (batch_id, seq) DO NOTHING
-            RETURNING batch_id
-            """,
-            (batch_id, seq),
-        ).fetchone()
-        return bool(row)
+        with self.conn.transaction():
+            batch = self.conn.execute('SELECT seq, status, pause_requested FROM batches WHERE id = %s FOR UPDATE', (batch_id,)).fetchone()
+            if not batch or batch != (seq, 'ready', False):
+                return False
+            row = self.conn.execute(
+                """INSERT INTO batch_claims (batch_id, seq) VALUES (%s, %s)
+                   ON CONFLICT (batch_id, seq) DO NOTHING RETURNING batch_id""", (batch_id, seq)
+            ).fetchone()
+            return bool(row)
 
     def claim_is_stale(self, batch_id: str, seq: int, now: datetime) -> bool:
         row = self.conn.execute(

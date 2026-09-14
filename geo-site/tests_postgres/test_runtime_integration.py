@@ -172,6 +172,62 @@ class PostgresRuntimeTests(unittest.TestCase):
                     self.assertEqual(403, response.status_code, path)
         asyncio.run(run())
 
+    def test_http_owner_lists_members_and_renews_only_own_member_with_audit(self):
+        now = datetime.now(timezone.utc)
+        member = self.repo.create_member(tenant_id=self.tenant, username='managed-' + uuid.uuid4().hex,
+            password_hash=hash_password('member-password'), role='member', starts_at=now, expires_at=now + timedelta(days=30))
+        stranger = self.repo.upsert_configured_user('foreign-' + uuid.uuid4().hex, hash_password('test-password'))
+        self.fund(member['id'], 4)
+        async def run():
+            async with self.http_client() as client:
+                login = await client.post('/auth/login', json={'account': self.config().geo_account, 'password': 'test-password'})
+                client.headers['x-csrf-token'] = login.json()['csrf']
+                listing = await client.get('/tenant/members')
+                self.assertEqual(200, listing.status_code, listing.text)
+                record = next(row for row in listing.json()['members'] if row['id'] == member['id'])
+                self.assertEqual(4, record['balance'])
+                self.assertNotIn('password', listing.text)
+                body = {'userId': stranger['id'], 'startsAt': now.isoformat(), 'expiresAt': (now + timedelta(days=60)).isoformat()}
+                rejected = await client.post('/tenant/subscription', json=body)
+                self.assertEqual(404, rejected.status_code, rejected.text)
+                body['userId'] = member['id']
+                first = await client.post('/tenant/subscription', json=body)
+                again = await client.post('/tenant/subscription', json=body)
+                self.assertEqual(200, first.status_code, first.text)
+                self.assertEqual(first.json()['id'], again.json()['id'])
+                ledger = await client.get('/tenant/members/' + member['id'] + '/credits')
+                self.assertEqual(4, ledger.json()['balance'])
+                self.assertEqual(1, len(ledger.json()['ledger']))
+                await client.post('/auth/login', json={'account': member['username'], 'password': 'member-password'})
+                self.assertEqual(403, (await client.get('/tenant/members')).status_code)
+        asyncio.run(run())
+        self.assertEqual(1, self.conn.execute("SELECT COUNT(*) FROM admin_audit WHERE tenant_id = %s AND action = 'subscription.update'", (self.tenant,)).fetchone()[0])
+
+    def test_existing_owner_session_initializes_saas_without_password_reentry(self):
+        from geo_backend.security import new_session_material
+        material = new_session_material(MASTER, datetime.now(timezone.utc))
+        self.repo.create_session(self.owner, material.stored)
+        self.conn.execute('DELETE FROM tenant_members WHERE user_id = %s', (self.owner,))
+        async def run():
+            async with self.http_client() as client:
+                client.cookies.set('lxue_session', material.cookie_token)
+                return await client.get('/settings')
+        result = asyncio.run(run())
+        self.assertEqual(200, result.status_code, result.text)
+        self.assertEqual('owner', result.json().get('subscription', {}).get('role'))
+
+    def test_orphan_account_cannot_use_legacy_path_to_clear_shared_cache(self):
+        orphan = self.repo.upsert_configured_user('orphan-' + uuid.uuid4().hex, hash_password('test-password'))
+        generation = self.repo.get_ima_cache_generation()
+        async def run():
+            async with self.http_client() as client:
+                login = await client.post('/auth/login', json={'account': orphan['username'], 'password': 'test-password'})
+                client.headers['x-csrf-token'] = login.json()['csrf']
+                return await client.post('/ima/cache/clear', json={})
+        result = asyncio.run(run())
+        self.assertEqual(403, result.status_code)
+        self.assertEqual(generation, self.repo.get_ima_cache_generation())
+
     def test_running_batch_blocks_model_change_and_second_batch(self):
         from geo_backend.errors import ApiError
         self.prepared_batch(1)
@@ -192,6 +248,9 @@ class PostgresRuntimeTests(unittest.TestCase):
         with self.assertRaises(ApiError):
             asyncio.run(self.service(model_complete=model).advance(batch['id'], {'seq': 0}, self.owner))
         self.assertEqual([], calls)
+
+        self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertEqual('cancelled', self.repo.get_batch(self.owner, batch['id'])['status'])
 
     def test_concurrent_create_and_refund_are_exactly_once(self):
         from concurrent.futures import ThreadPoolExecutor
@@ -234,6 +293,45 @@ class PostgresRuntimeTests(unittest.TestCase):
         self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner))
         self.assertFalse(self.repo.has_active_batch(self.owner))
         SettingsService(self.repo, MASTER).save_model(self.owner, 'deepseek', 'primary', '', 'new-key', False)
+
+    def test_pause_and_resume_preserve_credits_snapshot_and_do_not_run_while_paused(self):
+        batch = self.prepared_batch(1)
+        service = self.service()
+        paused = service.pause(batch['id'], self.owner)
+        self.assertEqual('paused', paused['status'])
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertTrue(self.repo.has_active_batch(self.owner))
+        async def forbidden(*args, **kwargs): self.fail('Paused batch called model')
+        result = asyncio.run(self.service(model_complete=forbidden).advance(batch['id'], {'seq': paused['seq']}, self.owner))
+        self.assertEqual('paused', result['status'])
+        resumed = service.resume(batch['id'], self.owner)
+        self.assertEqual('ready', resumed['status'])
+        self.assertEqual(resumed, service.resume(batch['id'], self.owner))
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+
+    def test_pause_during_model_call_commits_current_step_then_stops(self):
+        batch = self.prepared_batch(1)
+        async def model(*args, **kwargs):
+            with self.connect() as other:
+                service = BatchService(PostgresRepository(other), MASTER, {}, tenant_context=self.context)
+                requested = service.pause(batch['id'], self.owner)
+                self.assertTrue(requested['pauseRequested'])
+            return '# 完整正文\n当前调用结果不得丢失。'
+        result = asyncio.run(self.service(model_complete=model).advance(batch['id'], {'seq': 0}, self.owner))
+        self.assertEqual('paused', result['status'])
+        self.assertEqual('audit', result['phase'])
+        self.assertIn('当前调用结果不得丢失', self.repo.get_batch(self.owner, batch['id'])['draft'])
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+
+    def test_worker_expiry_refunds_reservation_and_finishes_job(self):
+        from geo_backend.worker import BatchWorker
+        batch = self.prepared_batch(1)
+        self.conn.execute("UPDATE jobs SET next_run_at = NOW() + INTERVAL '1 day' WHERE batch_id <> %s", (batch['id'],))
+        now = datetime.now(timezone.utc)
+        self.repo.set_subscription(self.tenant, self.owner, now - timedelta(days=3), now - timedelta(days=1))
+        asyncio.run(BatchWorker(self.repo, lambda job: self.service()).run_once())
+        self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertEqual('cancelled', self.conn.execute('SELECT status FROM jobs WHERE batch_id = %s', (batch['id'],)).fetchone()[0])
 
     def test_worker_stale_lease_cannot_finish_new_claim(self):
         batch = self.prepared_batch(1)

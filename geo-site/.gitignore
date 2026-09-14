@@ -4,5 +4,6 @@ __pycache__/
 .pytest_cache/
 .local/
 dist/
+output/playwright/
 .env*
 !.env.example

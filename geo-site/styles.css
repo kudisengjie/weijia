@@ -27,8 +27,8 @@
 .login-card h1 { font-size: clamp(23px, 2.4vw, 29px); letter-spacing: -.04em; margin: 28px 0 10px; }
 .login-card > p { color: #687f9c; margin: 0 0 30px; }
 .runtime-field { display: flex; flex-direction: column; gap: 9px; color: #526b8a; font-size: 13px; font-weight: 600; margin: 18px 0; min-width: 0; }
-.runtime-field input { display: block; width: 100%; min-width: 0; min-height: 48px; border: 1px solid #cbdcf0; border-radius: 12px; padding: 12px 14px; background: #fff; color: #17304f; font-size: 16px; font-weight: 400; }
-.runtime-field input:focus-visible { outline: 3px solid #80b1f540; border-color: #6095e5; }
+.runtime-field input, .runtime-field select { display: block; width: 100%; min-width: 0; min-height: 48px; border: 1px solid #cbdcf0; border-radius: 12px; padding: 12px 14px; background: #fff; color: #17304f; font: inherit; font-size: 16px; font-weight: 400; }
+.runtime-field input:focus-visible, .runtime-field select:focus-visible { outline: 3px solid #80b1f540; border-color: #6095e5; }
 .runtime-field input::placeholder { color: #8a9caf; font-size: 13px; }
 .password-field { position: relative; display: block; }
 .password-field input { padding-right: 62px; }
@@ -420,6 +420,21 @@ label:focus-within {
 .saas-admin-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .8fr); gap: 24px; }
 .saas-admin-grid h3 { margin: 4px 0 16px; font-size: 16px; }
 .wechat-contact { display: block; width: min(100%, 260px); margin: 20px auto 0; border-radius: 14px; border: 1px solid #cfe1f7; background: #fff; }
+.saas-admin-grid > * { min-width: 0; }
+#subscription-form { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+#member-form .runtime-columns, #subscription-form .runtime-columns { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 0 18px; }
+.runtime-ledger { overflow-x: auto; margin-top: 16px; }
+.runtime-ledger table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.runtime-ledger th, .runtime-ledger td { padding: 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.runtime-ledger th { color: #315477; background: #edf5ff; }
+.service-contact { display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: 24px; margin-top: 20px; }
+.service-contact .wechat-contact { width: 180px; height: auto; margin: 0; }
+.runtime-settings select { color: #23476a; background: #fff; }
+.runtime-panel button:focus-visible { outline: 3px solid #649bec; outline-offset: 3px; }
+@media (max-width: 800px) {
+    .saas-admin-grid, .service-contact { grid-template-columns: minmax(0, 1fr); }
+    .service-contact .wechat-contact { justify-self: center; }
+}
 
 @media (min-width: 1181px) and (max-width: 1900px) {
     .geo-provider-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS batches (
     UNIQUE (user_id, request_id_hash)
 );
 CREATE INDEX IF NOT EXISTS batches_user_created_idx ON batches (user_id, created_at DESC);
+ALTER TABLE batches ADD COLUMN IF NOT EXISTS pause_requested BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS batch_claims (
     batch_id CHAR(32) NOT NULL REFERENCES batches(id) ON DELETE CASCADE,

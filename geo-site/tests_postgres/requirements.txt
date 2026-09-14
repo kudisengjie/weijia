@@ -1,0 +1,2 @@
+# Optional loopback browser fixture; not part of the EdgeOne production bundle.
+uvicorn==0.35.0

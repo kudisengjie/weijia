@@ -1,4 +1,17 @@
-import { getModelPresentation, MODEL_PROVIDER_IDS } from './model-switch.js';
+import { getModelPresentation } from './model-switch.js';
+
+export function modelIsLocked(settings,batch) {
+  return Boolean(settings?.modelLocked || batch && !['completed','cancelled'].includes(batch.status));
+}
+export function batchStatusLabel(batch) {
+  if(batch.status==='completed')return batch.failedTasks?.length?'已结束 · 部分任务未完成':'全部完成';
+  return {cancelled:'已取消',paused:'已暂停',failed:'需要处理'}[batch.status] || (batch.pauseRequested?'正在暂停':batch.phaseLabel);
+}
+export function pendingOperation(previous,values,makeId=()=>crypto.randomUUID()) {
+  const signature=JSON.stringify(values);
+  return previous?.signature===signature?previous:{signature,body:{...values,idempotencyKey:makeId()}};
+}
+function localDateTime(value) {const d=new Date(value);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
 
 const $ = id => document.getElementById(id);
 function node(tag, text, className) { const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n; }
@@ -18,9 +31,9 @@ export async function bootstrapAuthenticatedWorkspace({showWorkspace,refreshSett
   catch(error) {showServiceFailure(error);return false;}
 }
 export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
-  let csrf='',settings=null,activeBatch=null,driving=false,pauseRequested=false,pendingCreate=null;
+  let csrf='',settings=null,activeBatch=null,driving=false,pauseRequested=false,pendingCreate=null,pendingCredit=null,members=[];
   const shell=document.querySelector('.geo-shell');
-  function showLogin() {pauseRequested=true;csrf='';settings=null;shell.hidden=true;$('login-page').hidden=false;$('model-key').value='';$('ima-form').reset();}
+  function showLogin() {pauseRequested=true;csrf='';settings=null;activeBatch=null;pendingCreate=null;pendingCredit=null;members=[];shell.hidden=true;$('login-page').hidden=false;$('model-key').value='';$('ima-form').reset();$('member-form').reset();defaultMemberDates();$('batch-progress').replaceChildren();$('batch-progress').hidden=true;renderModelLock();}
   function toast(text) {message('runtime-toast',text,true);$('runtime-toast').hidden=false;}
   async function api(path,body) {
     let response;
@@ -54,18 +67,23 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     $('ima-expiry').textContent=expiry?`到期日期：${expiry}${Date.parse(expiry)-Date.now()<7*86400000?' · 即将到期或已过期，请管理员更新':''}`:'到期日期尚未登记。共享凭据由管理员维护。';
     document.querySelectorAll('[data-credit-balance]').forEach(n=>n.textContent=`积分：${settings.credits?.balance??'—'}`);
     document.querySelectorAll('[data-subscription-expiry]').forEach(n=>n.textContent=settings.subscription?.expiresAt?`有效期至：${new Date(settings.subscription.expiresAt).toLocaleDateString('zh-CN')}`:'有效期：未配置');
-    const admin=$('tenant-admin');if(admin)admin.hidden=!['owner','admin'].includes(settings.subscription?.role);
+    const owner=settings.subscription?.role==='owner';$('tenant-admin').hidden=!owner;document.querySelector('.ima-admin').hidden=!owner;
+    const days=Math.ceil((Number(settings.subscription?.expiresAt)-Date.now())/86400000);
+    const reminder=!settings.subscription?.active?'服务尚未生效或已到期，请联系管理员调整有效期。已有文章仍可下载。':days<=7?`服务将在 ${Math.max(0,days)} 天内到期，请及时联系管理员续期。`:'服务有效，每条有效任务预扣 1 积分，未完整输出的任务自动返还。';
+    message('subscription-reminder',reminder,!settings.subscription?.active || days<=3);
+    renderModelLock();
   }
+  function renderModelLock() {const locked=modelIsLocked(settings,activeBatch);document.querySelectorAll('input[name="model-option"], #model-key, #custom-model-id, #model-form button').forEach(input=>{input.disabled=locked;});}
   async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();renderConnections();}
   async function enter() {return bootstrapAuthenticatedWorkspace({
     showWorkspace(){ $('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
     refreshSettings,
-    loadHistory:history,
+    async loadHistory(){await history();await loadMembers();},
     showServiceFailure(error){toast(error.message);},
   });}
   async function action(button,id,fn) {
     if(button.disabled)return;button.disabled=true;message(id,'处理中…');
-    try{await fn();}catch(error){message(id,error.message,true);}finally{button.disabled=false;}
+    try{await fn();}catch(error){message(id,error.message,true);}finally{button.disabled=false;renderModelLock();}
   }
   $('login-form').addEventListener('submit',event=>{event.preventDefault();action(event.submitter,'login-message',async()=>{
     const form=new FormData(event.currentTarget);const data=await api('auth/login',{account:form.get('account'),password:form.get('password')});csrf=data.csrf;await enter();message('login-message','');
@@ -91,46 +109,92 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     const body=Object.fromEntries(new FormData(event.currentTarget));await api('ima/update',body);$('ima-form').reset();await refreshSettings();message('ima-message','IMA 新凭据已验证并保存，后续请求立即使用。');
   });});
   $('clear-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
-    const result=await api('ima/cache/clear',{});message('ima-cache-message',`共享 IMA 缓存已清除，当前代数 ${result.generation}。`);
+    if(!confirm('确认清除全站共享缓存？新批次会重新获取所需资料，正在运行的批次保留其资料版本。')){message('ima-cache-message','已取消。');return;}
+    const result=await api('ima/cache/clear',{});message('ima-cache-message',`新批次将使用第 ${result.generation} 版缓存；运行中批次不受影响。`);
   }));
-  $('member-form').addEventListener('submit',event=>{event.preventDefault();action(event.submitter,'member-message',async()=>{
-    const values=Object.fromEntries(new FormData(event.currentTarget));const iso=value=>new Date(value).toISOString();
-    await api('tenant/members',{username:values.username,password:values.password,role:values.role,startsAt:iso(values.startsAt),expiresAt:iso(values.expiresAt)});event.currentTarget.reset();message('member-message','子账号已创建，可使用自己的模型 API 登录。');
+  function defaultMemberDates(){const form=$('member-form');form.elements.startsAt.value=localDateTime(Date.now());form.elements.expiresAt.value=localDateTime(Date.now()+30*86400000);}
+  defaultMemberDates();
+  $('member-form').addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget;action(event.submitter,'member-message',async()=>{
+    const values=Object.fromEntries(new FormData(form));const iso=value=>new Date(value).toISOString();
+    const created=await api('tenant/members',{username:values.username,password:values.password,role:values.role,startsAt:iso(values.startsAt),expiresAt:iso(values.expiresAt)});form.reset();defaultMemberDates();await loadMembers(created.id);message('member-message','子账号已创建，请为该账号发放积分。用户登录后填写自己的模型 API。');
   });});
-  $('credit-form').addEventListener('submit',event=>{event.preventDefault();action(event.submitter,'credit-message',async()=>{
-    const values=Object.fromEntries(new FormData(event.currentTarget));const result=await api('credits/adjust',{amount:Number(values.amount),kind:values.kind,idempotencyKey:crypto.randomUUID(),note:values.note});message('credit-message',`积分调整成功，当前余额 ${result.balance}。`);await refreshSettings();
+  $('credit-form').addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget;action(event.submitter,'credit-message',async()=>{
+    const values=Object.fromEntries(new FormData(form)),target=managedMember();
+    if(!confirm(`确认对账号「${target.username}」${values.kind==='grant'?'发放':'收回'} ${values.amount} 积分？`)){message('credit-message','已取消。');return;}
+    pendingCredit=pendingOperation(pendingCredit,{userId:target.id,amount:Number(values.amount),kind:values.kind,note:values.note});
+    let result;try{result=await api('credits/adjust',pendingCredit.body);}catch(error){if(error.status>=400&&error.status<500)pendingCredit=null;throw error;}
+    pendingCredit=null;message('credit-message',`账号「${target.username}」余额为 ${result.balance} 积分${result.applied?'。':'，本次操作此前已处理，未重复调整。'}`);await refreshSettings();await loadMembers(target.id);
+  });});
+  function managedMember(){const item=members.find(m=>m.id===$('managed-user').value);if(!item)throw new Error('请先选择要管理的账号。');return item;}
+  function renderManagedMember(){const target=members.find(m=>m.id===$('managed-user').value);if(!target)return;
+    $('managed-user-summary').textContent=`${target.username} · ${target.balance} 积分 · ${target.active?'服务有效':'未生效或已到期'}`;
+    const form=$('subscription-form');form.elements.startsAt.value=localDateTime(target.startsAt||Date.now());form.elements.expiresAt.value=localDateTime(target.expiresAt||Date.now()+30*86400000);
+  }
+  async function loadMembers(preferred=$('managed-user').value){if(settings?.subscription?.role!=='owner')return;
+    members=(await api('tenant/members')).members;const select=$('managed-user');select.replaceChildren();
+    for(const member of members){const option=node('option',member.username+(member.role==='owner'?'（总账号）':''));option.value=member.id;select.append(option);}
+    if(members.some(m=>m.id===preferred))select.value=preferred;renderManagedMember();await memberLedger();
+  }
+  function renderLedger(id,data){const region=$(id);region.replaceChildren();
+    if(!data.ledger?.length){region.append(node('p','暂无积分流水。','runtime-hint'));return;}
+    const table=node('table'),head=node('thead'),header=node('tr'),body=node('tbody');
+    for(const title of ['时间','类型','积分变动','任务']){const th=node('th',title);th.scope='col';header.append(th);}head.append(header);
+    const names={grant:'管理员发放',revoke:'管理员收回',reserve:'任务预扣',refund:'未完成返还',release:'释放预扣',consume:'任务完成'};
+    for(const entry of data.ledger){const row=node('tr');for(const value of [new Date(entry.createdAt).toLocaleString('zh-CN'),names[entry.kind]||entry.kind,`${entry.amount>0?'+':''}${entry.amount}`,entry.taskId?`第 ${entry.taskId} 条`:'—'])row.append(node('td',String(value)));body.append(row);}
+    table.append(head,body);region.append(table,node('p','显示最近 100 条流水。','runtime-hint'));
+  }
+  async function memberLedger(){const userId=$('managed-user').value;if(!userId)return;const data=await api(`tenant/members/${userId}/credits`);if($('managed-user').value===userId)renderLedger('member-ledger',data);}
+  $('managed-user').addEventListener('change',()=>{renderManagedMember();memberLedger().catch(e=>toast(e.message));});
+  $('refresh-member-ledger').addEventListener('click',event=>action(event.currentTarget,'credit-message',async()=>{await memberLedger();message('credit-message','已读取最新流水。');}));
+  $('refresh-own-ledger').addEventListener('click',event=>action(event.currentTarget,'subscription-reminder',async()=>{renderLedger('own-ledger',await api('credits'));await refreshSettings();}));
+  $('extend-subscription').addEventListener('click',()=>{const input=$('subscription-form').elements.expiresAt;input.value=localDateTime(Math.max(Date.now(),Date.parse(input.value)||0)+30*86400000);message('subscription-message','已增加 30 天，请点击“保存有效期”生效。');});
+  $('subscription-form').addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget;action(event.submitter,'subscription-message',async()=>{
+    const target=managedMember(),values=Object.fromEntries(new FormData(form));
+    await api('tenant/subscription',{userId:target.id,startsAt:new Date(values.startsAt).toISOString(),expiresAt:new Date(values.expiresAt).toISOString()});
+    await refreshSettings();await loadMembers(target.id);message('subscription-message',`账号「${target.username}」的有效期已保存。`);
   });});
   function renderBatch(b) {
+    if(!csrf||!settings)return;
     activeBatch=b;const panel=$('batch-progress');panel.hidden=false;panel.replaceChildren();
-    panel.append(node('span',b.model.label,'login-eyebrow'),node('h2',`${b.phaseLabel} · ${b.completed}/${b.total} 篇`));
+    panel.append(node('span',b.model.label,'login-eyebrow'),node('h2',`${batchStatusLabel(b)} · ${b.completed}/${b.total} 篇`));
     const progress=document.createElement('progress');progress.max=b.total;progress.value=b.completed;progress.setAttribute('aria-label','已完成文章进度');panel.append(progress);
-    panel.append(node('p',b.error|| (driving?'正在执行。可以暂停，当前步骤结束后停止。':'进度已保存，点击继续运行。'),b.error?'runtime-error':'runtime-hint'));
+    const terminal=['completed','cancelled'].includes(b.status);
+    panel.append(node('p',b.error|| (terminal?'已保存的文章可在下方下载。':b.status==='paused'?'已暂停，积分预扣和模型配置保留。继续运行不会重复预扣。':b.pauseRequested?'暂停请求已提交，等待当前步骤保存结果。':driving?'正在执行。可以暂停，当前步骤结束后停止。':'进度已保存，点击继续运行。'),b.error?'runtime-error':'runtime-hint'));
+    if(b.billing)panel.append(node('p',`任务积分：完成 ${b.billing.complete} · 已返还 ${b.billing.refunded+b.billing.released} · 预扣中 ${b.billing.reserved}`,'runtime-hint'));
+    for(const failed of b.failedTasks||[])panel.append(node('p',`第 ${failed.taskId} 条任务未完成：${failed.error}`,'runtime-error'));
     const controls=node('div',undefined,'runtime-buttons');
-    if(b.status!=='completed'){
+    if(!terminal){
       const proceed=node('button',driving?'当前步骤执行中':b.status==='failed'?'手动重试失败步骤':'继续运行','runtime-primary');proceed.disabled=driving;
       proceed.addEventListener('click',async()=>{
-        try{if(b.status==='failed'){if(!confirm('确认只重试失败步骤？若上次请求超时，提供商可能已扣费。'))return;b=await api(`batches/${b.id}/step`,{seq:b.seq,retry:true});}await drive(b);}catch(error){toast(error.message);}
+        try{if(b.status==='failed'){if(!confirm('确认重试准备失败的批次？会重新预扣尚未完成任务的积分。'))return;b=await api(`batches/${b.id}/step`,{seq:b.seq,retry:true});}else if(b.status==='paused'){b=await api(`batches/${b.id}/resume`,{});}await drive(b);}catch(error){toast(error.message);}
       });controls.append(proceed);
-      if(driving){const pause=node('button','暂停后续步骤');pause.addEventListener('click',()=>{pauseRequested=true;pause.disabled=true;pause.textContent='等待当前步骤结束…';});controls.append(pause);}
+      proceed.disabled=driving||Boolean(b.pauseRequested&&b.status!=='paused');
+      if(b.status==='ready'&&!b.pauseRequested){const pause=node('button','暂停后续步骤');pause.addEventListener('click',async()=>{pause.disabled=true;pauseRequested=true;try{renderBatch(await api(`batches/${b.id}/pause`,{}));}catch(error){toast(error.message);pause.disabled=false;}});controls.append(pause);}
       const refresh=node('button','读取一次最新状态');refresh.disabled=driving;refresh.addEventListener('click',async()=>{try{renderBatch(await api('batches/'+b.id));}catch(error){toast(error.message);}});controls.append(refresh);
-      if(!driving&&b.status!=='failed'){const recover=node('button','恢复超时步骤');recover.addEventListener('click',async()=>{if(!confirm('仅用于步骤已提交但超过 150 秒无进展的情况。上次调用可能已计费，确认手动恢复？'))return;try{renderBatch(await api(`batches/${b.id}/step`,{seq:b.seq,retry:true}));}catch(error){toast(error.message);}});controls.append(recover);}
+      if(!driving&&b.status==='ready'){const recover=node('button','处理超时步骤');recover.addEventListener('click',async()=>{if(!confirm('仅处理超过 150 秒无进展的步骤。结果不明的任务会跳过并退款，不重复发送模型请求。'))return;try{renderBatch(await api(`batches/${b.id}/step`,{seq:b.seq,retry:true}));}catch(error){toast(error.message);}});controls.append(recover);}
+      const cancel=node('button','取消批次并返还未完成积分');cancel.addEventListener('click',async()=>{if(!confirm('确认取消？未完整输出的任务积分会返还。已发给模型的请求无法撤回，提供商可能仍计费。'))return;cancel.disabled=true;pauseRequested=true;try{const result=await api(`batches/${b.id}/cancel`,{});activeBatch=result;await refreshSettings();renderBatch(await api('batches/'+b.id));await history();}catch(error){toast(error.message);cancel.disabled=false;}});controls.append(cancel);
     }
     panel.append(controls,node('p','任务状态与文章文件已保存到服务端；关闭页面后可从历史批次继续查看或下载。','runtime-hint'));
-    const modelLocked=b.status!=='completed';document.querySelectorAll('input[name="model-option"], #model-key, #custom-model-id, #model-form button').forEach(input=>{input.disabled=modelLocked;});
+    renderModelLock();
     for(const article of b.articles||[]){const row=node('div',undefined,'runtime-article');row.append(node('strong',article.title));const button=node('button','下载 MD');button.addEventListener('click',()=>download(article).catch(error=>toast(error.message)));row.append(button);panel.append(row);}
-    $('cabin-state').textContent=b.status==='failed'?'需要处理':b.phaseLabel;$('status-task').textContent=`${b.completed}/${b.total}`;
+    $('cabin-state').textContent=batchStatusLabel(b);$('status-task').textContent=`${b.completed}/${b.total}`;
     const apiCounter=document.querySelector('.geo-status-list > div:last-child dd');apiCounter.textContent=`${b.requests} 次请求步骤`;
     renderConnections();
   }
   async function drive(b) {
     if(driving)return;driving=true;pauseRequested=false;$('run-task').disabled=true;
     try{
-      while(!pauseRequested&&b.status==='ready'){
-        renderBatch(b);const response=await api(`batches/${b.id}/run`,{seq:b.seq,maxSteps:2});b=response.batch;
+      while(!pauseRequested&&b.status==='ready'&&!b.pauseRequested){
+        renderBatch(b);
+        try{const response=await api(`batches/${b.id}/run`,{seq:b.seq,maxSteps:1});b=response.batch;
+          if(b.error&&b.status==='ready')await new Promise(resolve=>setTimeout(resolve,response.nextPollMs||1200));
+        }catch(error){if(error.code!=='STEP_CLAIMED')throw error;
+          const latest=await api('batches/'+b.id);if(latest.seq===b.seq){b=latest;toast('其他执行器正在处理当前步骤，未重复提交。稍后可读取最新状态。');break;}b=latest;
+        }
       }
       b=await api('batches/'+b.id);renderBatch(b);
     }catch(error){toast(error.message);}
-    finally{driving=false;$('run-task').disabled=false;renderBatch(activeBatch||b);await history().catch(e=>toast(e.message));}
+    finally{driving=false;$('run-task').disabled=false;if(csrf){try{activeBatch=await api('batches/'+b.id);await refreshSettings();renderBatch(activeBatch);await history();}catch(error){toast(error.message);}}}
   }
   $('run-task').addEventListener('click',async event=>{
     if(driving||event.currentTarget.disabled)return;const button=event.currentTarget;button.disabled=true;$('runtime-toast').hidden=true;
@@ -144,12 +208,13 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     const {batches}=await api('batches');const list=$('history-list'),completed=$('completed-list');list.replaceChildren();completed.replaceChildren();
     if(!batches.length){list.append(node('p','还没有批次。上传资料并保存模型 API 后即可开始。','runtime-panel'));completed.append(node('p','还没有通过审核的文章。','runtime-panel'));return;}
     for(const b of batches){
-      const row=node('article',undefined,'runtime-panel runtime-history');row.append(node('h2',b.title),node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${b.phaseLabel}`));
+      const row=node('article',undefined,'runtime-panel runtime-history');row.append(node('h2',b.title),node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${batchStatusLabel(b)}`));
       const button=node('button','打开批次');button.addEventListener('click',async()=>{if(driving){toast('请先暂停当前批次。');return;}try{renderBatch(await api('batches/'+b.id));changeView('workspace');$('batch-progress').scrollIntoView({behavior:'smooth',block:'center'});}catch(error){toast(error.message);}});row.append(button);list.append(row);
       if(b.completed){const group=node('article',undefined,'runtime-panel');group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>download(article).catch(error=>toast(error.message)));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);completed.append(group);}
     }
     if(!completed.childElementCount)completed.append(node('p','还没有通过审核的文章。','runtime-panel'));
   }
   document.querySelectorAll('[data-view="history"],[data-view="completed"]').forEach(button=>button.addEventListener('click',()=>history().catch(e=>toast(e.message))));
+  document.querySelectorAll('[data-view="settings"]').forEach(button=>button.addEventListener('click',()=>refreshSettings().then(()=>loadMembers()).catch(e=>toast(e.message))));
   api('auth/session').then(async data=>{csrf=data.csrf;await enter();}).catch(error=>{showLogin();message('login-message',error.code==='LOGIN_REQUIRED'?'请输入账号和密码。':error.message,error.code!=='LOGIN_REQUIRED');});
 }

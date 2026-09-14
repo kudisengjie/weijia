@@ -164,6 +164,12 @@ def create_app(
         if not hasattr(repository, "get_tenant_context"):
             return None
         service = TenantAccessService(repository)
+        if service.context(user_id) is None and hasattr(repository, 'get_user_login'):
+            owner = repository.get_user_login(config.geo_account)
+            if owner and str(owner['id']) == user_id:
+                repository.ensure_owner_tenant(user_id)
+        if service.context(user_id) is None:
+            raise ApiError(403, '账号尚未分配工作区，请联系管理员。', 'TENANT_ACCESS_REQUIRED')
         return service.require(user_id) if active else service.context(user_id)
 
     @staticmethod
@@ -277,12 +283,16 @@ def create_app(
             context = tenant_context(repository, current.user_id, active=True)
             if context:
                 TenantAccessService.require_owner(context)
-            return await update_ima_credentials(
+            result = await update_ima_credentials(
                 repository,
                 config.geo_master_key,
                 config.ima_admin_secret,
                 body.model_dump(),
             )
+            if context:
+                repository.record_admin_audit(str(context['tenantId']), current.user_id, 'ima.credentials.update',
+                    details={'expiresAt': result['expiresAt']})
+            return result
 
     @app.get("/ima/cache")
     def ima_cache_status(request: Request):
@@ -301,7 +311,10 @@ def create_app(
             context = tenant_context(repository, current.user_id, active=True)
             if context:
                 TenantAccessService.require_owner(context)
-            generation = repository.clear_ima_cache_generation(current.user_id)
+            with repository.transaction():
+                generation = repository.clear_ima_cache_generation(current.user_id)
+                if context:
+                    repository.record_admin_audit(str(context['tenantId']), current.user_id, 'ima.cache.clear', details={'generation': generation})
             return {"cleared": True, "generation": generation}
 
     @app.get("/credits")
@@ -352,14 +365,31 @@ def create_app(
             if not context:
                 raise ApiError(403, "当前账号没有工作区。", "TENANT_ACCESS_REQUIRED")
             TenantAccessService.require_owner(context)
-            return TenantAccessService(repository).create_member(
-                context,
-                username=body.username,
-                password=body.password,
-                role=body.role,
-                starts_at=parse_datetime(body.startsAt),
-                expires_at=parse_datetime(body.expiresAt),
-            )
+            with repository.transaction():
+                member = TenantAccessService(repository).create_member(
+                    context, username=body.username, password=body.password, role=body.role,
+                    starts_at=parse_datetime(body.startsAt), expires_at=parse_datetime(body.expiresAt))
+                repository.record_admin_audit(str(context['tenantId']), current.user_id, 'member.create', member['id'],
+                    {'role': body.role, 'expiresAt': body.expiresAt})
+                return member
+
+    @app.get('/tenant/members')
+    def tenant_members_list(request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id)
+            TenantAccessService.require_owner(context or {})
+            return {'members': repository.list_members(str(context['tenantId']))}
+
+    @app.get('/tenant/members/{user_id}/credits')
+    def tenant_member_credits(user_id: UUID, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id)
+            TenantAccessService.require_owner(context or {})
+            tenant_id, target_id = str(context['tenantId']), str(user_id)
+            repository.require_member(tenant_id, target_id)
+            return {'balance': repository.credit_balance(tenant_id, target_id), 'ledger': repository.list_credit_ledger(tenant_id, target_id)}
 
     @app.post("/tenant/subscription")
     def tenant_subscription_update(body: SubscriptionBody, request: Request):
@@ -375,7 +405,7 @@ def create_app(
             expires_at = parse_datetime(body.expiresAt)
             if expires_at <= starts_at:
                 raise ApiError(400, "有效期必须晚于开始时间。", "INVALID_MEMBER_EXPIRY")
-            return repository.set_subscription(str(context["tenantId"]), str(body.userId) if body.userId else current.user_id, starts_at, expires_at)
+            return repository.set_subscription(str(context["tenantId"]), str(body.userId) if body.userId else current.user_id, starts_at, expires_at, actor_id=current.user_id)
 
     @app.get("/batches")
     def batches_list(request: Request):
@@ -401,7 +431,7 @@ def create_app(
     async def batches_step(batch_id: str, body: BatchStepBody, request: Request):
         with factory() as repository:
             current = authentication(request, repository)
-            context = tenant_context(repository, current.user_id, active=True)
+            context = tenant_context(repository, current.user_id)
             return await batch_service(repository, context).advance(batch_id, body.model_dump(), current.user_id)
 
     @app.post("/batches/{batch_id}/run")
@@ -410,7 +440,7 @@ def create_app(
             raise ApiError(400, "单次运行步数必须为 1–8。", "INVALID_RUN_BUDGET")
         with factory() as repository:
             current = authentication(request, repository)
-            context = tenant_context(repository, current.user_id, active=True)
+            context = tenant_context(repository, current.user_id)
             service = batch_service(repository, context)
             state = {"seq": body.seq, "retry": body.retry}
             result = None
@@ -427,6 +457,18 @@ def create_app(
         with factory() as repository:
             current = authentication(request, repository)
             return batch_service(repository, tenant_context(repository, current.user_id)).cancel(batch_id, current.user_id)
+
+    @app.post('/batches/{batch_id}/pause')
+    def batches_pause(batch_id: str, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            return batch_service(repository, tenant_context(repository, current.user_id)).pause(batch_id, current.user_id)
+
+    @app.post('/batches/{batch_id}/resume')
+    def batches_resume(batch_id: str, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            return batch_service(repository, tenant_context(repository, current.user_id)).resume(batch_id, current.user_id)
 
     @app.get("/artifacts/{artifact_id}")
     def artifact_download(artifact_id: str, request: Request):

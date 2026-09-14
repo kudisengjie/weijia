@@ -143,9 +143,60 @@
                             <div class="geo-model-summary" aria-live="polite"><span>当前选择</span><strong data-selected-model-connection>DeepSeek V4 Flash · 未连接</strong><code data-selected-model-id translate="no">deepseek-v4-flash</code></div>
                         </div>
                     </article>
-                    <section class="runtime-panel runtime-settings" aria-labelledby="credentials-title"><h2 id="credentials-title">模型 API 凭据</h2><p id="credential-provider"></p><form id="model-form"><label class="runtime-field">API Key<input id="model-key" type="password" autocomplete="off" maxlength="4096" placeholder="填写所选厂商的 API Key；留空保留已保存密钥"></label><label class="runtime-field">实际模型 ID（可选）<input id="custom-model-id" type="text" autocomplete="off" maxlength="160" placeholder="默认使用上方选项；可填写你账户开通的模型 ID"></label><p class="runtime-hint">仅连接该厂商官方接口，不接收任意代理地址。密钥加密保存在本次登录会话中，退出或登录过期后需要重新填写。不会在浏览器持久化。</p><div class="runtime-buttons"><button class="runtime-primary" type="submit">保存模型与密钥</button><button type="button" id="test-model">测试已保存模型</button><button type="button" id="remove-model-key">移除所选厂商密钥</button></div><p id="model-message" role="status"></p></form></section>
+                    <section class="runtime-panel runtime-settings" aria-labelledby="credentials-title"><h2 id="credentials-title">模型 API 凭据</h2><p id="credential-provider"></p><form id="model-form"><label class="runtime-field">API Key<input id="model-key" type="password" autocomplete="off" maxlength="4096" placeholder="填写所选厂商的 API Key；留空保留已保存密钥"></label><label class="runtime-field">实际模型 ID（可选）<input id="custom-model-id" type="text" autocomplete="off" maxlength="160" placeholder="默认使用上方选项；可填写你账户开通的模型 ID"></label><p class="runtime-hint">仅连接该厂商官方接口，不接收任意代理地址。密钥按账号加密保存在服务端，退出登录不会清除。不会在浏览器持久化；任务未结束前不可切换模型。</p><div class="runtime-buttons"><button class="runtime-primary" type="submit">保存模型与密钥</button><button type="button" id="test-model">测试已保存模型</button><button type="button" id="remove-model-key">移除所选厂商密钥</button></div><p id="model-message" role="status"></p></form></section>
                     <section class="runtime-panel runtime-settings" aria-labelledby="ima-title"><h2 id="ima-title">共享 IMA 知识库</h2><p data-ima-status>等待检查</p><p id="ima-expiry" class="runtime-hint"></p><details class="ima-admin"><summary>管理员：更新 IMA 凭据</summary><p>普通用户无需填写。新凭据访问验证通过后替换旧凭据，后续请求立即使用新值。</p><form id="ima-form"><label class="runtime-field">管理员更新口令<input name="adminSecret" type="password" autocomplete="off" required maxlength="256"></label><div class="runtime-columns"><label class="runtime-field">新的 IMA Client ID<input name="clientId" type="password" autocomplete="off" required maxlength="4096"></label><label class="runtime-field">新的 IMA API Key<input name="apiKey" type="password" autocomplete="off" required maxlength="4096"></label></div><label class="runtime-field">凭据到期日期<input name="expiresAt" type="date" required></label><button type="submit" class="runtime-primary">验证并更新 IMA</button><p id="ima-message" role="status"></p></form><div class="runtime-buttons"><button type="button" id="clear-ima-cache">清除共享 IMA 缓存</button><span id="ima-cache-message" class="runtime-hint" role="status"></span></div></details></section>
-                    <section class="runtime-panel runtime-settings" id="tenant-admin" aria-labelledby="tenant-admin-title" hidden><h2 id="tenant-admin-title">工作区管理</h2><p>仅所有者和管理员可见。子账号使用自己的模型 API Key，IMA 知识库与积分由本工作区统一管理。</p><div class="saas-admin-grid"><form id="member-form"><h3>创建子账号</h3><label class="runtime-field">账号<input name="username" required minlength="3" maxlength="128" autocomplete="off"></label><label class="runtime-field">密码<input name="password" type="password" required minlength="8" maxlength="128" autocomplete="new-password"></label><label class="runtime-field">角色<select name="role"><option value="member">成员</option><option value="admin">管理员</option></select></label><div class="runtime-columns"><label class="runtime-field">开始时间<input name="startsAt" type="datetime-local" required></label><label class="runtime-field">到期时间<input name="expiresAt" type="datetime-local" required></label></div><button class="runtime-primary" type="submit">创建子账号</button><p id="member-message" role="status"></p></form><form id="credit-form"><h3>调整积分</h3><label class="runtime-field">数量<input name="amount" type="number" min="1" required></label><label class="runtime-field">操作<select name="kind"><option value="grant">发放积分</option><option value="revoke">收回积分</option></select></label><label class="runtime-field">备注<input name="note" maxlength="200"></label><button class="runtime-primary" type="submit">提交调整</button><p id="credit-message" role="status"></p><img class="wechat-contact" src="assets/wechat-contact.png" alt="微信联系管理员二维码"></form></div></section>
+                    <section class="runtime-panel runtime-settings" id="tenant-admin" aria-labelledby="tenant-admin-title" hidden>
+                        <h2 id="tenant-admin-title">账号与积分管理</h2>
+                        <p class="runtime-hint">仅总账号可操作。每个子账号独立计分、独立有效期，使用自己的模型 API Key。</p>
+                        <div class="saas-admin-grid">
+                            <form id="member-form">
+                                <h3>创建子账号</h3>
+                                <label class="runtime-field">账号<input name="username" required minlength="3" maxlength="128" autocomplete="off" spellcheck="false"></label>
+                                <label class="runtime-field">密码<input name="password" type="password" required minlength="8" maxlength="128" autocomplete="new-password"></label>
+                                <input name="role" type="hidden" value="member">
+                                <div class="runtime-columns">
+                                    <label class="runtime-field">开始时间<input name="startsAt" type="datetime-local" required></label>
+                                    <label class="runtime-field">到期时间<input name="expiresAt" type="datetime-local" required></label>
+                                </div>
+                                <p class="runtime-hint">默认开通 30 天，可自行调整日期；初始积分为 0。</p>
+                                <button class="runtime-primary" type="submit">创建子账号</button>
+                                <p id="member-message" role="status"></p>
+                            </form>
+                            <div>
+                                <h3>管理已有账号</h3>
+                                <label class="runtime-field">选择要管理的账号<select id="managed-user"><option value="">正在读取账号…</option></select></label>
+                                <p id="managed-user-summary" class="runtime-hint" role="status"></p>
+                                <form id="credit-form">
+                                    <div class="runtime-columns">
+                                        <label class="runtime-field">积分数量<input name="amount" type="number" min="1" max="1000000" step="1" required></label>
+                                        <label class="runtime-field">调整方式<select name="kind"><option value="grant">发放积分</option><option value="revoke">收回积分</option></select></label>
+                                    </div>
+                                    <label class="runtime-field">调整备注<input name="note" maxlength="200" autocomplete="off"></label>
+                                    <button class="runtime-primary" type="submit">确认调整该账号积分</button>
+                                    <p id="credit-message" role="status"></p>
+                                </form>
+                                <form id="subscription-form">
+                                    <h3>调整有效期</h3>
+                                    <div class="runtime-columns">
+                                        <label class="runtime-field">开始时间<input name="startsAt" type="datetime-local" required></label>
+                                        <label class="runtime-field">到期时间<input name="expiresAt" type="datetime-local" required></label>
+                                    </div>
+                                    <div class="runtime-buttons"><button type="button" id="extend-subscription">在有效期基础上增加 30 天</button><button class="runtime-primary" type="submit">保存有效期</button></div>
+                                    <p id="subscription-message" role="status"></p>
+                                </form>
+                            </div>
+                        </div>
+                        <h3>所选账号积分流水</h3>
+                        <button type="button" id="refresh-member-ledger">读取最新流水</button>
+                        <div id="member-ledger" class="runtime-ledger" role="region" aria-label="所选账号积分流水"></div>
+                    </section>
+                    <section class="runtime-panel runtime-settings" id="account-service" aria-labelledby="account-service-title">
+                        <h2 id="account-service-title">我的积分与服务有效期</h2>
+                        <p id="subscription-reminder" role="status"></p>
+                        <div class="runtime-buttons"><span data-credit-balance>积分：—</span><span data-subscription-expiry>有效期：—</span><button type="button" id="refresh-own-ledger">查看我的积分流水</button></div>
+                        <div id="own-ledger" class="runtime-ledger"></div>
+                        <div class="service-contact"><div><h3>联系零雪续期或补充积分</h3><p>微信扫码联系管理员，由管理员为你的账号调整积分及有效期。本网站不收取在线付款。</p><p class="runtime-hint">每条有效 Excel 任务预扣 1 积分；该任务要求的文章未完整保存，自动返还 1 积分。已完成文件可随时下载。</p></div><img class="wechat-contact" src="assets/wechat-contact.png" alt="添加零雪管理员微信的二维码" width="260" height="260" loading="lazy"></div>
+                    </section>
                 </div>
             </section>
         </main>
