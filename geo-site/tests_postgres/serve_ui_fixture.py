@@ -36,7 +36,7 @@ def main():
     @contextmanager
     def repository():
         with fixture.connect() as conn:
-            yield PostgresRepository(conn)
+            yield PostgresRepository(conn, MASTER)
 
     async def model(_model, _key, messages, **_kwargs):
         await asyncio.sleep(2)

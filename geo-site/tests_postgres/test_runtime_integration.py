@@ -33,8 +33,8 @@ class PostgresRuntimeTests(unittest.TestCase):
             conn.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
             conn.execute(sql.SQL('CREATE SCHEMA {}').format(sql.Identifier(cls.schema)))
         with cls.connect() as conn:
-            ensure_schema(conn)
-            ensure_schema(conn)  # A deployment restart must be safe.
+            ensure_schema(conn, MASTER)
+            ensure_schema(conn, MASTER)  # A deployment restart must be safe.
 
     @classmethod
     def connect(cls):
@@ -50,7 +50,7 @@ class PostgresRuntimeTests(unittest.TestCase):
     def setUp(self):
         self.conn = self.connect()
         self.addCleanup(self.conn.close)
-        self.repo = PostgresRepository(self.conn)
+        self.repo = PostgresRepository(self.conn, MASTER)
         self.owner = self.repo.upsert_configured_user('owner-' + uuid.uuid4().hex, hash_password('test-password'))['id']
         self.tenant = self.repo.ensure_owner_tenant(self.owner, 'tenant-' + uuid.uuid4().hex)['tenantId']
         self.context = self.repo.get_tenant_context(self.owner, datetime.now(timezone.utc))
@@ -72,7 +72,7 @@ class PostgresRuntimeTests(unittest.TestCase):
         @contextmanager
         def factory():
             with self.connect() as conn:
-                yield PostgresRepository(conn)
+                yield PostgresRepository(conn, MASTER)
         return httpx.AsyncClient(transport=httpx.ASGITransport(app=create_app(self.config(), factory)),
             base_url='http://localhost', headers={'origin': 'http://localhost'})
 
@@ -258,7 +258,7 @@ class PostgresRuntimeTests(unittest.TestCase):
         body = self.body()
         def create(_):
             with self.connect() as conn:
-                return BatchService(PostgresRepository(conn), MASTER, {'clientId': 'test-client', 'apiKey': 'test-key'},
+                return BatchService(PostgresRepository(conn, MASTER), MASTER, {'clientId': 'test-client', 'apiKey': 'test-key'},
                     tenant_context=self.context).create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))['id']
         with ThreadPoolExecutor(max_workers=2) as pool:
             ids = list(pool.map(create, range(2)))
@@ -266,7 +266,7 @@ class PostgresRuntimeTests(unittest.TestCase):
         self.assertEqual(5, self.repo.credit_balance(self.tenant, self.owner))
         def refund(_):
             with self.connect() as conn:
-                return PostgresRepository(conn).settle_batch_incomplete(self.tenant, ids[0])
+                return PostgresRepository(conn, MASTER).settle_batch_incomplete(self.tenant, ids[0])
         with ThreadPoolExecutor(max_workers=2) as pool:
             list(pool.map(refund, range(2)))
         self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner))
@@ -313,7 +313,7 @@ class PostgresRuntimeTests(unittest.TestCase):
         batch = self.prepared_batch(1)
         async def model(*args, **kwargs):
             with self.connect() as other:
-                service = BatchService(PostgresRepository(other), MASTER, {}, tenant_context=self.context)
+                service = BatchService(PostgresRepository(other, MASTER), MASTER, {}, tenant_context=self.context)
                 requested = service.pause(batch['id'], self.owner)
                 self.assertTrue(requested['pauseRequested'])
             return '# 完整正文\n当前调用结果不得丢失。'
@@ -394,6 +394,130 @@ class PostgresRuntimeTests(unittest.TestCase):
 
     def fund(self, user_id=None, amount=10):
         return self.repo.adjust_credits(self.tenant, user_id or self.owner, amount, str(uuid.uuid4()), 'grant')
+
+    def test_batch_encryption_removes_all_plaintext_copies_and_roundtrips(self):
+        batch = self.prepared_batch(1)
+        batch.update(draft='仅用于加密回归的草稿', audit={'issues': ['测试审核意见']})
+        self.assertTrue(self.repo.save_batch(self.owner, batch['id'], batch, batch['seq']))
+        plain = self.conn.execute('SELECT state FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0]
+        self.assertEqual({}, plain, 'No company, evidence, rule, draft, or article copy may remain in plaintext')
+        cipher = self.conn.execute('SELECT state_cipher FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0]
+        self.assertGreater(len(cipher), 0)
+        for field in ('companies', 'rules', 'sources', 'evidenceCache', 'draft', 'audit'):
+            self.assertEqual(batch[field], self.repo.get_batch(self.owner, batch['id'])[field])
+        self.assertEqual(batch['id'], self.repo.list_batches(self.owner)[0]['id'])
+        request_hash = self.conn.execute('SELECT request_id_hash FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0]
+        self.assertEqual(batch['draft'], self.repo.get_request_batch(self.owner, request_hash)['draft'])
+
+    def test_batch_encryption_creation_does_not_persist_plaintext(self):
+        self.fund()
+        result = self.service().create(self.body(1), self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+        self.assertEqual({}, self.conn.execute('SELECT state FROM batches WHERE id = %s', (result['id'],)).fetchone()[0])
+
+    def test_batch_encryption_old_writer_is_rejected(self):
+        from psycopg.types.json import Jsonb
+        batch = self.prepared_batch(1)
+        with self.assertRaises(psycopg.errors.CheckViolation):
+            with self.conn.transaction():
+                self.conn.execute('UPDATE batches SET state = %s WHERE id = %s', (Jsonb(batch), batch['id']))
+        self.assertEqual(batch['companies'], self.repo.get_batch(self.owner, batch['id'])['companies'])
+
+    def test_batch_encryption_migrates_old_progress_once_without_losing_files(self):
+        from psycopg.types.json import Jsonb
+        batch = self.prepared_batch(1)
+        batch['seq'] = 7
+        batch['articles'] = [{'markdown': '# 历史完整文件\n必须保留', 'title': '历史输出'}]
+        batch.update(status='completed', phase='done')
+        with self.conn.transaction():
+            # Simulate the old storage layout in this disposable schema only.
+            self.conn.execute('ALTER TABLE batches DROP CONSTRAINT batches_no_plaintext_state')
+            self.conn.execute('ALTER TABLE batches ALTER COLUMN state_cipher DROP NOT NULL')
+            self.conn.execute('DELETE FROM schema_migrations WHERE version = 3')
+            self.conn.execute("UPDATE batches SET state = %s, state_cipher = NULL, seq = 7, status = 'completed' WHERE id = %s",
+                (Jsonb(batch), batch['id']))
+            balance = self.repo.credit_balance(self.tenant, self.owner)
+            ensure_schema(self.conn, MASTER)
+            cipher = self.conn.execute('SELECT state_cipher FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0]
+            ensure_schema(self.conn, MASTER)
+            self.assertEqual(cipher, self.conn.execute('SELECT state_cipher FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0])
+            self.assertEqual({}, self.conn.execute('SELECT state FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0])
+            restored = self.repo.get_batch(self.owner, batch['id'])
+            self.assertEqual(batch, restored)
+            self.assertEqual(balance, self.repo.credit_balance(self.tenant, self.owner))
+            self.assertEqual(3, self.repo.health()['schemaVersion'])
+
+    def test_batch_encryption_rejects_cross_account_and_swapped_ciphertext(self):
+        from geo_backend.errors import ApiError
+        batch = self.prepared_batch(1)
+        other = self.repo.upsert_configured_user('other-' + uuid.uuid4().hex, hash_password('test-password'))['id']
+        self.assertIsNone(self.repo.get_batch(other, batch['id']))
+        self.assertEqual([], self.repo.list_batches(other))
+        with self.conn.transaction():
+            self.conn.execute('UPDATE batches SET user_id = %s WHERE id = %s', (other, batch['id']))
+            with self.assertRaises(ApiError) as raised:
+                self.repo.get_batch(other, batch['id'])
+            self.assertEqual('BATCH_STATE_INVALID', raised.exception.code)
+
+    def test_batch_encryption_wrong_key_does_not_return_plaintext_or_change_progress(self):
+        batch = self.prepared_batch(1)
+        with self.assertRaises(psycopg.errors.ExternalRoutineInvocationException):
+            PostgresRepository(self.conn, 'b' * 64).get_batch(self.owner, batch['id'])
+        self.assertEqual(batch, self.repo.get_batch(self.owner, batch['id']))
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+
+    def test_batch_encryption_stale_save_preserves_ciphertext_and_progress(self):
+        batch = self.prepared_batch(1)
+        before = self.conn.execute('SELECT state_cipher FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0]
+        batch['draft'] = '不应保存的过期草稿'
+        self.assertFalse(self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'] + 1))
+        self.assertEqual(before, self.conn.execute('SELECT state_cipher FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0])
+        self.assertNotIn('不应保存', self.repo.get_batch(self.owner, batch['id']).get('draft', ''))
+
+    def test_batch_encryption_default_http_factory_uses_configured_master_key(self):
+        from dataclasses import replace
+        from geo_backend.app import create_app
+        batch = self.prepared_batch(1)
+        config = replace(self.config(), database_url=TEST_URL + '&options=-csearch_path%3D' + self.schema + '%2Cpublic')
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=create_app(config)),
+                    base_url='http://localhost', headers={'origin': 'http://localhost'}) as client:
+                health = await client.get('/health')
+                self.assertEqual(3, health.json()['schemaVersion'])
+                self.assertTrue(health.json()['ready'])
+                login = await client.post('/auth/login', json={'account': config.geo_account, 'password': 'test-password'})
+                self.assertEqual(200, login.status_code)
+                response = await client.get('/batches/' + batch['id'])
+                self.assertEqual(200, response.status_code)
+                self.assertEqual(batch['id'], response.json()['id'])
+                for private_field in ('companies', 'rules', 'sources', 'evidenceCache', 'state_cipher'):
+                    self.assertNotIn(private_field, response.json())
+        asyncio.run(run())
+
+    def test_legacy_unbilled_batch_can_be_cancelled_without_losing_old_articles(self):
+        from geo_backend.errors import ApiError
+        batch = self.prepared_batch(1)
+        # v1 had no tenant, reservations, or frozen model key. Its output remains readable.
+        self.repo.settle_batch_incomplete(self.tenant, batch['id'])
+        self.conn.execute('DELETE FROM credit_task_states WHERE batch_id = %s', (batch['id'],))
+        self.conn.execute('DELETE FROM batch_model_snapshots WHERE batch_id = %s', (batch['id'],))
+        self.conn.execute('UPDATE batches SET tenant_id = NULL WHERE id = %s', (batch['id'],))
+        batch.pop('tenantId', None)
+        batch.pop('creditTaskIds', None)
+        batch['articles'] = [{'markdown': '# v1 已完成文件', 'title': '保留旧文章'}]
+        self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'])
+        async def forbidden(*args, **kwargs): self.fail('Legacy batch must not use mutable model credentials')
+        with self.assertRaises(ApiError) as raised:
+            asyncio.run(self.service(model_complete=forbidden).advance(batch['id'], {'seq': batch['seq']}, self.owner))
+        self.assertEqual('LEGACY_BATCH_READONLY', raised.exception.code)
+        self.service().pause(batch['id'], self.owner)
+        with self.assertRaises(ApiError) as raised:
+            self.service().resume(batch['id'], self.owner)
+        self.assertEqual('LEGACY_BATCH_READONLY', raised.exception.code)
+        result = self.service().cancel(batch['id'], self.owner)
+        self.assertEqual('cancelled', result['status'])
+        self.assertEqual(batch['articles'], self.service().get(batch['id'], self.owner)['articles'])
+        self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertFalse(self.repo.has_active_batch(self.owner))
 
     def test_create_reserves_credits_after_batch_exists(self):
         self.fund()

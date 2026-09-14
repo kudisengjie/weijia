@@ -5,13 +5,30 @@ from datetime import datetime
 from threading import Lock
 from typing import Iterator
 import json
+import re
 
 from .database import connection, database_health, ensure_schema
 
 
 class PostgresRepository:
-    def __init__(self, conn: object) -> None:
+    def __init__(self, conn: object, master_key: str) -> None:
+        if not re.fullmatch(r'[0-9a-f]{64}', master_key):
+            raise ValueError('INVALID_MASTER_KEY')
         self.conn = conn
+        self.master_key = master_key
+
+    @staticmethod
+    def _batch_payload(user_id, batch_id, state):
+        return json.dumps({'userId': user_id, 'batchId': batch_id, 'state': state}, ensure_ascii=False)
+
+    @staticmethod
+    def _batch_state(user_id, batch_id, envelope):
+        from .errors import ApiError
+        if (not isinstance(envelope, dict) or envelope.get('userId') != user_id
+                or envelope.get('batchId') != batch_id or not isinstance(envelope.get('state'), dict)
+                or envelope['state'].get('id') != batch_id):
+            raise ApiError(503, '批次加密记录校验失败，请联系管理员。', 'BATCH_STATE_INVALID')
+        return envelope['state']
 
     def transaction(self):
         return self.conn.transaction()
@@ -20,8 +37,8 @@ class PostgresRepository:
         self.conn.execute('SELECT id FROM users WHERE id = %s FOR UPDATE', (user_id,))
 
     def get_request_batch(self, user_id: str, request_hash: str):
-        row = self.conn.execute('SELECT state FROM batches WHERE user_id = %s AND request_id_hash = %s', (user_id, request_hash)).fetchone()
-        return row[0] if row else None
+        row = self.conn.execute('SELECT id, pgp_sym_decrypt(state_cipher, %s)::jsonb FROM batches WHERE user_id = %s AND request_id_hash = %s', (self.master_key, user_id, request_hash)).fetchone()
+        return self._batch_state(user_id, row[0], row[1]) if row else None
 
     def health(self) -> dict[str, object]:
         return database_health(self.conn)
@@ -306,10 +323,11 @@ class PostgresRepository:
             return {"reserved": len(new_ids), "balance": balance - len(new_ids)}
 
     def _task_artifacts_complete(self, tenant_id, batch_id, task_id):
-        row = self.conn.execute("SELECT state FROM batches WHERE tenant_id = %s AND id = %s", (tenant_id, batch_id)).fetchone()
+        row = self.conn.execute("SELECT user_id FROM batches WHERE tenant_id = %s AND id = %s", (tenant_id, batch_id)).fetchone()
         if not row:
             return False
-        expected = [str(i + 1) for i, task in enumerate(row[0]["tasks"]) if str(task.get("billingTaskId", i + 1)) == task_id]
+        batch = self.get_batch(str(row[0]), batch_id)
+        expected = [str(i + 1) for i, task in enumerate(batch["tasks"]) if str(task.get("billingTaskId", i + 1)) == task_id]
         if not expected:
             return False
         found = self.conn.execute(
@@ -851,28 +869,23 @@ class PostgresRepository:
     def create_or_get_batch(
         self, user_id: str, batch_id: str, request_id_hash: str, state: dict[str, object]
     ) -> dict[str, object]:
-        from psycopg.types.json import Jsonb
-
         with self.conn.transaction():
             self.conn.execute(
                 """
-                INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, seq, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, state_cipher, seq, status)
+                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s)
                 ON CONFLICT (user_id, request_id_hash) DO NOTHING
                 """,
-                (batch_id, user_id, state.get("tenantId"), request_id_hash, Jsonb(state), state["seq"], state["status"]),
+                (batch_id, user_id, state.get("tenantId"), request_id_hash,
+                 self._batch_payload(user_id, batch_id, state), self.master_key, state["seq"], state["status"]),
             )
-            row = self.conn.execute(
-                "SELECT state FROM batches WHERE user_id = %s AND request_id_hash = %s",
-                (user_id, request_id_hash),
-            ).fetchone()
-        return row[0]
+            return self.get_request_batch(user_id, request_id_hash)
 
     def get_batch(self, user_id: str, batch_id: str) -> dict[str, object] | None:
         row = self.conn.execute(
-            "SELECT state, pause_requested FROM batches WHERE id = %s AND user_id = %s", (batch_id, user_id)
+            "SELECT pgp_sym_decrypt(state_cipher, %s)::jsonb, pause_requested FROM batches WHERE id = %s AND user_id = %s", (self.master_key, batch_id, user_id)
         ).fetchone()
-        return {**row[0], 'pauseRequested': row[1]} if row else None
+        return {**self._batch_state(user_id, batch_id, row[0]), 'pauseRequested': row[1]} if row else None
 
     def pause_requested(self, batch_id):
         row = self.conn.execute('SELECT pause_requested FROM batches WHERE id = %s FOR UPDATE', (batch_id,)).fetchone()
@@ -886,9 +899,9 @@ class PostgresRepository:
 
     def list_batches(self, user_id: str) -> list[dict[str, object]]:
         rows = self.conn.execute(
-            "SELECT state FROM batches WHERE user_id = %s ORDER BY created_at DESC LIMIT 500", (user_id,)
+            "SELECT id, pgp_sym_decrypt(state_cipher, %s)::jsonb FROM batches WHERE user_id = %s ORDER BY created_at DESC LIMIT 500", (self.master_key, user_id)
         ).fetchall()
-        return [row[0] for row in rows]
+        return [self._batch_state(user_id, row[0], row[1]) for row in rows]
 
     def has_active_batch(self, user_id: str) -> bool:
         row = self.conn.execute(
@@ -942,14 +955,13 @@ class PostgresRepository:
     def save_batch(
         self, user_id: str, batch_id: str, state: dict[str, object], expected_seq: int
     ) -> bool:
-        from psycopg.types.json import Jsonb
-
         result = self.conn.execute(
             """
-            UPDATE batches SET state = %s, seq = %s, status = %s, updated_at = NOW()
+            UPDATE batches SET state = '{}'::jsonb, state_cipher = pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'),
+                seq = %s, status = %s, updated_at = NOW()
             WHERE id = %s AND user_id = %s AND seq = %s
             """,
-            (Jsonb(state), state["seq"], state["status"], batch_id, user_id, expected_seq),
+            (self._batch_payload(user_id, batch_id, state), self.master_key, state["seq"], state["status"], batch_id, user_id, expected_seq),
         )
         return result.rowcount == 1
 
@@ -961,11 +973,11 @@ _SCHEMA_LOCK = Lock()
 
 
 @contextmanager
-def postgres_repository(database_url: str) -> Iterator[PostgresRepository]:
+def postgres_repository(database_url: str, master_key: str) -> Iterator[PostgresRepository]:
     with connection(database_url) as conn:
         if database_url not in _SCHEMA_READY:
             with _SCHEMA_LOCK:
                 if database_url not in _SCHEMA_READY:
-                    ensure_schema(conn)
+                    ensure_schema(conn, master_key)
                     _SCHEMA_READY.add(database_url)
-        yield PostgresRepository(conn)
+        yield PostgresRepository(conn, master_key)

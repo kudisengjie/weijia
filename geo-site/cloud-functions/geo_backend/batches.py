@@ -207,6 +207,10 @@ class BatchService:
             if current['tenantId'] != self.tenant_context['tenantId']:
                 raise ApiError(403, '工作区已变化，请重新登录。', 'TENANT_ACCESS_REQUIRED')
 
+    def _require_current_batch(self, batch):
+        if self.tenant_context and not batch.get('tenantId'):
+            raise ApiError(409, '此批次创建于旧版本，没有固定模型密钥。请取消后新建任务；已完成文章仍可下载，不会追扣旧任务积分。', 'LEGACY_BATCH_READONLY')
+
     async def advance(self, batch_id: str, body: dict[str, object], user_id: str) -> dict[str, object]:
         batch = self.repository.get_batch(user_id, batch_id)
         if not batch:
@@ -216,6 +220,7 @@ class BatchService:
             raise ApiError(400, "批次步骤标识无效。")
         if seq < batch["seq"] or batch["status"] in {'completed', 'cancelled'}:
             return _summary(batch)
+        self._require_current_batch(batch)
         try:
             self._require_active(user_id)
         except ApiError as error:
@@ -319,6 +324,7 @@ class BatchService:
                 raise ApiError(404, '批次不存在。', 'BATCH_NOT_FOUND')
             if batch['status'] != 'paused':
                 return _summary(batch)
+            self._require_current_batch(batch)
             seq = batch['seq']
             self.repository.set_pause_requested(batch_id, False)
             batch.update(status='ready', pauseRequested=False, seq=seq + 1, error='')
@@ -336,8 +342,10 @@ class BatchService:
             if batch['status'] in {'completed', 'cancelled'}:
                 return _summary(batch)
             seq = batch['seq']
-            if self.credit_service:
+            if self.credit_service and batch.get('tenantId'):
                 self.credit_service.refund_batch(str(self.tenant_context['tenantId']), batch_id)
+            elif self.tenant_context and not batch.get('tenantId'):
+                reason = '旧版批次已取消，未追扣积分；已有文章仍可下载。请新建任务使用当前版本。'
             batch.update(status='cancelled', error=reason, seq=seq + 1)
             if not self.repository.save_batch(user_id, batch_id, batch, seq):
                 raise ApiError(409, '进度已变化，请刷新后取消。', 'BATCH_CONFLICT')

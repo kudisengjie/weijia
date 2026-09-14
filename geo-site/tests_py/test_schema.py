@@ -8,10 +8,10 @@ sys.path.insert(0, str(FUNCTIONS_DIR))
 
 
 class SchemaTests(unittest.TestCase):
-    def test_schema_v2_contains_saas_runtime_tables(self):
+    def test_schema_v3_contains_saas_runtime_tables(self):
         from geo_backend.schema import SCHEMA_SQL, SCHEMA_VERSION
 
-        self.assertEqual(2, SCHEMA_VERSION)
+        self.assertEqual(3, SCHEMA_VERSION)
         for table in (
             "tenants",
             "tenant_members",

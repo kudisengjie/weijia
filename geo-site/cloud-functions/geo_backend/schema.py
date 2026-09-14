@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA_SQL = r"""
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS batches (
 );
 CREATE INDEX IF NOT EXISTS batches_user_created_idx ON batches (user_id, created_at DESC);
 ALTER TABLE batches ADD COLUMN IF NOT EXISTS pause_requested BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE batches ADD COLUMN IF NOT EXISTS state_cipher BYTEA;
 
 CREATE TABLE IF NOT EXISTS batch_claims (
     batch_id CHAR(32) NOT NULL REFERENCES batches(id) ON DELETE CASCADE,

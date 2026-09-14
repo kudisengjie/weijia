@@ -112,7 +112,7 @@ def create_app(
     model_complete=complete,
 ) -> FastAPI:
     config = settings or Settings.from_mapping(os.environ)
-    factory = repository_factory or (lambda: postgres_repository(config.database_url))
+    factory = repository_factory or (lambda: postgres_repository(config.database_url, config.geo_master_key))
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
     @app.exception_handler(ApiError)

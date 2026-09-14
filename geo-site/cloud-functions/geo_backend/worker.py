@@ -65,7 +65,7 @@ async def serve(config, *, once=False, poll_seconds=2):
         signal.signal(signum, lambda *_: stop.set())
     while not stop.is_set():
         try:
-            with postgres_repository(config.database_url) as repository:
+            with postgres_repository(config.database_url, config.geo_master_key) as repository:
                 def service(job):
                     context = TenantAccessService(repository).context(job['userId'])
                     if context is None:
