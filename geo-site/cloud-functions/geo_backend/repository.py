@@ -410,14 +410,15 @@ class PostgresRepository:
         ).fetchone()
         return int(row[0])
 
-    def acquire_ima_cache_lock(self, cache_key: str, generation: int, owner_token: str, lock_seconds: int = 30) -> bool:
+    def acquire_ima_cache_lock(self, cache_key: str, generation: int, owner_token: str, lock_seconds: int = 150) -> bool:
         with self.conn.transaction():
-            self.conn.execute("DELETE FROM ima_cache_locks WHERE locked_until <= NOW()")
             row = self.conn.execute(
                 """
                 INSERT INTO ima_cache_locks (cache_key, generation, locked_until, owner_token)
                 VALUES (%s, %s, NOW() + (%s || ' seconds')::INTERVAL, %s)
-                ON CONFLICT (cache_key) DO NOTHING
+                ON CONFLICT (cache_key) DO UPDATE SET locked_until = EXCLUDED.locked_until,
+                    owner_token = EXCLUDED.owner_token, generation = EXCLUDED.generation
+                WHERE ima_cache_locks.locked_until <= NOW()
                 RETURNING cache_key
                 """,
                 (cache_key, generation, lock_seconds, owner_token),

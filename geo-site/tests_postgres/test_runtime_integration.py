@@ -349,6 +349,107 @@ class PostgresRuntimeTests(unittest.TestCase):
         self.assertEqual({'text': 'cached evidence'}, asyncio.run(run()))
         self.assertEqual(1, len(calls))
 
+    def test_pinned_cache_survives_explicit_clear_and_new_generation_write(self):
+        from geo_backend.ima import ImaCache
+        async def run():
+            generation = self.repo.get_ima_cache_generation()
+            pinned = ImaCache(self.repo, MASTER, generation=generation)
+            request = {'mediaId': uuid.uuid4().hex}
+            async def old(): return {'text': 'old'}
+            async def new(): return {'text': 'new'}
+            async def forbidden(): self.fail('A running batch must retain its pinned cache')
+            await pinned.get_or_fetch('media', request, old)
+            self.repo.clear_ima_cache_generation(self.owner)
+            await ImaCache(self.repo, MASTER).get_or_fetch('media', request, new)
+            self.assertEqual({'text': 'old'}, await pinned.get_or_fetch('media', request, forbidden))
+        asyncio.run(run())
+
+    def test_full_ima_pipeline_shares_cache_but_uses_each_members_own_model_key(self):
+        now = datetime.now(timezone.utc)
+        member = self.repo.create_member(tenant_id=self.tenant, username='cache-' + uuid.uuid4().hex,
+            password_hash=hash_password('member-password'), role='member', starts_at=now, expires_at=now + timedelta(days=30))
+        SettingsService(self.repo, MASTER).save_model(member['id'], 'qwen', 'primary', '', 'member-model-key', False)
+        self.fund(amount=3)
+        self.fund(member['id'], 3)
+        # Unique generation avoids fixture data from other tests without changing production data.
+        self.repo.clear_ima_cache_generation(self.owner)
+        upstream, model_keys = [], []
+        def handler(request):
+            upstream.append(str(request.url))
+            if request.method == 'GET':
+                self.assertNotIn('ima-openapi-apikey', request.headers)
+                return httpx.Response(200, text='# 完整资料\n零雪提供内容服务。')
+            self.assertEqual('ima.qq.com', request.url.host)
+            payload = json.loads(request.content)
+            path = request.url.path.rsplit('/', 1)[-1]
+            if path == 'search_knowledge_base':
+                self.assertEqual({'query', 'cursor', 'limit'}, set(payload))
+                data = {'info_list': [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Brand', 'name': '品牌库'}], 'is_end': True}
+            elif path == 'get_knowledge_list':
+                self.assertEqual('KB-Copilot', payload['knowledge_base_id'])
+                folder = payload.get('folder_id', '')
+                files = {
+                    '': [{'folder_id': 'folder_gen', 'name': 'geo-content-generator'},
+                         {'media_id': 'folder_audit', 'title': 'geo-audit'},
+                         {'folder_id': 'folder_unused', 'name': '不相关资料'},
+                         {'media_id': 'memory', 'title': '零雪AI_记忆库完整档案.md'}],
+                    'folder_gen': [{'media_id': 'gen', 'title': '生成规则.md'}],
+                    'folder_audit': [{'media_id': 'audit', 'title': '审核规则.md'}],
+                }
+                self.assertIn(folder, files, 'Unrelated folders must not be fetched')
+                data = {'knowledge_list': files[folder], 'is_end': True}
+            elif path == 'search_knowledge':
+                self.assertEqual({'knowledge_base_id', 'query', 'cursor'}, set(payload))
+                self.assertEqual('KB-Brand', payload['knowledge_base_id'])
+                data = {'info_list': [{'media_id': 'evidence', 'title': '品牌证据.md'}], 'is_end': True}
+            elif path == 'get_media_info':
+                self.assertIn(payload['media_id'], {'memory', 'gen', 'audit', 'evidence'})
+                data = {'media_type': 1, 'url_info': {'url': 'https://test.cos.ap-guangzhou.myqcloud.com/' + payload['media_id'] + '.md'}}
+            else:
+                self.fail('Unexpected IMA call ' + path)
+            return httpx.Response(200, json={'code': 0, 'data': data})
+        async def model(model, key, messages, **kwargs):
+            model_keys.append(key)
+            payload = json.loads(messages[-1]['content'])
+            self.assertTrue(payload['knowledgeEvidence'])
+            return '{"passed":true,"issues":[]}' if 'draft' in payload else '# 零雪完整文章\n有依据的完整正文。'
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                for user in (self.owner, member['id']):
+                    before = len(upstream)
+                    context = self.repo.get_tenant_context(user, now)
+                    service = BatchService(self.repo, MASTER, {'clientId': 'test-client', 'apiKey': 'test-ima'},
+                        tenant_context=context, client=client, model_complete=model)
+                    result = service.create(self.body(1), user, now + timedelta(days=30))
+                    for _ in range(30):
+                        if result['status'] != 'ready': break
+                        result = await service.advance(result['id'], {'seq': result['seq']}, user)
+                    self.assertEqual('completed', result['status'], result)
+                    self.assertEqual(1, result['completed'], result)
+                    self.assertEqual([], result['failedTasks'])
+                    if user == member['id']:
+                        self.assertEqual(before, len(upstream), 'Second user must reuse site-wide IMA data')
+                    self.assertEqual(2, self.repo.credit_balance(self.tenant, user))
+                    self.assertEqual(1, self.conn.execute('SELECT COUNT(*) FROM article_artifacts WHERE batch_id = %s', (result['id'],)).fetchone()[0])
+        asyncio.run(run())
+        self.assertEqual(['test-model-key'] * 2 + ['member-model-key'] * 2, model_keys)
+
+    def test_cache_contention_does_not_fail_or_refund_task(self):
+        from geo_backend.errors import ApiError
+        from unittest.mock import patch
+        batch = self.prepared_batch(1)
+        batch.update(phase='search', sourceCandidates=[], cursor='')
+        batch['tasks'][0]['kbId'] = 'KB-Brand'
+        self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'])
+        async def busy(*args, **kwargs):
+            raise ApiError(503, 'Cache is being filled by another task', 'IMA_CACHE_BUSY')
+        with patch('geo_backend.ima.ImaCache.get_or_fetch', busy):
+            result = asyncio.run(self.service().advance(batch['id'], {'seq': 0}, self.owner))
+        self.assertEqual('ready', result['status'])
+        self.assertEqual('search', result['phase'])
+        self.assertEqual([], result['failedTasks'])
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+
     def prepared_batch(self, count=5):
         self.fund()
         body = self.body(count)

@@ -22,17 +22,18 @@ def normalize(value: object) -> str:
 class ImaCache:
     """Site-wide IMA cache facade backed by the repository and cache generation."""
 
-    def __init__(self, repository: object, master_key: str = "") -> None:
+    def __init__(self, repository: object, master_key: str = "", *, generation: int | None = None) -> None:
         self.repository = repository
         self.master_key = master_key
+        self.generation = generation
 
     @staticmethod
-    def key(kind: str, request: dict[str, object]) -> str:
+    def key(kind: str, request: dict[str, object], generation: int = 1) -> str:
         normalized = {
-            str(name): normalize(value) if isinstance(value, str) else value
+            str(name): re.sub(r"\s+", " ", value.strip()) if name == 'query' and isinstance(value, str) else value
             for name, value in sorted(request.items())
         }
-        return digest(kind + ":" + json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+        return digest(str(generation) + ":" + kind + ":" + json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
 
     async def get_or_fetch(
         self,
@@ -40,8 +41,8 @@ class ImaCache:
         request: dict[str, object],
         fetch,
     ) -> object:
-        generation = int(self.repository.get_ima_cache_generation())
-        cache_key = self.key(kind, request)
+        generation = self.generation if self.generation is not None else int(self.repository.get_ima_cache_generation())
+        cache_key = self.key(kind, request, generation)
         cached = self.repository.get_ima_cache(kind, cache_key, generation, self.master_key)
         if cached is not None:
             return cached
@@ -51,7 +52,7 @@ class ImaCache:
         owns_lock = False
         if acquire and release:
             for _ in range(121):
-                owns_lock = bool(acquire(cache_key, generation, owner_token, 30))
+                owns_lock = bool(acquire(cache_key, generation, owner_token, 150))
                 if owns_lock:
                     break
                 await asyncio.sleep(0.25)
@@ -61,6 +62,10 @@ class ImaCache:
             if not owns_lock:
                 raise ApiError(503, "IMA 缓存正在由其他任务更新，请稍后继续。", "IMA_CACHE_BUSY")
         try:
+            # Another request may have filled the cache between our miss and lock acquisition.
+            cached = self.repository.get_ima_cache(kind, cache_key, generation, self.master_key)
+            if cached is not None:
+                return cached
             value = await fetch()
             if value is None:
                 raise ApiError(502, "IMA 返回空内容，未写入缓存。", "IMA_EMPTY")
@@ -146,9 +151,6 @@ async def update_ima_credentials(
     if not any(normalize(item.get("name") or item.get("kb_name")) == "copilot" for item in data.get("info_list", [])):
         raise ApiError(422, "新凭据无法访问 copilot 知识库，已保留旧凭据。")
     repository.save_ima(value, master_key)
-    clear_cache = getattr(repository, "clear_ima_cache_generation", None)
-    if clear_cache:
-        clear_cache(None)
     return {"saved": True, "expiresAt": value["expiresAt"]}
 
 

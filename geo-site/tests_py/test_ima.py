@@ -26,6 +26,10 @@ class ImaTests(unittest.IsolatedAsyncioTestCase):
 
         repository = FakeRepository()
 
+        def unexpected_clear(_user):
+            self.fail('Monthly credential rotation must retain the shared cache')
+        repository.clear_ima_cache_generation = unexpected_clear
+
         def handler(request):
             return httpx.Response(
                 200,

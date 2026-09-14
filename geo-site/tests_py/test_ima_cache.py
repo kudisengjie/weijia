@@ -29,6 +29,25 @@ class CacheRepository:
 
 
 class ImaCacheTests(unittest.IsolatedAsyncioTestCase):
+    def test_identifiers_cursors_and_query_words_do_not_collide(self):
+        from geo_backend.ima import ImaCache
+        for field, first, second in [('mediaId', 'AbC', 'abc'), ('cursor', 'A B', 'AB'),
+                                     ('query', 'a b', 'ab'), ('query', 'US', 'us')]:
+            self.assertNotEqual(ImaCache.key('search', {field: first}), ImaCache.key('search', {field: second}))
+
+    async def test_cache_is_rechecked_after_winning_lock(self):
+        from geo_backend.ima import ImaCache
+        repository = CacheRepository()
+        def acquire(key, generation, token, seconds):
+            repository.values[('media', key, generation)] = {'text': 'other request finished'}
+            return True
+        repository.acquire_ima_cache_lock = acquire
+        repository.release_ima_cache_lock = lambda *args: None
+        async def forbidden():
+            self.fail('Cache filled before lock acquisition must not be fetched twice')
+        value = await ImaCache(repository).get_or_fetch('media', {'mediaId': 'm'}, forbidden)
+        self.assertEqual('other request finished', value['text'])
+
     async def test_search_hit_is_shared_and_does_not_call_upstream_again(self):
         from geo_backend.ima import ImaCache
 

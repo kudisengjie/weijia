@@ -144,6 +144,8 @@ class BatchService:
         if self.tenant_context:
             batch["tenantId"] = self.tenant_context["tenantId"]
             batch["creditTaskIds"] = list(dict.fromkeys(str(task["billingTaskId"]) for task in tasks))
+        if self.ima_cache is not None:
+            batch['imaCacheGeneration'] = self.repository.get_ima_cache_generation()
         stored = self.repository.create_or_get_batch(user_id, batch_id, _digest(request_id), batch)
         if self.credit_service:
             self.credit_service.reserve(str(self.tenant_context['tenantId']), user_id, batch_id, batch['creditTaskIds'])
@@ -244,7 +246,11 @@ class BatchService:
             requests = batch["requests"]
             batch = before
             batch["requests"] = requests
-            self._record_failure(batch, error)
+            if isinstance(error, ApiError) and error.code == 'IMA_CACHE_BUSY':
+                # Contention made no upstream call. Keep the same task and reservation.
+                batch['error'] = str(error)
+            else:
+                self._record_failure(batch, error)
         return self._commit_step(batch, user_id, seq)
 
     def _commit_step(self, batch, user_id, seq):
@@ -331,9 +337,12 @@ class BatchService:
 
     @staticmethod
     def _media(raw: dict[str, object]) -> dict[str, object]:
-        if not isinstance(raw.get("media_id"), str) or not isinstance(raw.get("title"), str):
+        media_id = raw.get('media_id') or raw.get('folder_id')
+        title = raw.get('title') or raw.get('name')
+        if not isinstance(media_id, str) or not isinstance(title, str):
             raise ApiError(502, "IMA 文件信息不完整。")
-        return {"media_id": raw["media_id"], "title": raw["title"], "media_type": raw.get("media_type")}
+        folder = bool(raw.get('folder_id')) or media_id.startswith('folder_')
+        return {"media_id": media_id, "title": title, "media_type": 99 if folder else raw.get("media_type")}
 
     async def _read_media_counted(
         self, batch: dict[str, object], credentials: dict[str, object], media: dict[str, object]
@@ -392,25 +401,27 @@ class BatchService:
 
     async def _execute(self, batch: dict[str, object], user_id: str) -> None:
         credentials = self._ima()
+        cache = (ImaCache(self.repository, self.master_key, generation=batch.get('imaCacheGeneration'))
+                 if self.ima_cache is not None else None)
 
         async def post(path: str, payload: dict[str, object]):
             batch["requests"] += 1
             return await ima_post(credentials, path, payload, client=self.client)
 
         async def cached_post(kind: str, payload: dict[str, object], path: str):
-            if self.ima_cache is None:
+            if cache is None:
                 return await post(path, payload)
-            return await self.ima_cache.get_or_fetch(
+            return await cache.get_or_fetch(
                 kind,
-                payload,
+                {**payload, 'endpoint': path},
                 lambda: post(path, payload),
             )
 
         async def cached_media(media: dict[str, object]):
-            if self.ima_cache is None:
+            if cache is None:
                 batch["requests"] += 2
                 return await read_media(credentials, media, client=self.client)
-            return await self.ima_cache.get_or_fetch(
+            return await cache.get_or_fetch(
                 "media",
                 {"knowledgeBaseId": media.get("kbId") or media.get("knowledge_base_id") or batch.get("copilot") or "", "mediaId": media["media_id"]},
                 lambda: self._read_media_counted(batch, credentials, media),
@@ -419,7 +430,7 @@ class BatchService:
         if batch["phase"] == "bases":
             data = await cached_post(
                 "search",
-                {"kind": "bases", "query": "", "cursor": batch["cursor"], "limit": 20},
+                {"query": "", "cursor": batch["cursor"], "limit": 20},
                 "openapi/wiki/v1/search_knowledge_base",
             )
             batch["bases"].extend(data.get("info_list", []))
@@ -493,7 +504,7 @@ class BatchService:
             task = batch["tasks"][batch["taskIndex"]]
             data = await cached_post(
                 "search",
-                {"knowledgeBaseId": task["kbId"], "query": task["question"], "cursor": batch["cursor"]},
+                {"knowledge_base_id": task["kbId"], "query": task["question"], "cursor": batch["cursor"]},
                 "openapi/wiki/v1/search_knowledge",
             )
             for raw in data.get("info_list", []):
