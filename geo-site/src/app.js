@@ -3,6 +3,7 @@ import * as mammoth from "mammoth";
 import { strFromU8, unzipSync } from "fflate";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { initializeRuntime } from './runtime.js';
+import { initializeConsole } from './console-view.js';
 import {
   DEFAULT_MODEL_PROVIDER,
   DEFAULT_MODEL_SLOT,
@@ -366,6 +367,9 @@ function clearFiles() {
 }
 
 function changeView(name) {
+  const shell=document.querySelector('.geo-shell');
+  if(name==='admin'&&shell.dataset.owner!=='true')name='settings';
+  shell.dataset.view=name;
   document.querySelectorAll("[data-view]").forEach((button) => {
     const active = button.dataset.view === name;
     button.classList.toggle("is-selected", active);
@@ -380,6 +384,7 @@ function changeView(name) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+const consoleView=initializeConsole({changeView});
 taskInput.addEventListener("change", handleTaskFile);
 companyInput.addEventListener("change", handleCompanyFiles);
 clearButton.addEventListener("click", clearFiles);
@@ -391,7 +396,7 @@ renderSelectedModel();
 updateStatus();
 
 initializeRuntime({
-  renderSelectedModel, changeView, clearUploads:clearFiles,
+  renderSelectedModel, changeView, clearUploads:clearFiles, consoleView,
   getUploads() {
     if (!currentTask?.data) throw new Error('请先选择并成功读取任务表。');
     if (!currentCompanies.length || currentCompanies.some(item => !item.result || item.error)) throw new Error('请先成功读取所有公司文档。');

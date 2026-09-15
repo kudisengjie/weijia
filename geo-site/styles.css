@@ -502,61 +502,151 @@ label:focus-within {
     .geo-settings-grid .geo-model-option strong { font-size: 11px; }
 }
 
+/* Approved A+B console: compact Microsoft YaHei, with no page-scale transforms. */
+.geo-shell { --console-body: 12px; --console-caption: 11px; --console-title: 14px; font-size: var(--console-body); }
+.geo-shell h1 { font-size: 22px; line-height: 1.35; letter-spacing: -.02em; text-wrap: initial; }
+.geo-shell h2, .geo-shell h3 { font-size: var(--console-title); line-height: 1.5; }
+.geo-shell p { line-height: 1.65; }
+.geo-shell .runtime-field { font-size: 12px; margin: 14px 0; gap: 6px; }
+.geo-shell .runtime-field input, .geo-shell .runtime-field select { min-height: 38px; padding: 9px 11px; font-size: 12px; border-radius: 7px; }
+.geo-shell .runtime-panel { padding: 20px; border-radius: 10px; margin: 0 0 16px; box-shadow: none; }
+.geo-shell .runtime-panel button { min-height: 34px; padding: 7px 12px; border-radius: 7px; font-size: 12px; }
+.geo-shell .runtime-hint, .geo-shell .geo-heading p { font-size: 11px; }
+.geo-shell .geo-heading { margin: 0 0 20px; }
+.geo-shell .geo-model-setting__intro > strong { font-size: 14px; }
+.geo-shell .geo-settings-grid .geo-model-summary strong { font-size: 12px; }
+.geo-shell .runtime-ledger table { font-size: 12px; }
+.geo-shell .runtime-ledger th, .geo-shell .runtime-ledger td { padding: 9px; }
+.geo-shell .geo-cabin { display: none; }
+.console-summary { display: flex; gap: 0; margin: 0 0 22px; border-bottom: 1px solid var(--line); padding: 0 0 18px; }
+.console-summary > div { padding: 0 28px; border-right: 1px solid var(--line); display: flex; align-items: baseline; gap: 16px; }
+.console-summary > div:first-child { padding-left: 0; }
+.console-summary > div:last-child { border: 0; }
+.console-summary span { color: var(--muted); white-space: nowrap; }
+.console-summary strong { font-size: 23px; font-variant-numeric: tabular-nums; }
+.console-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.console-panel-heading h2 { margin: 0; }
+.console-table-wrap { max-width: 100%; overflow-x: auto; }
+.console-table-wrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.console-table-wrap th { background: var(--ice); color: var(--muted); font-weight: 500; }
+.console-table-wrap th, .console-table-wrap td { padding: 14px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+.console-table-wrap td:first-child { font-weight: 600; min-width: 150px; }
+.console-table-wrap td:not(:first-child) { white-space: nowrap; }
+.console-table-wrap tbody tr:hover { background: var(--ice); }
+.geo-shell .console-link-button { background: transparent; color: #315e8d; border-color: transparent; }
+.console-empty { min-height: 170px; display: grid; place-items: center; color: var(--muted); text-align: center; }
+.console-brand-note { display: flex; align-items: center; gap: 14px; padding: 14px 2px; }
+.console-brand-note img { object-fit: cover; border-radius: 12px; }
+.console-brand-note strong { font-size: 13px; }
+.console-brand-note p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+.console-directory { display: grid; grid-template-columns: 168px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; min-height: 520px; }
+.console-directory__nav { padding: 20px 12px; background: var(--ice); border-right: 1px solid var(--line); }
+.console-directory__nav button { display: block; width: 100%; margin: 0 0 5px; padding: 10px 12px; border: 0; border-radius: 6px; font: inherit; color: var(--muted); background: transparent; text-align: left; cursor: pointer; }
+.console-directory__nav button.is-selected { background: #e4effb; color: #2b557f; font-weight: 600; }
+.console-directory__nav button:hover { color: #2b557f; background: #eaf2fc; }
+.console-directory__body { padding: 24px; min-width: 0; }
+.console-directory__pane { min-width: 0; }
+.console-directory__pane > h2 { margin: 0 0 16px; }
+.console-directory__pane .runtime-panel, .console-directory__pane .geo-model-setting { border: 0; box-shadow: none; padding: 0; background: transparent; }
+.console-directory__pane .geo-model-setting { margin-bottom: 18px; }
+.console-directory__pane form { max-width: 900px; }
+.console-directory__pane .runtime-field { max-width: 820px; }
+.console-directory__pane #subscription-form { border: 0; margin: 0; padding: 0; }
+.console-directory__pane .service-contact { margin-top: 0; }
+.console-directory__pane .ima-admin { padding: 0; }
+.console-directory__pane .ima-admin > summary { display: none; }
+.geo-shell #tenant-admin { padding: 0; border: 0; background: transparent; }
+.console-managed-user { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.console-managed-user .runtime-field { margin-top: 0; max-width: 480px; }
+.console-detail-tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--line); margin-bottom: 18px; overflow-x: auto; }
+.console-detail-tabs button { border: 0; border-bottom: 2px solid transparent; padding: 10px 0; font: inherit; white-space: nowrap; color: var(--muted); background: transparent; cursor: pointer; }
+.console-detail-tabs button.is-selected { border-bottom-color: #548bcd; color: #254c75; font-weight: 600; }
+.console-new-task { color: #24496f; text-align: left; cursor: pointer; font: inherit; }
+.console-new-task > span:first-child { font-size: 24px; }
+.console-new-task small { color: var(--muted); }
 @media (min-width: 861px) {
-    .geo-topbar__title strong { font-size: 18px; }
-    .geo-topbar__eyebrow, .geo-heading__eyebrow { font-size: 12px; }
-    .geo-home-link, .geo-mode-pill { font-size: 14px; }
-    .geo-brand small, .geo-steps small, .geo-sidebar__foot small { font-size: 12px; line-height: 1.55; }
-    .geo-heading p { font-size: 14px; line-height: 1.65; }
-    /* Give the subtitle its own full-width row; badges never compete with it. */
-    .geo-heading--workspace { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; row-gap: 0; }
+    .geo-shell { grid-template-columns: 180px minmax(0, 1fr); grid-template-areas: "side top" "side main"; grid-template-rows: 54px 1fr; gap: 0 26px; padding: 0 28px 0 0; }
+    .geo-shell[data-view=workspace] { grid-template-columns: 180px minmax(0, 1fr) 220px; grid-template-areas: "side top top" "side main cabin"; gap: 0 22px; }
+    .geo-topbar { border-bottom: 1px solid var(--line); }
+    .geo-topbar__title strong { font-size: 12px; }
+    .geo-topbar__eyebrow { font-size: 8px; }
+    .geo-home-link, .geo-mode-pill { font-size: 11px; }
+    .geo-sidebar { position: sticky; top: 0; min-height: 100vh; max-height: 100vh; overflow-y: auto; border: 0; border-right: 1px solid var(--line); border-radius: 0; padding: 26px 12px 18px; box-shadow: none; background: linear-gradient(170deg,#e8f2fd,#f6f9fe 60%); }
+    .geo-brand { gap: 8px; margin: 0 0 24px; }
+    .geo-brand strong { font-size: 15px; letter-spacing: 0; white-space: nowrap; }
+    .geo-brand small { font-size: 10px; }
+    .geo-sidebar__nav { margin: 0; padding: 12px 0 20px; gap: 5px; }
+    .geo-sidebar__nav button { padding: 10px; min-height: 38px; font-size: 12px; font-weight: 500; border-radius: 7px; }
+    .geo-sidebar__nav svg { width: 15px; }
+    .geo-sidebar__foot { padding: 10px; border-radius: 8px; gap: 8px; }
+    .geo-main { padding-top: 27px; }
+    .geo-heading--workspace { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 12px; }
     .geo-heading--workspace > div:first-child { display: contents; }
     .geo-heading--workspace .geo-heading__eyebrow { grid-column: 1; grid-row: 1; }
     .geo-heading--workspace h1 { grid-column: 1; grid-row: 2; }
-    .geo-heading--workspace p { grid-column: 1 / -1; grid-row: 3; font-size: 13px; white-space: nowrap; }
+    .geo-heading--workspace p { grid-column: 1 / -1; grid-row: 3; }
     .geo-heading--workspace .geo-model-badges { grid-column: 2; grid-row: 1 / 3; align-self: center; flex-wrap: nowrap; }
-    .geo-model-badge { min-width: 70px; padding: 8px 10px; }
-    .geo-model-badge small { font-size: 11px; white-space: nowrap; }
-    .geo-model-badge strong { margin-top: 2px; font-size: 13px; line-height: 1.4; white-space: nowrap; }
-    .geo-upload-card { padding: 22px; }
-    .geo-card-heading__index { font-size: 12px; }
-    .geo-card-heading h2 { font-size: 18px; }
-    .geo-card-heading p, .geo-dropzone > span:last-child { font-size: 13px; line-height: 1.65; }
-    .geo-card-heading__state { padding: 6px 10px; font-size: 12px; }
-    .geo-dropzone strong { font-size: 17px; }
-    .geo-file-slot__empty, .geo-file-list__empty { font-size: 13px; }
-    .geo-file-item { padding: 12px 14px; }
-    .geo-file-item strong, .geo-document-picker strong { font-size: 14px; }
-    .geo-file-item small, .geo-document-picker small { font-size: 12px; line-height: 1.5; }
-    .geo-file-item em { font-size: 12px; }
-    .geo-preview { padding: 16px; }
-    .geo-preview__heading h3 { font-size: 16px; }
-    .geo-preview__heading select { min-height: 40px; font-size: 13px; }
-    .geo-preview__meta small { font-size: 12px; }
-    .geo-preview__meta strong { font-size: 13px; }
-    .geo-table-wrap table { font-size: 13px; line-height: 1.55; }
-    .geo-table-wrap th, .geo-table-wrap td { padding: 10px 12px; }
-    .geo-preview--documents summary { padding: 13px 14px; }
-    .geo-preview--documents summary strong { font-size: 14px; }
-    .geo-preview--documents summary span { font-size: 12px; }
-    .geo-preview--documents pre { font: 14px/1.85 "Microsoft YaHei", "Microsoft YaHei UI", "PingFang SC", sans-serif; }
-    .geo-preflight h2 { font-size: 16px; }
-    .geo-preflight p { font-size: 12px; line-height: 1.65; }
-    .geo-preflight__grid div { padding: 12px 13px; font-size: 13px; }
-    .geo-run-area span { font-size: 12px; }
-    .geo-clear-button, .geo-run-button { min-height: 46px; font-size: 14px; }
-    .geo-empty-state p { font-size: 14px; }
-    .geo-settings-grid > article > span, .geo-model-setting__intro > span, .geo-model-catalog > legend { font-size: 12px; }
-    .geo-settings-grid > article > p, .geo-model-setting__intro > p { font-size: 13px; }
-    .geo-settings-grid .geo-provider-card__identity strong { font-size: 14px; }
-    .geo-settings-grid .geo-provider-card__identity small { font-size: 12px; }
-    .geo-provider-card__status { font-size: 12px !important; }
-    .geo-settings-grid .geo-model-option strong { font-size: 13px; }
-    .geo-model-summary code { font-size: 12px; }
-    .geo-cabin__heading span { font-size: 12px; }
-    .geo-cabin__heading strong { font-size: 18px; }
-    .geo-status-list div { font-size: 13px; line-height: 1.45; }
-    .geo-service-chips span { padding: 10px 6px; font-size: 12px; }
+    .geo-model-badge { min-width: 62px; padding: 6px 9px; border-radius: 7px; }
+    .geo-model-badge small { font-size: 10px; white-space: nowrap; }
+    .geo-model-badge strong { font-size: 11px; white-space: nowrap; }
+    .geo-workspace { border-radius: 10px; padding: 16px; box-shadow: none; background: #fff; }
+    .geo-upload-card { padding: 14px; border-radius: 8px; }
+    .geo-card-heading h2 { font-size: 14px; }
+    .geo-card-heading p, .geo-dropzone > span:last-child { font-size: 11px; }
+    .geo-card-heading__state { font-size: 10px; padding: 4px 7px; }
+    .geo-dropzone { min-height: 126px; padding: 14px; }
+    .geo-dropzone strong { font-size: 13px; }
+    .geo-upload-symbol { width: 42px; height: 42px; }
+    .geo-file-slot__empty, .geo-file-list__empty { font-size: 11px; }
+    .geo-file-item { padding: 9px 10px; }
+    .geo-file-item strong, .geo-document-picker strong { font-size: 12px; }
+    .geo-file-item small, .geo-document-picker small { font-size: 10px; }
+    .geo-file-item em { font-size: 10px; }
+    .geo-preview { padding: 12px; }
+    .geo-preview__heading h3 { font-size: 13px; }
+    .geo-preview__heading select { min-height: 32px; font-size: 11px; }
+    .geo-preview__meta small { font-size: 10px; }
+    .geo-preview__meta strong { font-size: 11px; }
+    .geo-table-wrap table { font-size: 12px; line-height: 1.5; }
+    .geo-table-wrap th, .geo-table-wrap td { padding: 8px 10px; }
+    .geo-preview--documents summary { padding: 10px; }
+    .geo-preview--documents summary strong { font-size: 12px; }
+    .geo-preview--documents summary span { font-size: 10px; }
+    .geo-preview--documents pre { font: 12px/1.8 "Microsoft YaHei", "Microsoft YaHei UI", sans-serif; }
+    .geo-preflight h2 { font-size: 13px; }
+    .geo-preflight p { font-size: 10px; }
+    .geo-preflight__grid div { padding: 9px 10px; font-size: 11px; }
+    .geo-clear-button, .geo-run-button { min-height: 36px; font-size: 12px; }
+    .geo-run-area span { font-size: 10px; }
+    .geo-shell[data-view=workspace] .geo-cabin { display: flex; min-height: 0; margin-top: 27px; padding: 16px; border-radius: 10px; box-shadow: none; }
+    .geo-cabin__heading strong { font-size: 14px; }
+    .geo-character { width: 64px; height: 64px; margin: 14px 0; border-radius: 9px; }
+    .geo-status-list { padding: 0; border: 0; background: transparent; }
+    .geo-status-list div { font-size: 11px; padding: 10px 0; }
+    .geo-status-list dt { flex-shrink: 0; }
+    .geo-service-chips span, .geo-saas-status span { font-size: 10px; padding: 7px 4px; }
+}
+@media (min-width:861px) and (max-width:1150px) {
+    .geo-shell[data-view=workspace] { grid-template-columns: 180px minmax(0,1fr); grid-template-areas: "side top" "side main"; }
+    .geo-shell[data-view=workspace] .geo-cabin { display: none; }
+}
+@media (max-width:860px) {
+    .geo-shell .geo-brand { display: flex; margin-bottom: 12px; }
+    .geo-shell .geo-sidebar__nav { display: flex; overflow-x: auto; padding-top: 8px; margin: 0; }
+    .geo-shell .geo-sidebar__nav button { width: auto; flex: 0 0 auto; font-size: 11px; padding: 9px; }
+    .geo-shell .geo-sidebar__nav svg { display: none; }
+    .console-new-task { display: flex; width: 100%; margin-top: 12px; justify-content: center; min-height: 40px; padding: 8px; }
+    .console-new-task small { display: none; }
+    .console-directory { grid-template-columns: minmax(0,1fr); min-height: 0; }
+    .console-directory__nav { display: flex; overflow-x: auto; gap: 8px; border-right: 0; border-bottom: 1px solid var(--line); padding: 10px; }
+    .console-directory__nav button { flex: 0 0 auto; width: auto; white-space: nowrap; margin: 0; }
+    .console-directory__body { padding: 15px; }
+    .console-summary > div { padding: 0 14px; gap: 10px; }
+    .console-summary strong { font-size: 20px; }
+    .console-summary span { font-size: 10px; }
+    .geo-shell .runtime-panel { padding: 14px; }
+    .geo-shell .console-directory__pane .runtime-panel { padding: 0; }
+    .geo-shell .runtime-field input, .geo-shell .runtime-field select { font-size: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

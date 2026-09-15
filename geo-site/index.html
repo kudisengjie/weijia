@@ -33,23 +33,32 @@
                 <span class="geo-brand__mark" aria-hidden="true"><img src="assets/lxue-brand-logo.png" alt="" width="40" height="40"></span>
                 <span><strong>零雪 GEO</strong><small>批量文章工作台</small></span>
             </a>
-            <ol class="geo-steps">
+            <ol class="geo-steps" hidden>
                 <li class="is-active"><span class="geo-step__number">1</span><span><strong>上传资料</strong><small>读取本地文件</small></span></li>
                 <li><span class="geo-step__number">2</span><span><strong>任务校验</strong><small>匹配品牌与知识库</small></span></li>
                 <li><span class="geo-step__number">3</span><span><strong>生成审核</strong><small>生成、审核、修订</small></span></li>
                 <li><span class="geo-step__number">4</span><span><strong>文章输出</strong><small>最终保存 MD</small></span></li>
             </ol>
             <nav class="geo-sidebar__nav" aria-label="功能页面">
+                <button type="button" data-view="overview">任务总览</button>
                 <button class="is-selected" type="button" data-view="workspace" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h8"/></svg>批次工作区</button>
                 <button type="button" data-view="history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4l3 2M21 12a9 9 0 1 1-3-6.7"/></svg>历史批次</button>
                 <button type="button" data-view="completed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M6 7l1 14h10l1-14M9 4h6"/></svg>已完成文章</button>
-                <button type="button" data-view="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 12h2m12 0h2M12 4v2m0 12v2"/></svg>设置</button>
+                <button type="button" data-view="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 12h2m12 0h2M12 4v2m0 12v2"/></svg>个人设置</button>
+                <button type="button" data-view="admin" hidden>管理中心</button>
                 <button type="button" id="logout-button">退出登录</button>
             </nav>
-            <div class="geo-sidebar__foot"><span class="geo-shield" aria-hidden="true">◇</span><span><strong>独立会话</strong><small>密钥与批次相互隔离</small></span></div>
+            <button class="geo-sidebar__foot console-new-task" id="new-workspace" type="button"><span aria-hidden="true">＋</span><span><strong>新建任务</strong><small>上传 Excel 开始创作</small></span></button>
         </aside>
 
         <main class="geo-main" id="geo-main">
+            <section class="geo-view" data-view-panel="overview" hidden>
+                <div class="geo-heading"><div><span class="geo-heading__eyebrow">CONTENT WORKSPACE</span><h1>任务总览</h1><p>查看任务进度，进入工作区处理资料与文章。</p></div></div>
+                <div class="console-summary"><div><span>任务批次</span><strong id="overview-total">—</strong></div><div><span>未结束</span><strong id="overview-active">—</strong></div><div><span>已保存文章</span><strong id="overview-articles">—</strong></div></div>
+                <section class="runtime-panel console-overview-panel"><div class="console-panel-heading"><h2>我的工作区</h2><button id="refresh-overview" type="button">刷新进度</button></div><div id="overview-list" class="console-table-wrap"><p class="console-empty">正在读取任务…</p></div></section>
+                <div class="console-brand-note"><img src="assets/lxue-geo-founder.png" alt="" width="64" height="64"><div><strong>零雪陪你，把内容做好</strong><p>知识库统一维护 · 模型由你选择 · 文章按任务归档</p></div></div>
+            </section>
+            <section class="geo-view" data-view-panel="admin" hidden><div class="geo-heading"><div><span class="geo-heading__eyebrow">OWNER CONSOLE</span><h1>管理中心</h1><p>仅总账号可管理子账号、积分、有效期与共享知识库。</p></div></div></section>
             <section class="geo-view is-active" data-view-panel="workspace">
                 <div class="geo-heading geo-heading--workspace">
                     <div><span class="geo-heading__eyebrow">START A GEO BATCH</span><h1>启动零雪GEO任务</h1><p>上传任务表与公司介绍文档，先确认页面读取到的内容是否正确。</p></div>
@@ -98,7 +107,7 @@
                 <div id="completed-list" class="runtime-list"></div>
             </section>
             <section class="geo-view" data-view-panel="settings" hidden>
-                <div class="geo-heading"><div><span class="geo-heading__eyebrow">SETTINGS</span><h1>模型与连接设置</h1><p>使用自己的模型 API。保存后用于新批次，已有批次保持原模型。</p></div></div>
+                <div class="geo-heading"><div><span class="geo-heading__eyebrow">SETTINGS</span><h1>个人设置</h1><p>管理自己的模型 API、查看积分与有效期；账号管理与共享知识库由总账号独立维护。</p></div></div>
                 <div class="geo-settings-grid">
                     <article class="geo-model-setting">
                         <div class="geo-model-setting__intro"><span>批次模型</span><strong>按厂商选择具体模型</strong><p id="model-provider-help">选择厂商与模型，在下方保存 API Key。模型实际可用性取决于你的提供商账户权限。</p></div>

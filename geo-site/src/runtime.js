@@ -31,7 +31,7 @@ export async function bootstrapAuthenticatedWorkspace({showWorkspace,refreshSett
   try {await refreshSettings();await loadHistory();return true;}
   catch(error) {showServiceFailure(error);return false;}
 }
-export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{}}) {
+export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{},consoleView}) {
   let csrf='',settings=null,activeBatch=null,driving=false,pauseRequested=false,pendingCreate=null,pendingCredit=null,members=[];
   const auth=createAuthFlow();
   const actions=new WeakMap();
@@ -45,6 +45,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     for(const id of ['batch-progress','history-list','completed-list','managed-user','managed-user-summary','member-ledger','own-ledger'])$(id).replaceChildren();
     $('tenant-admin').hidden=true;document.querySelector('.ima-admin').hidden=true;$('batch-progress').hidden=true;$('runtime-toast').hidden=true;renderModelLock();
     const submit=document.querySelector('.login-submit');actions.delete(submit);submit.disabled=false;
+    consoleView?.reset();
   }
   function toast(text) {if(!csrf)return;message('runtime-toast',text,true);$('runtime-toast').hidden=false;}
   async function api(path,body) {
@@ -83,6 +84,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     document.querySelectorAll('[data-credit-balance]').forEach(n=>n.textContent=`积分：${settings.credits?.balance??'—'}`);
     document.querySelectorAll('[data-subscription-expiry]').forEach(n=>n.textContent=settings.subscription?.expiresAt?`有效期至：${new Date(settings.subscription.expiresAt).toLocaleDateString('zh-CN')}`:'有效期：未配置');
     const owner=settings.subscription?.role==='owner';$('tenant-admin').hidden=!owner;document.querySelector('.ima-admin').hidden=!owner;
+    consoleView?.setOwner(owner);
     const days=Math.ceil((Number(settings.subscription?.expiresAt)-Date.now())/86400000);
     const reminder=!settings.subscription?.active?'服务尚未生效或已到期，请联系管理员调整有效期。已有文章仍可下载。':days<=7?`服务将在 ${Math.max(0,days)} 天内到期，请及时联系管理员续期。`:'服务有效，每条有效任务预扣 1 积分，未完整输出的任务自动返还。';
     message('subscription-reminder',reminder,!settings.subscription?.active || days<=3);
@@ -182,7 +184,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   });});
   function renderBatch(b) {
     if(!csrf||!settings)return;
-    activeBatch=b;const panel=$('batch-progress');panel.hidden=false;panel.replaceChildren();
+    activeBatch=b;const panel=$('batch-progress');if(!consoleView)panel.hidden=false;panel.replaceChildren();consoleView?.setBatch(b);
     panel.append(node('span',b.model.label,'login-eyebrow'),node('h2',`${batchStatusLabel(b)} · ${b.completed}/${b.total} 篇`));
     const progress=document.createElement('progress');progress.max=b.total;progress.value=b.completed;progress.setAttribute('aria-label','已完成文章进度');panel.append(progress);
     const terminal=['completed','cancelled'].includes(b.status);
@@ -203,13 +205,14 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     }
     panel.append(controls,node('p','任务状态与文章文件已保存到服务端；关闭页面后可从历史批次继续查看或下载。','runtime-hint'));
     renderModelLock();
-    for(const article of b.articles||[]){const row=node('div',undefined,'runtime-article');row.append(node('strong',article.title));const button=node('button','下载 MD');button.addEventListener('click',()=>download(article).catch(error=>toast(error.message)));row.append(button);panel.append(row);}
+    consoleView?.renderArticles(b,download,error=>toast(error.message));
     $('cabin-state').textContent=batchStatusLabel(b);$('status-task').textContent=`${b.completed}/${b.total}`;
     const apiCounter=document.querySelector('.geo-status-list > div:last-child dd');apiCounter.textContent=`${b.requests} 次请求步骤`;
     renderConnections();
   }
   async function drive(b) {
     if(driving)return;driving=true;pauseRequested=false;$('run-task').disabled=true;
+    const operation=auth.epoch;changeView('workspace');consoleView?.detailTab('progress');
     try{
       while(!pauseRequested&&b.status==='ready'&&!b.pauseRequested){
         renderBatch(b);
@@ -221,7 +224,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       }
       b=await api('batches/'+b.id);renderBatch(b);
     }catch(error){toast(error.message);}
-    finally{driving=false;$('run-task').disabled=false;if(csrf){try{activeBatch=await api('batches/'+b.id);await refreshSettings();renderBatch(activeBatch);await history();}catch(error){toast(error.message);}}}
+    finally{driving=false;$('run-task').disabled=false;if(csrf&&auth.isCurrent(operation)){try{activeBatch=await api('batches/'+b.id);await refreshSettings();renderBatch(activeBatch);await history();}catch(error){toast(error.message);}}}
   }
   $('run-task').addEventListener('click',async event=>{
     if(driving||event.currentTarget.disabled)return;const button=event.currentTarget;button.disabled=true;$('runtime-toast').hidden=true;
@@ -233,16 +236,24 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   });
   async function history() {
     const {batches}=await api('batches');const list=$('history-list'),completed=$('completed-list');list.replaceChildren();completed.replaceChildren();
+    consoleView?.renderOverview(batches,openBatch);
     if(!batches.length){list.append(node('p','还没有批次。上传资料并保存模型 API 后即可开始。','runtime-panel'));completed.append(node('p','还没有通过审核的文章。','runtime-panel'));return;}
     for(const b of batches){
       const row=node('article',undefined,'runtime-panel runtime-history');row.append(node('h2',b.title),node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${batchStatusLabel(b)}`));
-      const button=node('button','打开批次');button.addEventListener('click',async()=>{if(driving){toast('请先暂停当前批次。');return;}try{renderBatch(await api('batches/'+b.id));changeView('workspace');$('batch-progress').scrollIntoView({behavior:'smooth',block:'center'});}catch(error){toast(error.message);}});row.append(button);list.append(row);
+      const button=node('button','打开批次');button.addEventListener('click',()=>openBatch(b));row.append(button);list.append(row);
       if(b.completed){const group=node('article',undefined,'runtime-panel');group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>download(article).catch(error=>toast(error.message)));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);completed.append(group);}
     }
     if(!completed.childElementCount)completed.append(node('p','还没有通过审核的文章。','runtime-panel'));
   }
-  document.querySelectorAll('[data-view="history"],[data-view="completed"]').forEach(button=>button.addEventListener('click',()=>history().catch(e=>toast(e.message))));
-  document.querySelectorAll('[data-view="settings"]').forEach(button=>button.addEventListener('click',()=>refreshSettings().then(()=>loadMembers()).catch(e=>toast(e.message))));
+  async function openBatch(b){if(driving&&b.id!==activeBatch?.id){toast('请先暂停当前批次。');return;}try{renderBatch(await api('batches/'+b.id));changeView('workspace');consoleView?.detailTab('progress');}catch(error){toast(error.message);}}
+  $('new-workspace')?.addEventListener('click',()=>{
+    if(driving||settings?.modelLocked){toast('当前仍有未结束的批次，请先完成或取消后再新建。五工作区并行尚未开放。');return;}
+    if(activeBatch){activeBatch=null;pendingCreate=null;clearUploads();$('batch-progress').replaceChildren();}
+    consoleView?.setBatch(null);consoleView?.detailTab('materials');changeView('workspace');
+  });
+  $('refresh-overview')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await history();}catch(error){toast(error.message);}finally{button.disabled=false;}});
+  document.querySelectorAll('[data-view="overview"],[data-view="history"],[data-view="completed"]').forEach(button=>button.addEventListener('click',()=>history().catch(e=>toast(e.message))));
+  document.querySelectorAll('[data-view="settings"],[data-view="admin"]').forEach(button=>button.addEventListener('click',()=>refreshSettings().then(()=>loadMembers()).catch(e=>toast(e.message))));
   let tabAuthenticated=false;try{tabAuthenticated=sessionStorage.getItem(AUTH_TAB_MARKER)==='1';}catch{}
   if(shouldRestoreSession({navigationType:performance.getEntriesByType('navigation')[0]?.type,tabAuthenticated,hash:location.hash})){
     const operation=auth.begin();
