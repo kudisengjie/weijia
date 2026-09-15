@@ -92,26 +92,43 @@ class BatchService:
             self.ima_environment.get("apiKey", ""),
         )
 
-    def create(self, body: dict[str, object], user_id: str, expires_at: datetime) -> dict[str, object]:
+    def create(self, body: dict[str, object], user_id: str, expires_at: datetime, *, workspace_id=None) -> dict[str, object]:
         with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
             if hasattr(self.repository, 'lock_user'):
                 self.repository.lock_user(user_id)
-            return self._create(body, user_id, expires_at)
+            return self._create(body, user_id, expires_at, workspace_id=workspace_id)
 
-    def _create(self, body: dict[str, object], user_id: str, expires_at: datetime) -> dict[str, object]:
+    def _create(self, body: dict[str, object], user_id: str, expires_at: datetime, *, workspace_id=None) -> dict[str, object]:
+        workspace_model = None
+        if workspace_id is not None:
+            # Only WorkspaceService supplies this keyword, never a request-body flag.
+            from .workspaces import validate_draft
+            workspace = self.repository.get_workspace(user_id, str(self.tenant_context['tenantId']), workspace_id)
+            if not workspace or workspace['status'] != 'draft':
+                raise ApiError(409, '工作区不存在或已启动。', 'WORKSPACE_LOCKED')
+            draft = validate_draft(workspace['draft'])
+            body = {'requestId': 'workspace-' + workspace_id, 'rows': draft['rows'], 'companies': draft['companies']}
+            workspace_model = draft['model']
         request_id = body.get("requestId")
         if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9-]{16,80}", request_id):
             raise ApiError(400, "缺少有效的提交标识。")
         if hasattr(self.repository, 'get_request_batch'):
             existing = self.repository.get_request_batch(user_id, _digest(request_id))
             if existing:
+                if existing.get('workspaceId') != workspace_id:
+                    raise ApiError(409, '提交标识已用于其他工作区。', 'WORKSPACE_REQUEST_CONFLICT')
                 return _summary(existing)
         self._require_active(user_id)
-        if hasattr(self.repository, 'has_active_batch') and self.repository.has_active_batch(user_id):
+        if hasattr(self.repository, 'count_open_workspaces'):
+            from .workspaces import WORKSPACE_LIMIT
+            occupied = self.repository.count_open_workspaces(user_id)
+            if occupied > WORKSPACE_LIMIT or (workspace_id is None and occupied >= WORKSPACE_LIMIT):
+                raise ApiError(409, '最多五个未结束工作区，请先释放名额。', 'WORKSPACE_LIMIT_REACHED')
+        if workspace_id is None and hasattr(self.repository, 'has_active_batch') and self.repository.has_active_batch(user_id):
             raise ApiError(409, '请先完成或取消当前批次。', 'BATCH_ALREADY_ACTIVE')
         tasks, companies = parse_tasks(body.get("rows"), body.get("companies"))
         private = SettingsService(self.repository, self.master_key).private(user_id)
-        model = private["model"]
+        model = workspace_model or private["model"]
         if not private["keys"].get(model["id"]):
             raise ApiError(422, "请先保存所选模型的 API Key。")
         ima = self._ima()
@@ -145,6 +162,8 @@ class BatchService:
         if self.tenant_context:
             batch["tenantId"] = self.tenant_context["tenantId"]
             batch["creditTaskIds"] = list(dict.fromkeys(str(task["billingTaskId"]) for task in tasks))
+        if workspace_id is not None:
+            batch['workspaceId'] = workspace_id
         if self.ima_cache is not None:
             batch['imaCacheGeneration'] = self.repository.get_ima_cache_generation()
         stored = self.repository.create_or_get_batch(user_id, batch_id, _digest(request_id), batch)

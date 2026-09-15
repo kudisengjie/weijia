@@ -8,9 +8,10 @@ import json
 import re
 
 from .database import connection, database_health, ensure_schema
+from .workspace_repository import WorkspaceRepositoryMixin
 
 
-class PostgresRepository:
+class PostgresRepository(WorkspaceRepositoryMixin):
     def __init__(self, conn: object, master_key: str) -> None:
         if not re.fullmatch(r'[0-9a-f]{64}', master_key):
             raise ValueError('INVALID_MASTER_KEY')

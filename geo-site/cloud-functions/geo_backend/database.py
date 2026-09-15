@@ -37,6 +37,7 @@ def ensure_schema(conn: object, master_key: str) -> int:
             conn.execute("ALTER TABLE batches ALTER COLUMN state_cipher SET NOT NULL")
             conn.execute("ALTER TABLE batches ADD CONSTRAINT batches_no_plaintext_state CHECK (state = '{}'::jsonb)")
             conn.execute('INSERT INTO schema_migrations (version) VALUES (3)')
+        conn.execute('INSERT INTO schema_migrations (version) VALUES (4) ON CONFLICT (version) DO NOTHING')
     return SCHEMA_VERSION
 
 

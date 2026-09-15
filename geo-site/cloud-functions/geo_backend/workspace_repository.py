@@ -1,0 +1,67 @@
+"""Account-scoped encrypted workspace storage. Mutations require the account lock."""
+import json
+
+from .errors import ApiError
+
+
+class WorkspaceRepositoryMixin:
+    def count_open_workspaces(self, user_id):
+        return self.conn.execute("""
+            SELECT (SELECT COUNT(*) FROM workspaces WHERE user_id = %s AND status = 'draft')
+                 + (SELECT COUNT(*) FROM batches WHERE user_id = %s AND status NOT IN ('completed', 'cancelled'))
+        """, (user_id, user_id)).fetchone()[0]
+
+    @staticmethod
+    def _workspace_payload(user_id, tenant_id, workspace_id, draft):
+        return json.dumps({'userId': user_id, 'tenantId': tenant_id, 'workspaceId': workspace_id, 'draft': draft}, ensure_ascii=False)
+
+    def insert_workspace(self, user_id, tenant_id, workspace_id, request_hash, draft):
+        self.conn.execute("""
+            INSERT INTO workspaces(id, user_id, tenant_id, request_hash, status, state_cipher)
+            VALUES (%s, %s, %s, %s, 'draft', pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'))
+        """, (workspace_id, user_id, tenant_id, request_hash,
+              self._workspace_payload(user_id, tenant_id, workspace_id, draft), self.master_key))
+
+    def workspace_request_id(self, user_id, tenant_id, request_hash):
+        row = self.conn.execute('SELECT id FROM workspaces WHERE user_id = %s AND tenant_id = %s AND request_hash = %s',
+                                (user_id, tenant_id, request_hash)).fetchone()
+        return row[0] if row else None
+
+    def get_workspace(self, user_id, tenant_id, workspace_id):
+        row = self.conn.execute("""
+            SELECT id, status, version, batch_id, created_at, updated_at,
+                   pgp_sym_decrypt(state_cipher, %s)::jsonb
+            FROM workspaces WHERE user_id = %s AND tenant_id = %s AND id = %s
+        """, (self.master_key, user_id, tenant_id, workspace_id)).fetchone()
+        if row is None:
+            return None
+        payload = row[6]
+        if (not isinstance(payload, dict) or payload.get('userId') != user_id
+                or payload.get('tenantId') != tenant_id or payload.get('workspaceId') != workspace_id
+                or not isinstance(payload.get('draft'), dict)):
+            raise ApiError(503, '工作区加密记录校验失败，请联系管理员。', 'WORKSPACE_STATE_INVALID')
+        return {'id': row[0], 'status': row[1], 'version': row[2], 'batchId': row[3],
+                'createdAt': row[4].isoformat(), 'updatedAt': row[5].isoformat(), 'draft': payload['draft']}
+
+    def list_workspace_ids(self, user_id, tenant_id):
+        return [row[0] for row in self.conn.execute("""
+            SELECT w.id FROM workspaces w LEFT JOIN batches b ON b.id = w.batch_id
+            WHERE w.user_id = %s AND w.tenant_id = %s AND w.status <> 'archived'
+            ORDER BY (w.status = 'draft' OR b.status NOT IN ('completed', 'cancelled')) DESC, w.updated_at DESC LIMIT 500
+        """, (user_id, tenant_id)).fetchall()]
+
+    def update_workspace(self, user_id, tenant_id, workspace_id, version, *, draft=None, status=None, batch_id=None):
+        if draft is not None:
+            result = self.conn.execute("""
+                UPDATE workspaces SET state_cipher = pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'),
+                    version = version + 1, updated_at = NOW()
+                WHERE id = %s AND user_id = %s AND tenant_id = %s AND version = %s AND status = 'draft'
+            """, (self._workspace_payload(user_id, tenant_id, workspace_id, draft), self.master_key,
+                  workspace_id, user_id, tenant_id, version))
+        else:
+            result = self.conn.execute("""
+                UPDATE workspaces SET status = %s, batch_id = %s, version = version + 1, updated_at = NOW()
+                WHERE id = %s AND user_id = %s AND tenant_id = %s AND version = %s AND status = 'draft'
+            """, (status, batch_id, workspace_id, user_id, tenant_id, version))
+        if result.rowcount != 1:
+            raise ApiError(409, '工作区已被另一页面更新，请重新读取后操作。', 'WORKSPACE_VERSION_CONFLICT')

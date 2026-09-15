@@ -24,6 +24,7 @@ from .models import SettingsService
 from .providers import complete
 from .repository import postgres_repository
 from .tenant_access import TenantAccessService
+from .workspaces import WorkspaceService
 
 
 LOGGER = logging.getLogger("lxue_geo")
@@ -68,6 +69,20 @@ class BatchStepBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     seq: int
     retry: bool = False
+
+
+class WorkspaceCreateBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    requestId: str
+
+
+class WorkspaceVersionBody(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    version: int
+
+
+class WorkspaceSaveBody(WorkspaceVersionBody):
+    draft: dict[str, object]
 
 
 class BatchRunBody(BaseModel):
@@ -140,7 +155,8 @@ def create_app(
             elif not request.headers.get("content-type", "").startswith("application/json"):
                 response = JSONResponse({"error": "请求格式不支持。", "code": "UNSUPPORTED_MEDIA"}, status_code=415)
             else:
-                limit = BATCH_JSON_LIMIT if request.url.path == "/batches" else LOGIN_JSON_LIMIT if request.url.path == "/auth/login" else DEFAULT_JSON_LIMIT
+                large_payload = request.url.path == '/batches' or (request.url.path.startswith('/workspaces/') and request.url.path.endswith('/save'))
+                limit = BATCH_JSON_LIMIT if large_payload else LOGIN_JSON_LIMIT if request.url.path == "/auth/login" else DEFAULT_JSON_LIMIT
                 body = await request.body()
                 if len(body) > limit:
                     response = JSONResponse(
@@ -407,6 +423,49 @@ def create_app(
             if expires_at <= starts_at:
                 raise ApiError(400, "有效期必须晚于开始时间。", "INVALID_MEMBER_EXPIRY")
             return repository.set_subscription(str(context["tenantId"]), str(body.userId) if body.userId else current.user_id, starts_at, expires_at, actor_id=current.user_id)
+
+    def workspace_service(repository, user_id, *, active=False):
+        context = tenant_context(repository, user_id, active=active)
+        if not context:
+            raise ApiError(403, '当前账号没有工作区。', 'TENANT_ACCESS_REQUIRED')
+        return WorkspaceService(repository, config.geo_master_key, context, batch_service(repository, context))
+
+    @app.get('/workspaces')
+    def workspaces_list(request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            return workspace_service(repository, current.user_id).list(current.user_id)
+
+    @app.post('/workspaces')
+    def workspaces_create(body: WorkspaceCreateBody, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            return workspace_service(repository, current.user_id, active=True).create(body.requestId, current.user_id)
+
+    @app.get('/workspaces/{workspace_id}')
+    def workspaces_get(workspace_id: str, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            return workspace_service(repository, current.user_id).get(workspace_id, current.user_id)
+
+    @app.post('/workspaces/{workspace_id}/save')
+    def workspaces_save(workspace_id: str, body: WorkspaceSaveBody, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            return workspace_service(repository, current.user_id, active=True).save(workspace_id, current.user_id, body.version, body.draft)
+
+    @app.post('/workspaces/{workspace_id}/start')
+    def workspaces_start(workspace_id: str, body: WorkspaceVersionBody, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            service = workspace_service(repository, current.user_id, active=True)
+            return service.start(workspace_id, current.user_id, body.version, service.context['expiresAt'])
+
+    @app.post('/workspaces/{workspace_id}/archive')
+    def workspaces_archive(workspace_id: str, body: WorkspaceVersionBody, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            return workspace_service(repository, current.user_id).archive(workspace_id, current.user_id, body.version)
 
     @app.get("/batches")
     def batches_list(request: Request):

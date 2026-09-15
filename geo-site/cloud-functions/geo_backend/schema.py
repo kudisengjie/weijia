@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SCHEMA_SQL = r"""
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -279,4 +279,20 @@ ALTER TABLE jobs ADD COLUMN IF NOT EXISTS heartbeat_at TIMESTAMPTZ;
 
 INSERT INTO schema_migrations (version) VALUES (1) ON CONFLICT (version) DO NOTHING;
 INSERT INTO schema_migrations (version) VALUES (2) ON CONFLICT (version) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS workspaces (
+    id CHAR(32) PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    request_hash CHAR(64) NOT NULL,
+    state_cipher BYTEA NOT NULL,
+    version INTEGER NOT NULL DEFAULT 0 CHECK (version >= 0),
+    status VARCHAR(16) NOT NULL CHECK (status IN ('draft', 'started', 'archived')),
+    batch_id CHAR(32) UNIQUE REFERENCES batches(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, request_hash),
+    CHECK ((status = 'started') = (batch_id IS NOT NULL))
+);
+CREATE INDEX IF NOT EXISTS workspaces_user_status_idx ON workspaces(user_id, status);
 """
