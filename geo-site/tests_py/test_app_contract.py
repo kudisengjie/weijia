@@ -75,6 +75,16 @@ class AppContractTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("HttpOnly", cookie)
         self.assertIn("Secure", cookie)
         self.assertIn("SameSite=strict", cookie)
+        self.assertIn("Max-Age=28800", cookie)
+
+    async def test_reauthentication_rotates_cookie_and_revokes_old_one(self):
+        await self.login()
+        previous = self.client.cookies.get("lxue_session")
+        second = await self.login()
+        self.assertEqual(200, second.status_code)
+        self.assertNotEqual(previous, self.client.cookies.get("lxue_session"))
+        old = await self.client.get("/auth/session", headers={"Cookie": f"lxue_session={previous}"})
+        self.assertEqual(401, old.status_code)
 
     async def test_origin_session_csrf_and_logout_contract(self):
         rejected = await self.client.post("/auth/login", json={"account": "owner", "password": "secret"})

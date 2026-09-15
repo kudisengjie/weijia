@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 
-SESSION_TTL = timedelta(days=7)
+SESSION_TTL = timedelta(hours=8)
 
 
 def digest(value: str) -> str:

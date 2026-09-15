@@ -746,9 +746,10 @@ class PostgresRepository:
     def get_session(self, token_hash: str) -> dict[str, object] | None:
         row = self.conn.execute(
             """
-            SELECT user_id, csrf_hash, expires_at, revoked_at
+            SELECT user_id, csrf_hash, LEAST(expires_at, created_at + INTERVAL '8 hours'), revoked_at
             FROM sessions
             WHERE token_hash = %s AND revoked_at IS NULL AND expires_at > NOW()
+                AND created_at > NOW() - INTERVAL '8 hours'
             """,
             (token_hash,),
         ).fetchone()

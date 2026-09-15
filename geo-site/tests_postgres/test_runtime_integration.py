@@ -95,6 +95,33 @@ class PostgresRuntimeTests(unittest.TestCase):
         self.assertIn('零雪内容服务', response.text)
         self.assertIn("filename*=UTF-8''", response.headers['content-disposition'])
 
+    def test_auth_caps_legacy_sessions_and_rotates_browser_cookie(self):
+        from geo_backend.auth import AuthService
+        from geo_backend.security import digest
+        auth = AuthService(self.config(), self.repo)
+        old = auth.login(self.config().geo_account, 'test-password')
+        self.conn.execute("UPDATE sessions SET created_at = NOW() - INTERVAL '9 hours', expires_at = NOW() + INTERVAL '6 days' WHERE token_hash = %s", (digest(old.cookie_token),))
+        self.assertIsNone(self.repo.get_session(digest(old.cookie_token)))
+        async def run():
+            async with self.http_client() as client:
+                await client.post('/auth/login', json={'account': self.config().geo_account, 'password': 'test-password'})
+                previous = client.cookies.get('lxue_session')
+                again = await client.post('/auth/login', json={'account': self.config().geo_account, 'password': 'test-password'})
+                self.assertIn('Max-Age=28800', again.headers['set-cookie'])
+                expired = await client.get('/auth/session', headers={'Cookie': f'lxue_session={previous}'})
+                self.assertEqual(401, expired.status_code)
+                self.assertEqual(200, (await client.get('/auth/session')).status_code)
+        asyncio.run(run())
+
+    def test_legacy_session_public_expiry_matches_eight_hour_cap(self):
+        from geo_backend.auth import AuthService
+        from geo_backend.security import digest
+        auth = AuthService(self.config(), self.repo)
+        session = auth.login(self.config().geo_account, 'test-password')
+        self.conn.execute("UPDATE sessions SET created_at = NOW() - INTERVAL '7 hours', expires_at = NOW() + INTERVAL '6 days' WHERE token_hash = %s", (digest(session.cookie_token),))
+        restored = auth.authenticate(session.cookie_token, None, 'GET')
+        self.assertLess((restored.expires_at - datetime.now(timezone.utc)).total_seconds(), 3601)
+
     def test_http_member_cannot_download_other_members_artifact(self):
         batch = self.prepared_batch(1)
         artifact = self.save_artifact(batch['id'])

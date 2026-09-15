@@ -34,7 +34,7 @@ class AuthService:
         if self.settings.missing:
             raise ApiError(503, "服务端配置尚未完成，请管理员检查 EdgeOne 环境变量。", "SETUP_REQUIRED")
 
-    def login(self, account: object, password: object) -> LoginResult:
+    def login(self, account: object, password: object, *, previous_cookie: str | None = None) -> LoginResult:
         self.require_configuration()
         account_text = account if isinstance(account, str) else ""
         scope_hash = digest(f"login:{account_text.casefold()}")
@@ -63,6 +63,8 @@ class AuthService:
                 ensure_owner_tenant(str(user["id"]))
         material = new_session_material(self.settings.geo_master_key, now)
         self.repository.create_session(str(user["id"]), material.stored)
+        if previous_cookie and len(previous_cookie) <= 256:
+            self.logout(previous_cookie)
         return LoginResult(True, material.cookie_token, material.csrf_token, material.expires_at)
 
     def authenticate(self, cookie_token: str | None, csrf_token: str | None, method: str) -> AuthenticatedSession:

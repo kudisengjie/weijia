@@ -28,6 +28,33 @@ def settings():
 
 
 class AuthServiceTests(unittest.TestCase):
+    def test_sessions_are_limited_to_eight_hours(self):
+        from geo_backend.security import SESSION_TTL
+        self.assertEqual(timedelta(hours=8), SESSION_TTL)
+
+    def test_successful_reauthentication_revokes_only_presented_cookie(self):
+        from geo_backend.auth import AuthService
+        from geo_backend.errors import ApiError
+        repository = FakeRepository()
+        service = AuthService(settings(), repository)
+        first = service.login("owner", "secret")
+        other = service.login("owner", "secret")
+        fresh = service.login("owner", "secret", previous_cookie=first.cookie_token)
+        with self.assertRaises(ApiError):
+            service.authenticate(first.cookie_token, None, "GET")
+        self.assertEqual("user-1", service.authenticate(fresh.cookie_token, None, "GET").user_id)
+        self.assertEqual("user-1", service.authenticate(other.cookie_token, None, "GET").user_id)
+
+    def test_bad_or_empty_password_does_not_revoke_existing_cookie(self):
+        from geo_backend.auth import AuthService
+        from geo_backend.errors import ApiError
+        service = AuthService(settings(), FakeRepository())
+        first = service.login("owner", "secret")
+        for password in ("wrong", ""):
+            with self.assertRaises(ApiError):
+                service.login("owner", password, previous_cookie=first.cookie_token)
+        self.assertEqual("user-1", service.authenticate(first.cookie_token, None, "GET").user_id)
+
     def test_successful_login_creates_durable_session(self):
         from geo_backend.auth import AuthService
 

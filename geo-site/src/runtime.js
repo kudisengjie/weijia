@@ -1,4 +1,5 @@
 import { getModelPresentation } from './model-switch.js';
+import { AUTH_TAB_MARKER, createAuthFlow, shouldRestoreSession } from './auth-flow.js';
 
 export function modelIsLocked(settings,batch) {
   return Boolean(settings?.modelLocked || batch && !['completed','cancelled'].includes(batch.status));
@@ -30,16 +31,30 @@ export async function bootstrapAuthenticatedWorkspace({showWorkspace,refreshSett
   try {await refreshSettings();await loadHistory();return true;}
   catch(error) {showServiceFailure(error);return false;}
 }
-export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
+export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{}}) {
   let csrf='',settings=null,activeBatch=null,driving=false,pauseRequested=false,pendingCreate=null,pendingCredit=null,members=[];
+  const auth=createAuthFlow();
+  const actions=new WeakMap();
+  const rememberTab=value=>{try{if(value)sessionStorage.setItem(AUTH_TAB_MARKER,'1');else sessionStorage.removeItem(AUTH_TAB_MARKER);}catch{}};
+  let expiryTimer;
   const shell=document.querySelector('.geo-shell');
-  function showLogin() {pauseRequested=true;csrf='';settings=null;activeBatch=null;pendingCreate=null;pendingCredit=null;members=[];shell.hidden=true;$('login-page').hidden=false;$('model-key').value='';$('ima-form').reset();$('member-form').reset();defaultMemberDates();$('batch-progress').replaceChildren();$('batch-progress').hidden=true;renderModelLock();}
-  function toast(text) {message('runtime-toast',text,true);$('runtime-toast').hidden=false;}
+  function showLogin() {
+    auth.invalidate();rememberTab(false);clearTimeout(expiryTimer);pauseRequested=true;csrf='';settings=null;activeBatch=null;pendingCreate=null;pendingCredit=null;members=[];
+    shell.hidden=true;$('login-page').hidden=false;$('login-password').value='';$('login-password').type='password';$('toggle-password').textContent='显示';$('toggle-password').setAttribute('aria-pressed','false');$('toggle-password').setAttribute('aria-label','显示密码');
+    $('model-form').reset();$('ima-form').reset();$('member-form').reset();$('credit-form').reset();$('subscription-form').reset();defaultMemberDates();clearUploads();
+    for(const id of ['batch-progress','history-list','completed-list','managed-user','managed-user-summary','member-ledger','own-ledger'])$(id).replaceChildren();
+    $('tenant-admin').hidden=true;document.querySelector('.ima-admin').hidden=true;$('batch-progress').hidden=true;$('runtime-toast').hidden=true;renderModelLock();
+    const submit=document.querySelector('.login-submit');actions.delete(submit);submit.disabled=false;
+  }
+  function toast(text) {if(!csrf)return;message('runtime-toast',text,true);$('runtime-toast').hidden=false;}
   async function api(path,body) {
+    const operation=auth.epoch;
     let response;
     try {response=await fetch('/api/'+path,{method:body===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(125000)});}
-    catch {throw new Error('连接中断或请求超时，未自动重试。批次可在历史记录中读取进度。');}
+    catch {if(!auth.isCurrent(operation))throw Object.assign(new Error('已忽略旧会话响应。'),{code:'STALE_RESPONSE'});throw new Error('连接中断或请求超时，未自动重试。批次可在历史记录中读取进度。');}
+    if(!auth.isCurrent(operation))throw Object.assign(new Error('已忽略旧会话响应。'),{code:'STALE_RESPONSE'});
     let data;try{data=await response.json();}catch{throw new Error('运行接口未部署，请管理员检查 EdgeOne 的 Python Cloud Functions 与 PostgreSQL 配置。');}
+    if(!auth.isCurrent(operation))throw Object.assign(new Error('已忽略旧会话响应。'),{code:'STALE_RESPONSE'});
     if(!response.ok){if(response.status===401&&path!=='auth/login')showLogin();const e=new Error(data.error||'请求失败。');e.code=data.code;e.status=response.status;throw e;}
     return data;
   }
@@ -79,20 +94,32 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
     showWorkspace(){ $('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
     refreshSettings,
     async loadHistory(){await history();await loadMembers();},
-    showServiceFailure(error){toast(error.message);},
+    showServiceFailure(error){if(error.code!=='STALE_RESPONSE')toast(error.message);},
   });}
+  async function acceptSession(operation,data) {
+    if(!auth.isCurrent(operation))return;
+    if(!auth.accept(operation,data))throw new Error('登录响应无效，请重新输入账号和密码。');
+    csrf=data.csrf;rememberTab(true);clearTimeout(expiryTimer);
+    expiryTimer=setTimeout(()=>{showLogin();message('login-message','登录已到期，请重新输入密码。');},Math.min(data.expiresAt-Date.now(),2147483647));
+    if(location.hash==='#login')window.history.replaceState(null,'',location.pathname+location.search);
+    await enter();
+  }
   async function action(button,id,fn) {
-    if(button.disabled)return;button.disabled=true;message(id,'处理中…');
-    try{await fn();}catch(error){message(id,error.message,true);}finally{button.disabled=false;renderModelLock();}
+    if(button.disabled)return;const token=Symbol();actions.set(button,token);button.disabled=true;message(id,'处理中…');
+    try{await fn();}catch(error){if(actions.get(button)===token&&error.code!=='STALE_RESPONSE')message(id,error.message,true);}finally{if(actions.get(button)===token){actions.delete(button);button.disabled=false;renderModelLock();}}
   }
   $('login-form').addEventListener('submit',event=>{event.preventDefault();action(event.submitter,'login-message',async()=>{
-    const form=new FormData(event.currentTarget);const data=await api('auth/login',{account:form.get('account'),password:form.get('password')});csrf=data.csrf;await enter();message('login-message','');
+    const form=new FormData(event.currentTarget),operation=auth.begin();rememberTab(false);
+    const data=await api('auth/login',{account:form.get('account'),password:form.get('password')});await acceptSession(operation,data);if(auth.isCurrent(operation))message('login-message','');
   });});
   $('toggle-password').addEventListener('click',()=>{const input=$('login-password'),shown=input.type==='password';input.type=shown?'text':'password';$('toggle-password').textContent=shown?'隐藏':'显示';$('toggle-password').setAttribute('aria-pressed',String(shown));$('toggle-password').setAttribute('aria-label',shown?'隐藏密码':'显示密码');});
   $('logout-button').addEventListener('click',async()=>{
     if(driving){toast('请先暂停批次，等待当前步骤结束后退出。');return;}
     if(!confirm('确认退出工作台？模型设置、批次历史和已完成文章仍保存在当前账号中。'))return;
-    try{await api('auth/logout',{});location.reload();}catch(error){toast(error.message);}
+    auth.begin();$('logout-button').disabled=true;
+    try{await api('auth/logout',{});showLogin();message('login-message','已退出，请输入账号和密码。');}
+    catch(error){showLogin();message('login-message',error.status===401?'登录已失效，请重新输入密码。':'本机已锁定，但服务器未确认退出。请恢复网络后重新登录以替换旧会话。',error.status!==401);}
+    finally{$('logout-button').disabled=false;}
   });
   document.querySelectorAll('input[name="model-option"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked){$('model-key').value='';$('custom-model-id').value='';renderCredentials();renderConnections();message('model-message','选择已更改，请保存后用于新批次。');}}));
   $('model-form').addEventListener('submit',event=>{event.preventDefault();action(event.submitter,'model-message',async()=>{
@@ -216,5 +243,12 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads}) {
   }
   document.querySelectorAll('[data-view="history"],[data-view="completed"]').forEach(button=>button.addEventListener('click',()=>history().catch(e=>toast(e.message))));
   document.querySelectorAll('[data-view="settings"]').forEach(button=>button.addEventListener('click',()=>refreshSettings().then(()=>loadMembers()).catch(e=>toast(e.message))));
-  api('auth/session').then(async data=>{csrf=data.csrf;await enter();}).catch(error=>{showLogin();message('login-message',error.code==='LOGIN_REQUIRED'?'请输入账号和密码。':error.message,error.code!=='LOGIN_REQUIRED');});
+  let tabAuthenticated=false;try{tabAuthenticated=sessionStorage.getItem(AUTH_TAB_MARKER)==='1';}catch{}
+  if(shouldRestoreSession({navigationType:performance.getEntriesByType('navigation')[0]?.type,tabAuthenticated,hash:location.hash})){
+    const operation=auth.begin();
+    api('auth/session').then(data=>acceptSession(operation,data)).catch(error=>{
+      if(error.code==='STALE_RESPONSE')return;showLogin();message('login-message',error.code==='LOGIN_REQUIRED'?'请输入账号和密码。':error.message,error.code!=='LOGIN_REQUIRED');
+    });
+  }else{showLogin();message('login-message','请输入账号和密码，点击登录后进入工作台。');}
+  window.addEventListener('pageshow',event=>{if(event.persisted){showLogin();message('login-message','请重新输入密码后进入工作台。');}});
 }

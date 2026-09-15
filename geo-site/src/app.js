@@ -296,17 +296,21 @@ async function handleTaskFile() {
   }
 
   currentTask = { file, data: null, error: "" };
+  const readingTask=currentTask;
   taskDisplay.appendChild(makeFileItem(file, "loading"));
   taskState.textContent = "读取中";
   checkTask.textContent = "正在读取";
   updateStatus();
   try {
-    currentTask.data = await readSpreadsheet(file);
+    const data=await readSpreadsheet(file);
+    if(currentTask!==readingTask)return;
+    currentTask.data=data;
     taskDisplay.replaceChildren(makeFileItem(file, "ready", `${currentTask.data.sheets.length} 个工作表`));
     taskState.textContent = "已读取";
     checkTask.textContent = `已读取 ${currentTask.data.sheets.length} 个工作表`;
     renderSheet(currentTask.data, 0);
   } catch (error) {
+    if(currentTask!==readingTask)return;
     currentTask.error = error instanceof Error ? error.message : "文件读取失败。";
     taskDisplay.replaceChildren(makeFileItem(file, "error", currentTask.error));
     taskState.textContent = "读取失败";
@@ -318,6 +322,7 @@ async function handleTaskFile() {
 async function handleCompanyFiles() {
   const files = Array.from(companyInput.files || []);
   currentCompanies = files.map((file) => ({ file, result: null, error: "" }));
+  const readingCompanies=currentCompanies;
   companyList.replaceChildren();
   companyPreview.replaceChildren();
   companyPreview.hidden = true;
@@ -341,6 +346,7 @@ async function handleCompanyFiles() {
     } catch (error) {
       item.error = error instanceof Error ? error.message : "文件读取失败。";
     }
+    if(currentCompanies!==readingCompanies)return;
     companyList.children[index].replaceWith(makeFileItem(item.file, item.error ? "error" : "ready", item.error || `${item.result.total.toLocaleString("zh-CN")} 字符`));
     renderCompanyPreviews();
     updateStatus();
@@ -385,7 +391,7 @@ renderSelectedModel();
 updateStatus();
 
 initializeRuntime({
-  renderSelectedModel, changeView,
+  renderSelectedModel, changeView, clearUploads:clearFiles,
   getUploads() {
     if (!currentTask?.data) throw new Error('请先选择并成功读取任务表。');
     if (!currentCompanies.length || currentCompanies.some(item => !item.result || item.error)) throw new Error('请先成功读取所有公司文档。');

@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict
 
 from .auth import AuthService
+from .security import SESSION_TTL
 from .artifacts import ArtifactService
 from .batches import BatchService
 from .config import Settings
@@ -200,13 +201,13 @@ def create_app(
         return {"service": "available", **result}
 
     @app.post("/auth/login")
-    def login(body: LoginBody, response: Response):
+    def login(body: LoginBody, request: Request, response: Response):
         with factory() as repository:
-            result = AuthService(config, repository).login(body.account, body.password)
+            result = AuthService(config, repository).login(body.account, body.password, previous_cookie=request.cookies.get(SESSION_COOKIE))
         response.set_cookie(
             SESSION_COOKIE,
             result.cookie_token,
-            max_age=604800,
+            max_age=int(SESSION_TTL.total_seconds()),
             httponly=True,
             secure=not config.local_dev,
             samesite="strict",
