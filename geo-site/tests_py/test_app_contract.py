@@ -111,6 +111,40 @@ class AppContractTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Max-Age=0", logout.headers["set-cookie"])
         self.assertEqual(401, (await self.client.get("/auth/session")).status_code)
 
+    async def test_authenticated_responses_carry_stable_account_scope(self):
+        import re
+
+        from geo_backend.security import hash_password
+
+        # 匿名请求得不到账号上下文。
+        anonymous = await self.client.get("/auth/session")
+        self.assertEqual(401, anonymous.status_code)
+
+        login = await self.login()
+        self.assertEqual(200, login.status_code)
+        scope = login.json().get("accountScope")
+        self.assertTrue(isinstance(scope, str) and re.fullmatch(r"[0-9a-f]{32}", scope), scope)
+
+        session = await self.client.get("/auth/session")
+        self.assertEqual(200, session.status_code)
+        self.assertEqual(scope, session.json().get("accountScope"))
+
+        # 换账号登录后 scope 随账号变化，不沿用旧值。
+        self.repository.users["member"] = {
+            "id": "member-user",
+            "username": "member",
+            "password_hash": hash_password("member-secret"),
+        }
+        member_login = await self.client.post(
+            "/auth/login",
+            headers={"Origin": "https://geo.example.test"},
+            json={"account": "member", "password": "member-secret"},
+        )
+        self.assertEqual(200, member_login.status_code)
+        member_scope = member_login.json().get("accountScope")
+        self.assertTrue(isinstance(member_scope, str) and re.fullmatch(r"[0-9a-f]{32}", member_scope), member_scope)
+        self.assertNotEqual(scope, member_scope)
+
     async def test_oversized_login_body_is_rejected_before_validation(self):
         response = await self.client.post(
             "/auth/login",

@@ -691,3 +691,11 @@ label:focus-within {
 .console-empty-state button:hover { background: #2f65b3; border-color: #2f65b3; }
 .console-empty-state button:disabled { opacity: .6; cursor: not-allowed; }
 @media (max-width: 760px) { .workspace-empty { padding: 30px 16px; } .console-empty-state { min-height: 140px; } }
+
+/* ===== 2026-09-16 local saving directory page (phase B) ===== */
+#saving-settings { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+#saving-settings h2 { margin: 0; }
+#saving-settings p { margin: 0; max-width: 560px; }
+#saving-settings .geo-run-button { min-width: 140px; }
+#saving-message.is-error { color: #b3423f; }
+@media (max-width: 760px) { #saving-settings { gap: 8px; } }

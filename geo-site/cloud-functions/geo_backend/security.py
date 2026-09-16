@@ -78,6 +78,17 @@ def csrf_for_session(cookie_token: str, master_key: str) -> str:
     return urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
+def account_scope(user_id: str, master_key: str) -> str:
+    """稳定、非秘密、按账号隔离的本地命名标识（交接方案 §6.2）。
+
+    由服务端 user ID 与主密钥派生的 HMAC 截断值：不可逆推用户身份，
+    只用于浏览器端 IndexedDB 命名隔离，不能作为服务端授权凭证。
+    """
+    key = bytes.fromhex(master_key)
+    value = hmac.new(key, f"lxue-account-scope-v1:{user_id}".encode("utf-8"), hashlib.sha256).hexdigest()
+    return value[:32]
+
+
 def new_session_material(master_key: str | None = None, now: datetime | None = None) -> SessionMaterial:
     current = now or datetime.now(timezone.utc)
     cookie_token = secrets.token_urlsafe(32)

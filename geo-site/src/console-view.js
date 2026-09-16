@@ -22,9 +22,11 @@ export function initializeConsole({changeView,onCreate}){
   const picker=el('div',undefined,'console-managed-user');picker.append(byId('managed-user').closest('label'),byId('managed-user-summary'));
   const ledgerButton=byId('refresh-member-ledger'),ledger=byId('member-ledger'),cacheControls=byId('clear-ima-cache').parentElement;
   grid.remove();
-  const personal=directory(settings,'settings',[['models','模型与 API'],['security','登录与安全'],['billing','积分与有效期'],['contact','联系与续费']]);
+  const personal=directory(settings,'settings',[['models','模型与 API'],['saving','文章保存'],['security','登录与安全'],['billing','积分与有效期'],['contact','联系与续费']]);
   personal.panes.models.classList.add('geo-settings-grid');personal.panes.models.append(catalog,credentials);
   personal.panes.billing.append(account);personal.panes.contact.append(el('h2','联系零雪'),contact);
+  const saving=el('div',undefined,'runtime-panel');saving.id='saving-settings';
+  personal.panes.saving.append(saving);
   const security=el('div',undefined,'runtime-panel');security.id='security-settings';
   security.append(el('h2','登录与安全'),el('p','新打开登录入口需要主动输入密码；只有已登录的当前标签页刷新，才会向服务器验证并恢复会话。'),el('p','会话最长有效 8 小时。重新登录会替换当前浏览器的旧会话，退出后清除本页的私有资料。'),el('p','请勿在公共电脑保存密码。修改登录密码请联系管理员。模型密钥始终加密存储在服务器。','runtime-hint'));
   personal.panes.security.append(security);

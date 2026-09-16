@@ -1,8 +1,9 @@
 import { getModelPresentation } from './model-switch.js';
-import { AUTH_TAB_MARKER, createAuthFlow, shouldRestoreSession } from './auth-flow.js';
+import { AUTH_TAB_MARKER, accountScopeFrom, createAuthFlow, shouldRestoreSession } from './auth-flow.js';
 import {createBatchRunners} from './batch-runners.js';
 import {initializeWorkspaces} from './workspace-ui.js';
 import {initializeConsole} from './console-view.js';
+import {createLocalOutput} from './local-output.js';
 
 export function modelIsLocked(settings,batch) {
   return Boolean(settings?.modelLocked || batch && !['completed','cancelled'].includes(batch.status));
@@ -38,6 +39,58 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   let csrf='',settings=null,activeBatch=null,pendingCredit=null,members=[],workspaces;
   const auth=createAuthFlow();
   const consoleView=initializeConsole({changeView,onCreate:()=>workspaces.create()});
+  const localOutput=createLocalOutput({});
+  function renderSaving() {
+    const pane=$('saving-settings');if(!pane)return;
+    const operation=auth.epoch;
+    pane.replaceChildren(node('h2','文章保存到本机'),
+      node('p','选择一个本机文件夹后，生成完成的文章会自动写入并逐字校验；确认保存成功前，网站不会清理在线正文。'),
+      node('p','文件夹授权只保存在本浏览器中，并按登录账号相互隔离。忘记此设备目录不会删除已保存的文章。','runtime-hint'));
+    const statusLine=node('p',undefined,'runtime-hint');statusLine.id='saving-status';statusLine.setAttribute('role','status');
+    const messageLine=node('p',undefined,'runtime-hint');messageLine.id='saving-message';
+    pane.append(statusLine,messageLine);
+    localOutput.state().then(state=>{
+      if(!auth.isCurrent(operation))return;
+      if(!state.supported){
+        statusLine.textContent='当前浏览器不支持自动保存到本地目录。可继续查看历史和手动下载文件；正式使用请用最新版桌面 Edge 或 Chrome。';
+        return;
+      }
+      if(!state.scope){statusLine.textContent='登录后即可选择本机保存文件夹。';return;}
+      const button=node('button',state.directoryName?'更换文件夹':'选择文件夹','geo-run-button');button.type='button';button.id='saving-pick';
+      button.addEventListener('click',async()=>{
+        button.disabled=true;messageLine.textContent='';messageLine.classList.remove('is-error');
+        try{
+          const picked=await localOutput.pick();
+          if(picked?.cancelled)messageLine.textContent='已取消选择，保持原设置。';
+        }catch(error){messageLine.textContent=error.message||'选择文件夹失败。';messageLine.classList.add('is-error');}
+        finally{button.disabled=false;renderSaving();}
+      });
+      pane.append(button);
+      if(!state.directoryName){statusLine.textContent='尚未选择本机保存文件夹。新文章生成前需要先完成目录授权。';return;}
+      const authorized=state.permission==='granted';
+      statusLine.textContent=`保存文件夹：${state.directoryName} · ${authorized?'已授权':'需要重新授权'}`;
+      if(!authorized){
+        const authorize=node('button','重新授权','geo-run-button');authorize.type='button';authorize.id='saving-authorize';
+        authorize.addEventListener('click',async()=>{
+          authorize.disabled=true;
+          try{
+            const result=await localOutput.requestAccess();
+            messageLine.textContent=result==='granted'?'已重新授权此文件夹。':'授权被拒绝，稍后写盘前需要再次授权。';
+          }catch(error){messageLine.textContent=error.message||'重新授权失败。';messageLine.classList.add('is-error');}
+          finally{authorize.disabled=false;renderSaving();}
+        });
+        pane.append(authorize);
+      }
+      const forget=node('button','忘记此设备目录','console-link-button');forget.type='button';forget.id='saving-forget';
+      forget.addEventListener('click',async()=>{
+        if(!confirm('忘记此设备上保存的文件夹设置？已写入本机的文章文件不会被删除。'))return;
+        await localOutput.forget();renderSaving();
+      });
+      pane.append(forget);
+    });
+    const pending=node('p','待补存文章：—（本地交付将在后续版本启用；当前版本不会自动删除在线正文。）','runtime-hint');
+    pane.append(pending);
+  }
   function downloadCurrent(article){const operation=auth.epoch;return download(article,()=>auth.isCurrent(operation));}
   const runners=createBatchRunners({api,onBatch:receiveBatch,onError:(error,id)=>toast(`任务 ${id.slice(0,6)}：${error.message}`),async onFinish(id){
     const operation=auth.epoch;
@@ -47,12 +100,14 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   workspaces=initializeWorkspaces({api,getSettings:()=>settings,getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange,changeView,consoleView,
     onSelect(w){activeBatch=w?.batch||null;consoleView?.setWorkspaceEmpty(!w);if(activeBatch)renderBatch(activeBatch);else{$('batch-progress').replaceChildren();consoleView?.setBatch(null);}},
     onModelChange:renderConnections,onStarted:drive,onError:error=>toast(error.message),onSuccess(){ $('runtime-toast').hidden=true; }});
+  document.querySelector('[data-view-panel=settings]').addEventListener('directorychange',event=>{if(event.detail==='saving')renderSaving();});
   const actions=new WeakMap();
   const rememberTab=value=>{try{if(value)sessionStorage.setItem(AUTH_TAB_MARKER,'1');else sessionStorage.removeItem(AUTH_TAB_MARKER);}catch{}};
   let expiryTimer;
   const shell=document.querySelector('.geo-shell');
   function showLogin() {
     auth.invalidate();runners.reset();workspaces.reset();rememberTab(false);clearTimeout(expiryTimer);csrf='';settings=null;activeBatch=null;pendingCredit=null;members=[];
+    localOutput.setScope(null);renderSaving();
     shell.hidden=true;$('login-page').hidden=false;$('login-password').value='';$('login-password').type='password';$('toggle-password').textContent='显示';$('toggle-password').setAttribute('aria-pressed','false');$('toggle-password').setAttribute('aria-label','显示密码');
     $('model-form').reset();$('ima-form').reset();$('member-form').reset();$('credit-form').reset();$('subscription-form').reset();defaultMemberDates();clearUploads();
     for(const id of ['batch-progress','history-list','completed-list','managed-user','managed-user-summary','member-ledger','own-ledger'])$(id).replaceChildren();
@@ -115,6 +170,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     if(!auth.isCurrent(operation))return;
     if(!auth.accept(operation,data))throw new Error('登录响应无效，请重新输入账号和密码。');
     csrf=data.csrf;rememberTab(true);clearTimeout(expiryTimer);
+    localOutput.setScope(accountScopeFrom(data));renderSaving();
     expiryTimer=setTimeout(()=>{showLogin();message('login-message','登录已到期，请重新输入密码。');},Math.min(data.expiresAt-Date.now(),2147483647));
     if(location.hash==='#login')window.history.replaceState(null,'',location.pathname+location.search);
     await enter();

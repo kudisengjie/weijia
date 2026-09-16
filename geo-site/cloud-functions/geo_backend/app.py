@@ -229,13 +229,23 @@ def create_app(
             samesite="strict",
             path="/",
         )
-        return {"authenticated": True, "csrf": result.csrf_token, "expiresAt": _epoch_ms(result.expires_at)}
+        return {
+            "authenticated": True,
+            "csrf": result.csrf_token,
+            "expiresAt": _epoch_ms(result.expires_at),
+            "accountScope": result.account_scope,
+        }
 
     @app.get("/auth/session")
     def session(request: Request):
         with factory() as repository:
             current = authentication(request, repository)
-        return {"authenticated": True, "csrf": current.csrf_token, "expiresAt": _epoch_ms(current.expires_at)}
+        return {
+            "authenticated": True,
+            "csrf": current.csrf_token,
+            "expiresAt": _epoch_ms(current.expires_at),
+            "accountScope": current.account_scope,
+        }
 
     @app.post("/auth/logout")
     def logout(request: Request, response: Response):

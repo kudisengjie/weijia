@@ -126,5 +126,58 @@ class AuthServiceTests(unittest.TestCase):
         self.assertEqual("LOGIN_REQUIRED", rejected.exception.code)
 
 
+class AccountScopeTests(unittest.TestCase):
+    """本地交付的账号上下文：稳定、非秘密、按账号隔离（2026-09-16 交接方案 §6.2）。"""
+
+    def test_account_scope_is_derived_from_master_key_and_user_id(self):
+        import hashlib
+        import hmac as hmac_module
+
+        from geo_backend.security import account_scope
+
+        key = bytes.fromhex("c" * 64)
+        expected = hmac_module.new(
+            key, b"lxue-account-scope-v1:user-1", hashlib.sha256
+        ).hexdigest()[:32]
+        self.assertEqual(expected, account_scope("user-1", "c" * 64))
+        # 主密钥不同则派生值不同；同一密钥同一用户稳定。
+        self.assertNotEqual(account_scope("user-1", "d" * 64), expected)
+        self.assertEqual(expected, account_scope("user-1", "c" * 64))
+
+    def test_login_result_carries_stable_opaque_scope(self):
+        from geo_backend.auth import AuthService
+
+        repository = FakeRepository()
+        service = AuthService(settings(), repository)
+        first = service.login("owner", "secret")
+        again = service.login("owner", "secret")
+
+        self.assertTrue(first.account_scope)
+        self.assertRegex(first.account_scope, r"^[0-9a-f]{32}$")
+        self.assertEqual(first.account_scope, again.account_scope)
+        self.assertNotIn("user-1", first.account_scope)
+        self.assertNotIn("owner", first.account_scope)
+
+    def test_session_scope_matches_login_scope_and_isolates_accounts(self):
+        from geo_backend.auth import AuthService
+        from geo_backend.security import hash_password
+
+        repository = FakeRepository()
+        repository.users["member"] = {
+            "id": "user-2",
+            "username": "member",
+            "password_hash": hash_password("member-secret"),
+        }
+        service = AuthService(settings(), repository)
+        owner = service.login("owner", "secret")
+        member = service.login("member", "member-secret")
+
+        self.assertNotEqual(owner.account_scope, member.account_scope)
+        restored = service.authenticate(owner.cookie_token, None, "GET")
+        self.assertEqual(owner.account_scope, restored.account_scope)
+        member_restored = service.authenticate(member.cookie_token, None, "GET")
+        self.assertEqual(member.account_scope, member_restored.account_scope)
+
+
 if __name__ == "__main__":
     unittest.main()

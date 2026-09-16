@@ -63,3 +63,18 @@ test('partial output is never labelled all successful', () => {
   assert.equal(runtime.batchStatusLabel({status:'cancelled'}),'已取消');
   assert.equal(runtime.batchStatusLabel({status:'paused'}),'已暂停');
 });
+
+test('authenticated session hands the account scope to local output; logout clears it', () => {
+  // 交接方案 §6.2/§12 阶段 B：登录/会话恢复注入 accountScope，登出/失效立即清空本机交付上下文。
+  assert.match(source, /accountScopeFrom/);
+  assert.match(source, /localOutput\.setScope\(accountScopeFrom\(data\)\)/);
+  assert.match(source, /localOutput\.setScope\(null\)/);
+  assert.match(source, /createLocalOutput\(/);
+});
+
+test('saving pane only enables real directory flows and never fakes a saved state', () => {
+  assert.match(source, /saving-settings/);
+  assert.match(source, /renderSaving/);
+  assert.match(source, /本地交付将在后续版本启用/);
+  assert.doesNotMatch(source, /localStorage\.(set|get)Item\('lxue\.geo\.dir/);
+});

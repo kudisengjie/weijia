@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from .config import Settings
 from .errors import ApiError
-from .security import csrf_for_session, digest, new_session_material, verify_password
+from .security import account_scope, csrf_for_session, digest, new_session_material, verify_password
 
 
 @dataclass(frozen=True)
@@ -15,6 +15,7 @@ class LoginResult:
     cookie_token: str
     csrf_token: str
     expires_at: datetime
+    account_scope: str
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,7 @@ class AuthenticatedSession:
     csrf_hash: str
     csrf_token: str
     expires_at: datetime
+    account_scope: str
 
 
 class AuthService:
@@ -65,7 +67,13 @@ class AuthService:
         self.repository.create_session(str(user["id"]), material.stored)
         if previous_cookie and len(previous_cookie) <= 256:
             self.logout(previous_cookie)
-        return LoginResult(True, material.cookie_token, material.csrf_token, material.expires_at)
+        return LoginResult(
+            True,
+            material.cookie_token,
+            material.csrf_token,
+            material.expires_at,
+            account_scope(str(user["id"]), self.settings.geo_master_key),
+        )
 
     def authenticate(self, cookie_token: str | None, csrf_token: str | None, method: str) -> AuthenticatedSession:
         self.require_configuration()
@@ -82,7 +90,13 @@ class AuthService:
             actual = digest(csrf_token or "")
             if not hmac.compare_digest(actual, stored_csrf_hash):
                 raise ApiError(403, "会话校验失败，请重新登录。", "CSRF_REJECTED")
-        return AuthenticatedSession(str(row["user_id"]), stored_csrf_hash, session_csrf, row["expires_at"])
+        return AuthenticatedSession(
+            str(row["user_id"]),
+            stored_csrf_hash,
+            session_csrf,
+            row["expires_at"],
+            account_scope(str(row["user_id"]), self.settings.geo_master_key),
+        )
 
     def logout(self, cookie_token: str) -> None:
         if cookie_token:
