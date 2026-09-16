@@ -13,7 +13,7 @@
 
 验证：`npm run build` 通过；`npm test` 28/30——仅剩两个与本阶段无关的既有失败（`model-switch.test.mjs`：runtime.js 既有 `AUTH_TAB_MARKER` 使用 sessionStorage 触发凭据正则；`.geo-table-wrap table` 基础字号 9px/媒体查询 12px vs 断言 13px；两者经 diff 确认非本次改动引入，未擅自“顺手修”以免扩大范围）。`check-workspace-feedback.mjs`、`check-console-layout.mjs`、`check-login-flow.mjs` 全部 PASS；`git diff --check` 干净。提交信息中已如实记录两个既有失败。
 
-⚠️ git 事故记录：提交后分支引用 `refs/heads/feat/static-geo-model-catalog` 曾静默丢失（reflog 与提交对象完好，`git update-ref` 写入亦被静默吞掉），最终以 `printf SHA > .git/refs/heads/feat/static-geo-model-catalog` 手动恢复。后续会话开工前先跑 `git -C <工作树> log -1` 确认 HEAD 可解析；若再次丢失，从 `.git/logs/refs/heads/feat/static-geo-model-catalog` 末行取 SHA 手动重建引用文件。
+⚠️ git 事故记录：本机每次 `git commit` 后分支引用 `refs/heads/feat/static-geo-model-catalog` 都可能被静默吞掉（reflog 与提交对象完好，`git update-ref` 写入亦会被吞），已两次复现（1eea687 与 349143b 后），最终以 `printf SHA > .git/refs/heads/feat/static-geo-model-catalog` 手动恢复并验证持久。后续每次提交后必须跑 `git -C <工作树> log -1` 确认 HEAD 可解析；若丢失，从 `.git/logs/refs/heads/feat/static-geo-model-catalog` 末行取 SHA 手动重建引用文件。
 
 下一步：接续 §13 阶段 B（本地交付目录）；阶段 A 未推送，与后续阶段一起再定推送节奏。
 
