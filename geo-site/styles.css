@@ -675,3 +675,19 @@ label:focus-within {
 @media (max-width: 1280px) { .workspace-toolbar { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } .workspace-toolbar__actions { grid-column: 1 / -1; } }
 @media (max-width: 860px) { .workspace-toolbar { grid-template-columns: minmax(0,1fr); } .workspace-toolbar input,.workspace-toolbar select { font-size: 16px; min-height: 40px; } .workspace-tabs button { flex-basis: 138px; } }
 @media (min-width: 861px) { .geo-shell .geo-service-chips { grid-template-columns: minmax(0,1fr); } .geo-shell .geo-service-chips span { white-space: nowrap; } }
+
+/* ===== 2026-09-16 workspace creation feedback and overview empty state ===== */
+.workspace-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 0 0 18px; padding: 42px 24px; text-align: center; background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+.workspace-empty strong { color: var(--ink); font-size: 16px; }
+.workspace-empty p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; max-width: 460px; }
+.workspace-empty button { min-height: 44px; padding: 10px 26px; border: 1px solid var(--blue-deep); border-radius: 11px; background: var(--blue-deep); color: #fff; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+.workspace-empty button:hover { background: #2f65b3; border-color: #2f65b3; }
+.workspace-empty button:disabled { opacity: .6; cursor: not-allowed; }
+.console-empty-state { min-height: 170px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); text-align: center; padding: 20px; }
+.console-empty-state img { width: 72px; height: 72px; object-fit: contain; }
+.console-empty-state strong { color: var(--ink); font-size: 15px; }
+.console-empty-state p { margin: 0; font-size: 13px; line-height: 1.7; max-width: 420px; }
+.console-empty-state button { margin-top: 6px; min-height: 40px; padding: 8px 22px; border: 1px solid var(--blue-deep); border-radius: 10px; background: var(--blue-deep); color: #fff; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.console-empty-state button:hover { background: #2f65b3; border-color: #2f65b3; }
+.console-empty-state button:disabled { opacity: .6; cursor: not-allowed; }
+@media (max-width: 760px) { .workspace-empty { padding: 30px 16px; } .console-empty-state { min-height: 140px; } }

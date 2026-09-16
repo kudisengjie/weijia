@@ -3,7 +3,6 @@ import * as mammoth from "mammoth";
 import { strFromU8, unzipSync } from "fflate";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { initializeRuntime } from './runtime.js';
-import { initializeConsole } from './console-view.js';
 import {
   DEFAULT_MODEL_PROVIDER,
   DEFAULT_MODEL_SLOT,
@@ -408,7 +407,6 @@ function changeView(name) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-const consoleView=initializeConsole({changeView});
 taskInput.addEventListener("change", handleTaskFile);
 companyInput.addEventListener("change", handleCompanyFiles);
 clearButton.addEventListener("click", clearFiles);
@@ -420,7 +418,7 @@ renderSelectedModel();
 updateStatus();
 
 initializeRuntime({
-  renderSelectedModel, changeView, clearUploads:clearFiles, consoleView,
+  renderSelectedModel, changeView, clearUploads:clearFiles,
   getDraftUploads, restoreDraftUploads, uploadsAreReading,
   onUploadsChange(listener){onUploadsChanged=listener;},
   getUploads() {

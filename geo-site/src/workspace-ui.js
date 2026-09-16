@@ -13,7 +13,7 @@ export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDra
   let timer,savePromise=null,pendingCreate=null,serverOccupied=0,legacyCount=0,models=[];
   const strip=el('nav',undefined,'workspace-tabs');strip.className='workspace-tabs';strip.setAttribute('aria-label','独立任务工作区');$('geo-main').prepend(strip);
   const toolbar=el('div',undefined,'workspace-toolbar');toolbar.className='workspace-toolbar';
-  const titleLabel=el('label','工作区名称'),title=el('input',undefined,'workspace-title');title.type='text';title.name='workspaceTitle';title.maxLength=160;title.autocomplete='off';titleLabel.append(title);
+  const titleLabel=el('label','工作区名称'),title=el('input',undefined,'workspace-title');title.type='text';title.name='workspaceTitle';title.id='workspace-title';title.maxLength=160;title.autocomplete='off';titleLabel.append(title);
   const modelLabel=el('label','本工作区模型'),model=el('select',undefined,'workspace-model');model.name='workspaceModel';modelLabel.append(model);
   const controls=el('div');controls.className='workspace-toolbar__actions';
   const save=el('button','保存草稿','save-workspace'),reload=el('button','重新读取','reload-workspace'),close=el('button','关闭草稿','close-workspace');
@@ -126,12 +126,20 @@ export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDra
     const w={...old,batch};records.set(w.id,w);
     if(selected?.id===w.id)selected=w;renderTabs();
   }
-  $('new-workspace').addEventListener('click',()=>operate(async()=>{
-    if(uploadsAreReading())throw new Error('文件仍在读取，请稍候再新建工作区。');
-    await flush();pendingCreate??=crypto.randomUUID();
-    let result;try{result=await api('workspaces',{requestId:pendingCreate});}catch(error){if(error.status>=400&&error.status<500)pendingCreate=null;throw error;}
-    pendingCreate=null;serverOccupied++;display(result);changeView('workspace');
-  }));
+  async function create(){
+    return operate(async()=>{
+      if(uploadsAreReading())throw new Error('文件仍在读取，请稍候再新建工作区。');
+      await flush();pendingCreate??=crypto.randomUUID();
+      status('正在创建…');state.setAttribute('aria-busy','true');
+      let result;
+      try{result=await api('workspaces',{requestId:pendingCreate});}
+      catch(error){if(error.status>=400&&error.status<500)pendingCreate=null;throw error;}
+      finally{state.removeAttribute('aria-busy');}
+      pendingCreate=null;serverOccupied++;display(result);changeView('workspace');
+      setTimeout(()=>{if(selected?.id===result.id&&!title.disabled)title.focus();},0);
+    });
+  }
+  $('new-workspace').addEventListener('click',()=>{create().catch(()=>{});});
   save.addEventListener('click',()=>operate(flush));
   reload.addEventListener('click',()=>operate(async()=>{if((dirty()||uncertain)&&!confirm('重新读取会丢弃本页尚未保存的修改，读取服务器最新资料与启动状态。确认继续？'))return;if(savePromise)await savePromise.catch(()=>{});display(await api('workspaces/'+selected.id));}));
   close.addEventListener('click',()=>operate(async()=>{
@@ -154,9 +162,9 @@ export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDra
       display(result);onStarted(result.batch);
     });
   }
-  function reset(){epoch++;clearTimeout(timer);savePromise=null;pendingCreate=null;records.clear();selected=null;busy=false;revision=savedRevision=0;serverOccupied=legacyCount=0;conflict=uncertain=false;restoring=true;title.value='';model.replaceChildren();strip.replaceChildren();strip.hidden=true;status('请选择工作区或新建任务。');restoring=false;updateControls();}
+  function reset(){epoch++;clearTimeout(timer);savePromise=null;pendingCreate=null;records.clear();selected=null;busy=false;revision=savedRevision=0;serverOccupied=legacyCount=0;conflict=uncertain=false;restoring=true;title.value='';model.replaceChildren();strip.replaceChildren();strip.hidden=true;status('请选择工作区或新建任务。');restoring=false;onSelect(null);updateControls();}
   reset();
-  return {load,start,reset,modelOptions,updateBatch,flush,open:id=>operate(()=>select(id)),forBatch:id=>[...records.values()].find(w=>w.batchId===id),
+  return {load,start,reset,modelOptions,updateBatch,flush,create,open:id=>operate(()=>select(id)),forBatch:id=>[...records.values()].find(w=>w.batchId===id),
     leave:fn=>operate(async()=>{if(uploadsAreReading())throw new Error('文件仍在读取，请稍候再切换。');await flush();display(null);await fn();}),
     get selected(){return selected;},get model(){return selected?.batch?.model||(selected?.status==='draft'?models.find(m=>modelValue(m)===model.selectedOptions[0]?.dataset.modelValue):null);},
     get summaries(){return [...records.values()].filter(w=>w.status!=='archived').map(w=>({...w.batch,id:w.id,workspaceId:w.id,title:label(w),model:w.batch?.model||w.draft?.model||w.model,status:w.batch?.status||'draft',completed:w.batch?.completed||0,total:w.batch?.total||0}));},

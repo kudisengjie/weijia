@@ -2,6 +2,7 @@ import { getModelPresentation } from './model-switch.js';
 import { AUTH_TAB_MARKER, createAuthFlow, shouldRestoreSession } from './auth-flow.js';
 import {createBatchRunners} from './batch-runners.js';
 import {initializeWorkspaces} from './workspace-ui.js';
+import {initializeConsole} from './console-view.js';
 
 export function modelIsLocked(settings,batch) {
   return Boolean(settings?.modelLocked || batch && !['completed','cancelled'].includes(batch.status));
@@ -33,9 +34,10 @@ export async function bootstrapAuthenticatedWorkspace({showWorkspace,refreshSett
   try {await refreshSettings();await loadHistory();return true;}
   catch(error) {showServiceFailure(error);return false;}
 }
-export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{},consoleView,getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange}) {
+export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{},getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange}) {
   let csrf='',settings=null,activeBatch=null,pendingCredit=null,members=[],workspaces;
   const auth=createAuthFlow();
+  const consoleView=initializeConsole({changeView,onCreate:()=>workspaces.create()});
   function downloadCurrent(article){const operation=auth.epoch;return download(article,()=>auth.isCurrent(operation));}
   const runners=createBatchRunners({api,onBatch:receiveBatch,onError:(error,id)=>toast(`任务 ${id.slice(0,6)}：${error.message}`),async onFinish(id){
     const operation=auth.epoch;
@@ -43,7 +45,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     catch(error){if(auth.isCurrent(operation)&&error.code!=='STALE_RESPONSE')toast(error.message);}
   }});
   workspaces=initializeWorkspaces({api,getSettings:()=>settings,getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange,changeView,consoleView,
-    onSelect(w){activeBatch=w?.batch||null;if(activeBatch)renderBatch(activeBatch);else{$('batch-progress').replaceChildren();consoleView?.setBatch(null);}},
+    onSelect(w){activeBatch=w?.batch||null;consoleView?.setWorkspaceEmpty(!w);if(activeBatch)renderBatch(activeBatch);else{$('batch-progress').replaceChildren();consoleView?.setBatch(null);}},
     onModelChange:renderConnections,onStarted:drive,onError:error=>toast(error.message),onSuccess(){ $('runtime-toast').hidden=true; }});
   const actions=new WeakMap();
   const rememberTab=value=>{try{if(value)sessionStorage.setItem(AUTH_TAB_MARKER,'1');else sessionStorage.removeItem(AUTH_TAB_MARKER);}catch{}};
@@ -198,6 +200,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     if(!csrf||!settings)return;
     const driving=runners.has(b.id);
     activeBatch=b;const panel=$('batch-progress');if(!consoleView)panel.hidden=false;panel.replaceChildren();const workspace=workspaces.forBatch(b.id);consoleView?.setBatch({...b,title:workspace?.draft?.title||workspace?.title||b.title});
+    consoleView?.setWorkspaceEmpty(false);
     panel.append(node('span',b.model.label,'login-eyebrow'),node('h2',`${batchStatusLabel(b)} · ${b.completed}/${b.total} 篇`));
     const progress=document.createElement('progress');progress.max=b.total;progress.value=b.completed;progress.setAttribute('aria-label','已完成文章进度');panel.append(progress);
     const terminal=['completed','cancelled'].includes(b.status);
