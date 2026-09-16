@@ -1,4 +1,5 @@
 import sys
+import asyncio
 import unittest
 from pathlib import Path
 
@@ -27,6 +28,48 @@ class WorkerRepository:
 
 
 class WorkerTests(unittest.IsolatedAsyncioTestCase):
+    async def test_pool_five_independent_lanes_and_graceful_stop(self):
+        from geo_backend.worker import run_pool
+        stop, release, all_started = asyncio.Event(), asyncio.Event(), asyncio.Event()
+        active = peak = calls = finished = 0
+        async def step():
+            nonlocal active, peak, calls, finished
+            calls += 1
+            active += 1
+            peak = max(peak, active)
+            if active == 5:
+                all_started.set()
+            await release.wait()
+            active -= 1
+            finished += 1
+            return True
+        task = asyncio.create_task(run_pool(step, stop, concurrency=5, poll_seconds=0.01))
+        await asyncio.wait_for(all_started.wait(), timeout=2)
+        stop.set()
+        self.assertFalse(task.done(), 'Stop must drain in-flight work, not cancel it')
+        release.set()
+        await asyncio.wait_for(task, timeout=2)
+        self.assertEqual((5, 5, 5, 0), (peak, calls, finished, active))
+
+    async def test_pool_failure_isolated_and_idle_wakes_on_stop(self):
+        from geo_backend.worker import run_pool
+        stop = asyncio.Event()
+        calls, failures = [], []
+        async def step():
+            calls.append(len(calls))
+            if len(calls) == 1:
+                raise RuntimeError('private upstream detail must not be logged')
+            stop.set()
+            return False
+        await asyncio.wait_for(run_pool(step, stop, concurrency=2, poll_seconds=60, on_error=lambda: failures.append(True)), timeout=2)
+        self.assertEqual([True], failures)
+        self.assertEqual(2, len(calls))
+
+    async def test_pool_rejects_more_than_five_lanes(self):
+        from geo_backend.worker import run_pool
+        with self.assertRaises(ValueError):
+            await run_pool(None, asyncio.Event(), concurrency=6)
+
     async def test_worker_claims_once_and_finishes_completed_batch(self):
         from geo_backend.worker import BatchWorker
 
