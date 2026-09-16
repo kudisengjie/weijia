@@ -66,7 +66,7 @@ export function initializeConsole({changeView}){
     if(!batches.length){region.append(el('p','还没有任务。点击左下角“新建任务”，上传第一份 Excel。','console-empty'));return;}
     const table=el('table'),head=el('thead'),header=el('tr'),body=el('tbody');
     for(const label of ['任务工作区','模型','状态','文章输出','操作']){const th=el('th',label);th.scope='col';header.append(th);}head.append(header);
-    for(const batch of batches){const row=el('tr');const state=batch.status==='completed'?(batch.failedTasks?.length?'部分未完成':'已完成'):({paused:'已暂停',failed:'需要处理',cancelled:'已取消'}[batch.status]||batch.phaseLabel||'待运行');
+    for(const batch of batches){const row=el('tr');const state=batch.status==='completed'?(batch.failedTasks?.length?'部分未完成':'已完成'):({draft:'草稿',paused:'已暂停',failed:'需要处理',cancelled:'已取消'}[batch.status]||batch.phaseLabel||'待运行');
       row.append(el('td',batch.title),el('td',batch.model.label),el('td',state),el('td',`${batch.completed} / ${batch.total}`));
       const action=el('td'),button=el('button','打开工作区','console-link-button');button.type='button';button.addEventListener('click',()=>open(batch));action.append(button);row.append(action);body.append(row);
     }

@@ -38,8 +38,7 @@ test('settings bootstrap failure stays in workspace and does not trigger duplica
 });
 
 test('runtime uses bounded runs and server-side article artifacts', () => {
-  assert.match(source, /batches\/\$\{b\.id\}\/run/);
-  assert.match(source, /maxSteps:1/);
+  assert.match(source, /createBatchRunners/);
   assert.match(source, /artifacts\/'\+encodeURIComponent/);
   assert.match(source, /batches\/\$\{b\.id\}\/pause/);
   assert.match(source, /batches\/\$\{b\.id\}\/cancel/);

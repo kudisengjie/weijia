@@ -1,5 +1,7 @@
 import { getModelPresentation } from './model-switch.js';
 import { AUTH_TAB_MARKER, createAuthFlow, shouldRestoreSession } from './auth-flow.js';
+import {createBatchRunners} from './batch-runners.js';
+import {initializeWorkspaces} from './workspace-ui.js';
 
 export function modelIsLocked(settings,batch) {
   return Boolean(settings?.modelLocked || batch && !['completed','cancelled'].includes(batch.status));
@@ -17,11 +19,11 @@ function localDateTime(value) {const d=new Date(value);return new Date(d.getTime
 const $ = id => document.getElementById(id);
 function node(tag, text, className) { const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n; }
 function message(id,text,error=false) { $(id).textContent=text;$(id).classList.toggle('is-error',error); }
-async function download(article) {
+async function download(article,isCurrent=()=>true) {
   if(article.artifactId){
     const response=await fetch('/api/artifacts/'+encodeURIComponent(article.artifactId),{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(125000)});
     if(!response.ok){let data={};try{data=await response.json();}catch{}throw new Error(data.error||'文章文件读取失败。');}
-    const blob=await response.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=article.filename||`article-${article.index}.md`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
+    const blob=await response.blob();if(!isCurrent())return;const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=article.filename||`article-${article.index}.md`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
   }
   const url=URL.createObjectURL(new Blob([article.markdown],{type:'text/markdown;charset=utf-8'}));
   const a=document.createElement('a');a.href=url;a.download=`${article.index}-${article.brand}-${article.title}`.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,120)+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -31,15 +33,24 @@ export async function bootstrapAuthenticatedWorkspace({showWorkspace,refreshSett
   try {await refreshSettings();await loadHistory();return true;}
   catch(error) {showServiceFailure(error);return false;}
 }
-export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{},consoleView}) {
-  let csrf='',settings=null,activeBatch=null,driving=false,pauseRequested=false,pendingCreate=null,pendingCredit=null,members=[];
+export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{},consoleView,getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange}) {
+  let csrf='',settings=null,activeBatch=null,pendingCredit=null,members=[],workspaces;
   const auth=createAuthFlow();
+  function downloadCurrent(article){const operation=auth.epoch;return download(article,()=>auth.isCurrent(operation));}
+  const runners=createBatchRunners({api,onBatch:receiveBatch,onError:(error,id)=>toast(`任务 ${id.slice(0,6)}：${error.message}`),async onFinish(id){
+    const operation=auth.epoch;
+    try{receiveBatch(await api('batches/'+id));await refreshSettings();await history();}
+    catch(error){if(auth.isCurrent(operation)&&error.code!=='STALE_RESPONSE')toast(error.message);}
+  }});
+  workspaces=initializeWorkspaces({api,getSettings:()=>settings,getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange,changeView,consoleView,
+    onSelect(w){activeBatch=w?.batch||null;if(activeBatch)renderBatch(activeBatch);else{$('batch-progress').replaceChildren();consoleView?.setBatch(null);}},
+    onModelChange:renderConnections,onStarted:drive,onError:error=>toast(error.message),onSuccess(){ $('runtime-toast').hidden=true; }});
   const actions=new WeakMap();
   const rememberTab=value=>{try{if(value)sessionStorage.setItem(AUTH_TAB_MARKER,'1');else sessionStorage.removeItem(AUTH_TAB_MARKER);}catch{}};
   let expiryTimer;
   const shell=document.querySelector('.geo-shell');
   function showLogin() {
-    auth.invalidate();rememberTab(false);clearTimeout(expiryTimer);pauseRequested=true;csrf='';settings=null;activeBatch=null;pendingCreate=null;pendingCredit=null;members=[];
+    auth.invalidate();runners.reset();workspaces.reset();rememberTab(false);clearTimeout(expiryTimer);csrf='';settings=null;activeBatch=null;pendingCredit=null;members=[];
     shell.hidden=true;$('login-page').hidden=false;$('login-password').value='';$('login-password').type='password';$('toggle-password').textContent='显示';$('toggle-password').setAttribute('aria-pressed','false');$('toggle-password').setAttribute('aria-label','显示密码');
     $('model-form').reset();$('ima-form').reset();$('member-form').reset();$('credit-form').reset();$('subscription-form').reset();defaultMemberDates();clearUploads();
     for(const id of ['batch-progress','history-list','completed-list','managed-user','managed-user-summary','member-ledger','own-ledger'])$(id).replaceChildren();
@@ -68,7 +79,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   }
   function renderConnections() {
     if(!settings)return;
-    const model=settings.model,configured=settings.providers[model.id].configured;
+    const model=activeBatch?.model||workspaces.model||settings.model,configured=settings.providers[model.id].configured;
     document.querySelectorAll('[data-selected-model-provider]').forEach(n=>n.textContent=model.provider);
     document.querySelectorAll('[data-selected-model-name]').forEach(n=>n.textContent=model.model);
     document.querySelectorAll('[data-selected-model-preflight]').forEach(n=>n.textContent=`${model.label} · ${configured?'已配置，尚未验证':'未配置 API'}`);
@@ -91,7 +102,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     renderModelLock();
   }
   function renderModelLock() {const locked=modelIsLocked(settings,activeBatch);document.querySelectorAll('input[name="model-option"], #model-key, #custom-model-id, #model-form button').forEach(input=>{input.disabled=locked;});}
-  async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();renderConnections();}
+  async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();}
   async function enter() {return bootstrapAuthenticatedWorkspace({
     showWorkspace(){ $('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
     refreshSettings,
@@ -116,8 +127,9 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   });});
   $('toggle-password').addEventListener('click',()=>{const input=$('login-password'),shown=input.type==='password';input.type=shown?'text':'password';$('toggle-password').textContent=shown?'隐藏':'显示';$('toggle-password').setAttribute('aria-pressed',String(shown));$('toggle-password').setAttribute('aria-label',shown?'隐藏密码':'显示密码');});
   $('logout-button').addEventListener('click',async()=>{
-    if(driving){toast('请先暂停批次，等待当前步骤结束后退出。');return;}
+    if(runners.size){toast('请先分别暂停运行中的工作区，等待当前步骤结束后退出。');return;}
     if(!confirm('确认退出工作台？模型设置、批次历史和已完成文章仍保存在当前账号中。'))return;
+    try{await workspaces.flush();}catch(error){toast(error.message);return;}
     auth.begin();$('logout-button').disabled=true;
     try{await api('auth/logout',{});showLogin();message('login-message','已退出，请输入账号和密码。');}
     catch(error){showLogin();message('login-message',error.status===401?'登录已失效，请重新输入密码。':'本机已锁定，但服务器未确认退出。请恢复网络后重新登录以替换旧会话。',error.status!==401);}
@@ -184,7 +196,8 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   });});
   function renderBatch(b) {
     if(!csrf||!settings)return;
-    activeBatch=b;const panel=$('batch-progress');if(!consoleView)panel.hidden=false;panel.replaceChildren();consoleView?.setBatch(b);
+    const driving=runners.has(b.id);
+    activeBatch=b;const panel=$('batch-progress');if(!consoleView)panel.hidden=false;panel.replaceChildren();const workspace=workspaces.forBatch(b.id);consoleView?.setBatch({...b,title:workspace?.draft?.title||workspace?.title||b.title});
     panel.append(node('span',b.model.label,'login-eyebrow'),node('h2',`${batchStatusLabel(b)} · ${b.completed}/${b.total} 篇`));
     const progress=document.createElement('progress');progress.max=b.total;progress.value=b.completed;progress.setAttribute('aria-label','已完成文章进度');panel.append(progress);
     const terminal=['completed','cancelled'].includes(b.status);
@@ -193,64 +206,45 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     for(const failed of b.failedTasks||[])panel.append(node('p',`第 ${failed.taskId} 条任务未完成：${failed.error}`,'runtime-error'));
     const controls=node('div',undefined,'runtime-buttons');
     if(!terminal){
-      const proceed=node('button',driving?'当前步骤执行中':b.status==='failed'?'手动重试失败步骤':'继续运行','runtime-primary');proceed.disabled=driving;
+          const proceed=node('button',driving?'当前步骤执行中':b.status==='failed'?'手动重试失败步骤':'继续运行','runtime-primary');proceed.disabled=driving;
       proceed.addEventListener('click',async()=>{
-        try{if(b.status==='failed'){if(!confirm('确认重试准备失败的批次？会重新预扣尚未完成任务的积分。'))return;b=await api(`batches/${b.id}/step`,{seq:b.seq,retry:true});}else if(b.status==='paused'){b=await api(`batches/${b.id}/resume`,{});}await drive(b);}catch(error){toast(error.message);}
+        proceed.disabled=true;try{if(b.status==='failed'){if(!confirm('确认重试准备失败的批次？会重新预扣尚未完成任务的积分。'))return;b=await api(`batches/${b.id}/step`,{seq:b.seq,retry:true});}else if(b.status==='paused'){b=await api(`batches/${b.id}/resume`,{});}drive(b);}catch(error){toast(error.message);}finally{proceed.disabled=runners.has(b.id);}
       });controls.append(proceed);
       proceed.disabled=driving||Boolean(b.pauseRequested&&b.status!=='paused');
-      if(b.status==='ready'&&!b.pauseRequested){const pause=node('button','暂停后续步骤');pause.addEventListener('click',async()=>{pause.disabled=true;pauseRequested=true;try{renderBatch(await api(`batches/${b.id}/pause`,{}));}catch(error){toast(error.message);pause.disabled=false;}});controls.append(pause);}
-      const refresh=node('button','读取一次最新状态');refresh.disabled=driving;refresh.addEventListener('click',async()=>{try{renderBatch(await api('batches/'+b.id));}catch(error){toast(error.message);}});controls.append(refresh);
-      if(!driving&&b.status==='ready'){const recover=node('button','处理超时步骤');recover.addEventListener('click',async()=>{if(!confirm('仅处理超过 150 秒无进展的步骤。结果不明的任务会跳过并退款，不重复发送模型请求。'))return;try{renderBatch(await api(`batches/${b.id}/step`,{seq:b.seq,retry:true}));}catch(error){toast(error.message);}});controls.append(recover);}
-      const cancel=node('button','取消批次并返还未完成积分');cancel.addEventListener('click',async()=>{if(!confirm('确认取消？未完整输出的任务积分会返还。已发给模型的请求无法撤回，提供商可能仍计费。'))return;cancel.disabled=true;pauseRequested=true;try{const result=await api(`batches/${b.id}/cancel`,{});activeBatch=result;await refreshSettings();renderBatch(await api('batches/'+b.id));await history();}catch(error){toast(error.message);cancel.disabled=false;}});controls.append(cancel);
+      if(b.status==='ready'&&!b.pauseRequested){const pause=node('button','暂停后续步骤');pause.addEventListener('click',async()=>{pause.disabled=true;runners.stop(b.id);try{receiveBatch(await api(`batches/${b.id}/pause`,{}));}catch(error){toast(error.message);pause.disabled=false;}});controls.append(pause);}
+      const refresh=node('button','读取一次最新状态');refresh.disabled=driving;refresh.addEventListener('click',async()=>{try{receiveBatch(await api('batches/'+b.id));}catch(error){toast(error.message);}});controls.append(refresh);
+      if(!driving&&b.status==='ready'){const recover=node('button','处理超时步骤');recover.addEventListener('click',async()=>{if(!confirm('仅处理超过 150 秒无进展的步骤。结果不明的任务会跳过并退款，不重复发送模型请求。'))return;try{receiveBatch(await api(`batches/${b.id}/step`,{seq:b.seq,retry:true}));}catch(error){toast(error.message);}});controls.append(recover);}
+      const cancel=node('button','取消批次并返还未完成积分');cancel.addEventListener('click',async()=>{if(!confirm('确认取消？未完整输出的任务积分会返还。已发给模型的请求无法撤回，提供商可能仍计费。'))return;cancel.disabled=true;runners.stop(b.id);try{receiveBatch(await api(`batches/${b.id}/cancel`,{}));await refreshSettings();receiveBatch(await api('batches/'+b.id));await history();}catch(error){toast(error.message);cancel.disabled=false;}});controls.append(cancel);
     }
-    panel.append(controls,node('p','任务状态与文章文件已保存到服务端；关闭页面后可从历史批次继续查看或下载。','runtime-hint'));
+    panel.append(controls,node('p','切换工作区不会停止其他任务。状态与文件保存在服务端；当前由页面推进，关闭页面可能暂停后续生成，重新打开后可继续。','runtime-hint'));
     renderModelLock();
-    consoleView?.renderArticles(b,download,error=>toast(error.message));
+    consoleView?.renderArticles(b,downloadCurrent,error=>toast(error.message));
     $('cabin-state').textContent=batchStatusLabel(b);$('status-task').textContent=`${b.completed}/${b.total}`;
     const apiCounter=document.querySelector('.geo-status-list > div:last-child dd');apiCounter.textContent=`${b.requests} 次请求步骤`;
     renderConnections();
   }
-  async function drive(b) {
-    if(driving)return;driving=true;pauseRequested=false;$('run-task').disabled=true;
-    const operation=auth.epoch;changeView('workspace');consoleView?.detailTab('progress');
-    try{
-      while(!pauseRequested&&b.status==='ready'&&!b.pauseRequested){
-        renderBatch(b);
-        try{const response=await api(`batches/${b.id}/run`,{seq:b.seq,maxSteps:1});b=response.batch;
-          if(b.error&&b.status==='ready')await new Promise(resolve=>setTimeout(resolve,response.nextPollMs||1200));
-        }catch(error){if(error.code!=='STEP_CLAIMED')throw error;
-          const latest=await api('batches/'+b.id);if(latest.seq===b.seq){b=latest;toast('其他执行器正在处理当前步骤，未重复提交。稍后可读取最新状态。');break;}b=latest;
-        }
-      }
-      b=await api('batches/'+b.id);renderBatch(b);
-    }catch(error){toast(error.message);}
-    finally{driving=false;$('run-task').disabled=false;if(csrf&&auth.isCurrent(operation)){try{activeBatch=await api('batches/'+b.id);await refreshSettings();renderBatch(activeBatch);await history();}catch(error){toast(error.message);}}}
+  function receiveBatch(b){
+    if(!csrf)return;workspaces.updateBatch(b);
+    if(activeBatch?.id===b.id&&!(activeBatch.seq>b.seq)&&!(['completed','cancelled'].includes(activeBatch.status)&&!['completed','cancelled'].includes(b.status)))renderBatch(b);
   }
-  $('run-task').addEventListener('click',async event=>{
-    if(driving||event.currentTarget.disabled)return;const button=event.currentTarget;button.disabled=true;$('runtime-toast').hidden=true;
-    try{
-      if(!pendingCreate)pendingCreate={requestId:crypto.randomUUID(),...getUploads()};
-      const b=await api('batches',pendingCreate);pendingCreate=null;await drive(b);
-    }catch(error){toast(error.message);if(error.status>=400&&error.status<500)pendingCreate=null;}
-    finally{button.disabled=false;}
-  });
+  function drive(b){
+    try{const promise=runners.start(b);receiveBatch(b);if(activeBatch?.id===b.id)consoleView?.detailTab('progress');promise.catch(error=>toast(error.message));}
+    catch(error){toast(error.message);}
+  }
+  $('run-task').addEventListener('click',()=>workspaces.start(getUploads));
   async function history() {
     const {batches}=await api('batches');const list=$('history-list'),completed=$('completed-list');list.replaceChildren();completed.replaceChildren();
-    consoleView?.renderOverview(batches,openBatch);
+    await workspaces.load(batches);
+    consoleView?.renderOverview([...workspaces.summaries,...batches.filter(b=>!workspaces.forBatch(b.id))],b=>b.workspaceId?workspaces.open(b.workspaceId):openBatch(b));
     if(!batches.length){list.append(node('p','还没有批次。上传资料并保存模型 API 后即可开始。','runtime-panel'));completed.append(node('p','还没有通过审核的文章。','runtime-panel'));return;}
     for(const b of batches){
       const row=node('article',undefined,'runtime-panel runtime-history');row.append(node('h2',b.title),node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${batchStatusLabel(b)}`));
       const button=node('button','打开批次');button.addEventListener('click',()=>openBatch(b));row.append(button);list.append(row);
-      if(b.completed){const group=node('article',undefined,'runtime-panel');group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>download(article).catch(error=>toast(error.message)));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);completed.append(group);}
+      if(b.completed){const group=node('article',undefined,'runtime-panel');group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>downloadCurrent(article).catch(error=>toast(error.message)));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);completed.append(group);}
     }
     if(!completed.childElementCount)completed.append(node('p','还没有通过审核的文章。','runtime-panel'));
   }
-  async function openBatch(b){if(driving&&b.id!==activeBatch?.id){toast('请先暂停当前批次。');return;}try{renderBatch(await api('batches/'+b.id));changeView('workspace');consoleView?.detailTab('progress');}catch(error){toast(error.message);}}
-  $('new-workspace')?.addEventListener('click',()=>{
-    if(driving||settings?.modelLocked){toast('当前仍有未结束的批次，请先完成或取消后再新建。五工作区并行尚未开放。');return;}
-    if(activeBatch){activeBatch=null;pendingCreate=null;clearUploads();$('batch-progress').replaceChildren();}
-    consoleView?.setBatch(null);consoleView?.detailTab('materials');changeView('workspace');
-  });
+  async function openBatch(b){const workspace=workspaces.forBatch(b.id);if(workspace)return workspaces.open(workspace.id);return workspaces.leave(async()=>{renderBatch(await api('batches/'+b.id));changeView('workspace');consoleView?.detailTab('progress');});}
   $('refresh-overview')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await history();}catch(error){toast(error.message);}finally{button.disabled=false;}});
   document.querySelectorAll('[data-view="overview"],[data-view="history"],[data-view="completed"]').forEach(button=>button.addEventListener('click',()=>history().catch(e=>toast(e.message))));
   document.querySelectorAll('[data-view="settings"],[data-view="admin"]').forEach(button=>button.addEventListener('click',()=>refreshSettings().then(()=>loadMembers()).catch(e=>toast(e.message))));

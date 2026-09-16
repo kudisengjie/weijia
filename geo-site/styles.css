@@ -655,3 +655,23 @@ label:focus-within {
 
 .geo-brand__mark { flex: 0 0 40px; width: 40px; height: 40px; padding: 0; border: 0; background: transparent; }
 .geo-brand__mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+/* Five independent workspaces: compact strip, never a global model switch. */
+.workspace-tabs { display: flex; gap: 8px; max-width: 100%; overflow-x: auto; margin: 0 0 18px; padding: 2px 2px 6px; }
+.workspace-tabs button { flex: 1 0 118px; min-width: 0; max-width: 240px; text-align: left; border: 1px solid var(--line); border-radius: 7px; padding: 9px 11px; background: #fff; color: var(--ink); font: inherit; cursor: pointer; }
+.workspace-tabs button strong { display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-tabs button small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+.workspace-tabs button[aria-current=page] { border-color: #77a6dd; background: var(--ice); box-shadow: inset 0 2px #77a6dd; }
+.workspace-tabs button:hover, .workspace-toolbar button:hover { border-color: #77a6dd; }
+.workspace-toolbar { display: grid; grid-template-columns: minmax(140px,1fr) minmax(150px,1fr) auto; align-items: end; gap: 12px; margin: 0 0 16px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.workspace-toolbar label { display: grid; gap: 6px; min-width: 0; font-size: 11px; color: var(--muted); }
+.workspace-toolbar input, .workspace-toolbar select { width: 100%; min-width: 0; height: 34px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: 12px "Microsoft YaHei",sans-serif; color: var(--ink); background: #fff; }
+.workspace-toolbar__actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.workspace-toolbar button { min-height: 34px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--ice); color: var(--ink); font: inherit; cursor: pointer; white-space: nowrap; }
+.workspace-toolbar > p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; }
+.workspace-toolbar > p.is-error { color: #b34242; }
+.workspace-tabs button:focus-visible, .workspace-toolbar :is(button,input,select):focus-visible { outline: 2px solid #548bcd; outline-offset: 2px; }
+.workspace-tabs button:disabled, .workspace-toolbar :disabled, .console-new-task:disabled { opacity: .6; cursor: not-allowed; }
+@media (max-width: 1280px) { .workspace-toolbar { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } .workspace-toolbar__actions { grid-column: 1 / -1; } }
+@media (max-width: 860px) { .workspace-toolbar { grid-template-columns: minmax(0,1fr); } .workspace-toolbar input,.workspace-toolbar select { font-size: 16px; min-height: 40px; } .workspace-tabs button { flex-basis: 138px; } }
+@media (min-width: 861px) { .geo-shell .geo-service-chips { grid-template-columns: minmax(0,1fr); } .geo-shell .geo-service-chips span { white-space: nowrap; } }

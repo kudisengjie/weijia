@@ -22,6 +22,7 @@ try {
         if(p==='/api/auth/login')return route.fulfill({json:{authenticated:true,csrf:'fixture',expiresAt:Date.now()+600000}});
         if(p==='/api/settings')return route.fulfill({json:{model,providers:Object.fromEntries(['hunyuan','qwen','doubao','deepseek','minimax','zhipu','kimi','mimo'].map(id=>[id,{configured:true}])),ima:{configured:true,expiresAt:'2027-01-01'},credits:{balance:800},subscription:{role,active:true,expiresAt:Date.now()+30*86400000},modelLocked:true}});
         if(p==='/api/batches')return route.fulfill({json:{batches}});
+        if(p==='/api/workspaces')return route.fulfill({json:{workspaces:[],occupied:1,limit:5}});
         if(p==='/api/batches/fixture-batch')return route.fulfill({json:batches[0]});
         if(p==='/api/artifacts/fixture-artifact')return route.fulfill({contentType:'text/markdown',body:'# 已保存测试文章\n这是固定浏览器测试数据。'});
         if(p.startsWith('/api/tenant/'))ownerReads.push(p);

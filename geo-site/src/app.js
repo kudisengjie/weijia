@@ -37,6 +37,8 @@ const modelOptionInputs = document.querySelectorAll('input[name="model-option"]'
 let currentTask = null;
 let currentCompanies = [];
 let selectedSheetIndex = 0;
+let onUploadsChanged = () => {};
+function uploadsAreReading(){return Boolean(currentTask&&!currentTask.data&&!currentTask.error)||currentCompanies.some(item=>!item.result&&!item.error);}
 function renderSelectedModel(
   provider = DEFAULT_MODEL_PROVIDER,
   slot = DEFAULT_MODEL_SLOT,
@@ -217,7 +219,7 @@ function renderSheet(data, sheetIndex) {
     option.selected = index === sheetIndex;
     selector.appendChild(option);
   });
-  selector.addEventListener("change", () => renderSheet(data, Number(selector.value)));
+  selector.addEventListener("change", () => {renderSheet(data, Number(selector.value));onUploadsChanged();});
   heading.append(title, selector);
 
   const maxColumns = sheet.rows.reduce((maximum, row) => Math.max(maximum, row.length), 0);
@@ -253,17 +255,17 @@ function renderCompanyPreviews() {
     const name = document.createElement("strong");
     name.textContent = item.file.name;
     const status = document.createElement("span");
-    status.textContent = item.error ? "读取失败" : `${item.result.total.toLocaleString("zh-CN")} 字符`;
+    status.textContent = item.error ? "读取失败" : item.result ? `${item.result.total.toLocaleString("zh-CN")} 字符` : '读取中';
     summary.append(name, status);
     const content = document.createElement("pre");
-    content.textContent = item.error ? item.error : item.result.text;
+    content.textContent = item.error || item.result?.text || '读取中…';
     const brandLabel = document.createElement('label');
     brandLabel.className = 'runtime-field';
     brandLabel.textContent = '对应品牌（与任务表的品牌名完全一致）';
     const brandInput = document.createElement('input');
     brandInput.type = 'text'; brandInput.maxLength = 120; brandInput.required = true;
     brandInput.value = item.brand || ''; brandInput.placeholder = '填写这份文档所属品牌';
-    brandInput.addEventListener('input', () => { item.brand = brandInput.value; });
+    brandInput.addEventListener('input', () => { item.brand = brandInput.value;onUploadsChanged(); });
     brandLabel.append(brandInput);
     details.append(summary, brandLabel, content);
     companyPreview.appendChild(details);
@@ -293,6 +295,7 @@ async function handleTaskFile() {
     taskState.textContent = "未选择";
     checkTask.textContent = "等待选择";
     updateStatus();
+    onUploadsChanged();
     return;
   }
 
@@ -318,6 +321,7 @@ async function handleTaskFile() {
     checkTask.textContent = currentTask.error;
   }
   updateStatus();
+  onUploadsChanged();
 }
 
 async function handleCompanyFiles() {
@@ -335,6 +339,7 @@ async function handleCompanyFiles() {
     empty.textContent = "尚未选择公司介绍文档";
     companyList.appendChild(empty);
     updateStatus();
+    onUploadsChanged();
     return;
   }
 
@@ -355,6 +360,25 @@ async function handleCompanyFiles() {
   const successful = currentCompanies.filter((item) => item.result).length;
   companyState.textContent = `${successful}/${files.length} 已读取`;
   checkCompany.textContent = successful === files.length ? `已读取 ${successful} 个文档` : `已读取 ${successful}/${files.length}，请查看提示`;
+  onUploadsChanged();
+}
+
+function getDraftUploads(){
+  if(uploadsAreReading())throw new Error('文件仍在读取，请稍候再保存或切换工作区。');
+  if(currentTask?.error||currentCompanies.some(item=>item.error))throw new Error('文件读取失败，请替换文件或清除所选文件后再保存。');
+  const sheet=currentTask?.data?.sheets[selectedSheetIndex];
+  return {taskFileName:currentTask?.file.name||'',sheetName:sheet?.name||'',rows:sheet?.rows||[],companies:currentCompanies.map(item=>({name:item.file.name,brand:item.brand||'',text:item.result.fullText}))};
+}
+function restoreDraftUploads(draft){
+  clearFiles();
+  if(draft.taskFileName||draft.rows?.length){
+    currentTask={file:{name:draft.taskFileName||'已保存任务表',size:0},data:{sheets:[{name:draft.sheetName||'已保存工作表',rows:draft.rows||[]}]},error:''};
+    taskDisplay.replaceChildren(makeFileItem(currentTask.file,'ready','服务端草稿'));
+    taskState.textContent='已读取';checkTask.textContent='已恢复选中的工作表';renderSheet(currentTask.data,0);
+  }
+  currentCompanies=(draft.companies||[]).map(item=>({file:{name:item.name,size:0},brand:item.brand,error:'',result:truncate(item.text)}));
+  if(currentCompanies.length){companyList.replaceChildren(...currentCompanies.map(item=>makeFileItem(item.file,'ready','服务端草稿')));renderCompanyPreviews();companyState.textContent=`${currentCompanies.length}/${currentCompanies.length} 已读取`;checkCompany.textContent=`已读取 ${currentCompanies.length} 个文档`;}
+  updateStatus();
 }
 
 function clearFiles() {
@@ -397,6 +421,8 @@ updateStatus();
 
 initializeRuntime({
   renderSelectedModel, changeView, clearUploads:clearFiles, consoleView,
+  getDraftUploads, restoreDraftUploads, uploadsAreReading,
+  onUploadsChange(listener){onUploadsChanged=listener;},
   getUploads() {
     if (!currentTask?.data) throw new Error('请先选择并成功读取任务表。');
     if (!currentCompanies.length || currentCompanies.some(item => !item.result || item.error)) throw new Error('请先成功读取所有公司文档。');
