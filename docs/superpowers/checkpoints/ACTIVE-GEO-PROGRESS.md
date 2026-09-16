@@ -2,6 +2,21 @@
 
 更新时间：2026-09-16。本文件只记录可复核的实现、验证和明确未完成项；本地、GitHub、EdgeOne 三层状态分开记录，不把“已保存”“已推送”“已部署”混为一谈。
 
+## 阶段 A（2026-09-16，工作区创建反馈）已完成，本地提交 1eea68770a244638dc21a66039c6683c7a5aed87
+
+按 `docs/superpowers/plans/2026-09-16-glm-development-handoff.md` §12 以 TDD 完成阶段 A，仅本地检查点：未推送、未部署。先写失败测试再实现：
+
+- 新增 `geo-site/scripts/check-workspace-feedback.mjs`（真实 Edge，沿用 `GEO_TEST_PLAYWRIGHT_MODULE`）。两个会话：空态会话断言总览图标、`.console-empty-state` 吉祥物空态与 `#overview-create`、工作区空态引导与 `#empty-create`、点击创建出现“正在创建…”与 `aria-busy`、仅一次创建 POST、创建后标题自动聚焦、运行任务可用、1920/1280/1280×600/390px 与 125% 缩放无横向溢出；失败会话断言 500 时显示错误原因、重试按钮恢复可用。
+- `workspace-ui.js`：`create()` 提取为独立函数，`pendingCreate` 幂等请求 ID（4xx 时重置），`aria-busy` 与“正在创建…”即时反馈，busy 清除后 `setTimeout` 聚焦标题。
+- `console-view.js` 成为空态唯一所有者（修复双所有者 bug：`showLogin`→`reset()` 曾重新打开 materials）：`setWorkspaceEmpty`/`setBatch` 统一管理空态与 uploads 显隐；总览空态含吉祥物图与创建按钮（经 `onCreate` 回调）。
+- `runtime.js` 接管 `initializeConsole` 初始化（`onCreate:()=>workspaces.create()`），`onSelect`/`renderBatch` 同步空态；`app.js` 移除重复初始化。`index.html` 总览按钮补内联 SVG，样式版本号更新；`styles.css` 末尾追加 `.workspace-empty`/`.console-empty-state` 样式块（含 760px 移动端适配）。
+
+验证：`npm run build` 通过；`npm test` 28/30——仅剩两个与本阶段无关的既有失败（`model-switch.test.mjs`：runtime.js 既有 `AUTH_TAB_MARKER` 使用 sessionStorage 触发凭据正则；`.geo-table-wrap table` 基础字号 9px/媒体查询 12px vs 断言 13px；两者经 diff 确认非本次改动引入，未擅自“顺手修”以免扩大范围）。`check-workspace-feedback.mjs`、`check-console-layout.mjs`、`check-login-flow.mjs` 全部 PASS；`git diff --check` 干净。提交信息中已如实记录两个既有失败。
+
+⚠️ git 事故记录：提交后分支引用 `refs/heads/feat/static-geo-model-catalog` 曾静默丢失（reflog 与提交对象完好，`git update-ref` 写入亦被静默吞掉），最终以 `printf SHA > .git/refs/heads/feat/static-geo-model-catalog` 手动恢复。后续会话开工前先跑 `git -C <工作树> log -1` 确认 HEAD 可解析；若再次丢失，从 `.git/logs/refs/heads/feat/static-geo-model-catalog` 末行取 SHA 手动重建引用文件。
+
+下一步：接续 §13 阶段 B（本地交付目录）；阶段 A 未推送，与后续阶段一起再定推送节奏。
+
 ## 当前接续重点（优先于下方历史测试）
 
 2026-09-16 最新接续：用户要求将完整开发思路交给 GLM 智谱，包含根路径、GitHub/分支位置，并复审两次。本轮仅编写交接方案、更新进度并建立本地文档检查点，没有修改业务代码、数据库、环境或生产资源，没有新推送。单一交接文件：`docs/superpowers/plans/2026-09-16-glm-development-handoff.md`。两轮内联复审已完成，第一轮补齐旧启动入口、回执/到期退款边界、等待写盘后的执行恢复、schema 迁移版本与正文副本；第二轮核对 35 个现有路径、9 个拟新增文件、测试命令和凭据格式扫描。新功能仍为待实施，不将方案审查称为功能测试通过。
