@@ -2,6 +2,21 @@
 
 更新时间：2026-09-16。本文件只记录可复核的实现、验证和明确未完成项；本地、GitHub、EdgeOne 三层状态分开记录，不把“已保存”“已推送”“已部署”混为一谈。
 
+## 阶段 B（2026-09-16，本地目录与账号上下文）已完成，本地提交 1fbe46097bbba1c6c4cd0aff87f5524212139047
+
+按交接方案 §6/§8.2/§12 阶段 B 以 TDD 完成，仅证明目录授权与写盘，**未启用生产文章删除、未清任何在线正文**。仅本地检查点：未推送、未部署。
+
+- 后端 accountScope：`security.py` 新增 `account_scope(user_id, master_key)`（HMAC-SHA256 截断 32 hex，非秘密、不可逆推、非授权凭证）；`auth.py` 的 `LoginResult`/`AuthenticatedSession` 增加字段；`/auth/login` 与 `/auth/session` 认证返回新增 `accountScope`。匿名 401 无该字段。Python 测试先红后绿（test_auth.py 三个新用例 + test_app_contract.py 登录/会话/换账号隔离契约），71/71 通过。
+- 前端契约：`auth-flow.js` 新增 `accountScopeFrom(data)`（严格小写 32 hex 校验，匿名/格式非法返回 null）；`auth-flow.test.mjs` 先红后绿。
+- 新增 `src/hash-bytes.js`（crypto.subtle SHA-256，浏览器/Node 通用）与 `src/local-output.js`：目录句柄按 accountScope 隔离存 IndexedDB；`pick` 必须用户手势触发并以 `showDirectoryPicker({mode:'readwrite'})` 调用，AbortError 归为取消；`restore`/`requestAccess`/`forget`（只忘设置不删文件）；`saveFile` 完整链路=权限复查→逐级建目录→同名哈希一致复用/不同建 `-conflict-N` 名（绝不覆写用户文件）→createWritable/write/close→读回校验字节与 SHA-256，失败分类 NO_ACCOUNT_SCOPE/PERMISSION_REQUIRED/WRITE_FAILED/CLOSE_FAILED/VERIFY_FAILED。
+- 新增 `src/local-output.test.mjs` 13 项全绿：句柄复用、拒绝/撤销权限、取消选择、写失败无残留、close 失败、读回不一致、同名复用/冲突、账号隔离、忘设置不删文件、无 scope 拒绝；**真实磁盘验证**用 FSA 同契约的 Node fs 适配器在 `os.tmpdir()` 专用临时目录实际写入→close→Node fs 读回比对 SHA-256 与冲突行为，不是 OPFS/Blob 替身。
+- “文章保存”目录页：console-view 个人设置新增页签（`#saving-settings`），runtime `renderSaving` 显示支持情况/目录名/授权状态，按钮=选择/重新授权/忘记此设备目录，不支持环境如实提示且不提供选择按钮；页签打开即刷新状态（directorychange）；登出与换账号 `localOutput.setScope(...)` 重置。待补存数量占位明确标注“本地交付将在后续版本启用”。
+- 新增 `scripts/check-local-directory.mjs`（真实 Edge）：手势触发 picker 一次、授权态显示、忘记回退、换账号隔离（fixture 注入 `window.showDirectoryPicker` 存根仅测交互——OS 目录选择器无法自动化；真实磁盘验证在 Node 测试）、1280/390 无溢出、两个会话全 PASS。
+- 验证汇总：`npm test` 44 通过 + 2 个既有失败（同阶段 A，未改）；`npm run test:python` 71/71；`npm run build`；check-local-directory / check-workspace-feedback / check-console-layout / check-login-flow 全 PASS；`git diff --check` 干净。
+- 环境注意：本会话再次出现“写入被静默吞掉”——git 提交后分支引用丢失（第 4 次，已按文档流程恢复），以及一次 runtime.js 编辑与一次测试脚本编辑落盘丢失需重写。**每次编辑/提交后必须立即 grep/`git log -1` 复核落盘结果。**
+
+下一步：§12 阶段 C（数据库 v5 与交付事务：tests_postgres/test_local_delivery.py、delivery service、正文清理与按交付结算）。
+
 ## 阶段 A（2026-09-16，工作区创建反馈）已完成，本地提交 1eea68770a244638dc21a66039c6683c7a5aed87
 
 按 `docs/superpowers/plans/2026-09-16-glm-development-handoff.md` §12 以 TDD 完成阶段 A，仅本地检查点：未推送、未部署。先写失败测试再实现：
