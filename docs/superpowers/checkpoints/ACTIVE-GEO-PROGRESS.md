@@ -238,3 +238,8 @@ ce83602 是 SaaS 原型检查点，不是已完成的发布版。此前 58 项 P
 - DeepSeek（deepseek-flash / deepseek-v4-pro）、腾讯混元（hy3 / hy4-preview）、IMA（clientId+apiKey，search_knowledge_base 可见 copilot）全部真实端点验证通过；凭据来源为 Windows 用户级环境变量，验证脚本 `scripts/verify_real_providers.py`（从 `.local/verify-keys.json` 读取，用后即删，密钥不进日志）。
 - 发现并修复：`complete(test=True)` 探测上限 128 tokens 会被思考型模型（hy4-preview 实测 reasoning_tokens=133）耗尽 → finish_reason=length → 设置页「测试连接」误报失败。上限提高为 2048，新增回归测试，Python 套件 95/95。
 - `AGNES_API_KEY`（51 位）归属供应商待用户确认，未消耗探测请求。
+
+### ref 丢失根因定论（2026-09-17 下午）
+- 根因：某个非标准 git 的自动化工具把 worktree 目录当独立仓库操作，直接读写 `.git/worktrees/<id>/refs/`（今早 09:57:58 写入指向 Phase C 84678ddd 的陈旧分支 ref，git 对该位置完全忽略但证明其存在）；今天 09:57/10:34/15:16 三波同内容重写亦非 git 行为（git 绝不重写已有对象）。已排除 hooks/gc/pack-refs/Defender/计划任务/OneDrive。
+- 自愈方案：`tools/repair-geo-branch.mjs`（fetch→origin 远程 ref→GEO-RESUME `canonical-head:` 锚点，两级校验后写回共享 ref；`--check` 只查不改）。两条路径均已实测 PASS（健康 OK + 删 ref 一键接回 e963b99）。
+- 恢复原则固化：远端永远是对的；GEO-RESUME 顶部 `canonical-head:` 行是唯一锚点，每次推送后必须更新。
