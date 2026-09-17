@@ -2,9 +2,17 @@
 
 更新时间：2026-09-16。本文件只记录可复核的实现、验证和明确未完成项；本地、GitHub、EdgeOne 三层状态分开记录，不把“已保存”“已推送”“已部署”混为一谈。
 
-## 阶段 C（2026-09-16，数据库 v5 与交付事务）核心已完成，已推送，远端核验 SHA = 05ca96499d2e73481c0628fbb892e6363b899eb0（与本地 HEAD 一致，含 84678dd 功能提交 + 05ca964 文档提交 + 本次推送状态文档提交）；master 未动（远端仍 e12d424），EdgeOne 生产无影响。
+## 阶段 C（2026-09-16，数据库 v5 与交付事务）已完成并全量回归通过，已推送，远端核验 SHA = 3a24f51085b81748fec8b5968de6c0d7aaed007a（本地 HEAD 一致）；master 未动（远端仍 e12d424），EdgeOne 生产无影响。
 
-按交接方案 §9/§8/§12 阶段 C 以 TDD 实现 schema v5、交付回执事务与按 deliveryMode 结算。**真实 PG 回归（tests_postgres/test_local_delivery.py）因隔离实例被沙箱阻断尚未运行**。生产未连接，旧数据无影响。
+真实 PG 回归（2026-09-17 上午，用户以管理员注册 pgtest55483 服务常驻 55483 后运行）：
+
+- `tests_postgres/test_local_delivery.py` **12/12 全绿**：v5 迁移回填与重复安全、jobs waiting_local 可写、新模式未交付禁止 settle（ARTIFACT_NOT_PERSISTED）、回执确认结算并清密文（content_cipher IS NULL + purged_at）、同回执/换 requestId 幂等、同 requestId 他文 REQUEST_ID_CONFLICT、hash/bytes 不匹配保持 pending、退款后迟到回执 already_refunded 不重扣、legacy 模式不变、已交付下载 410、pending 清单账号隔离。
+- 真实 PG 抓出并修复 1 个真 bug：`_delivery_result` 正常路径缺 `receipt_request_id` 参数（TypeError）。测试夹具 3 处小 bug（信封格式、information_schema 查询、回执全表计数）一并修正。
+- **重要设计决策：新批次默认保持 `server_legacy`**。曾把 `create_or_get_batch` 默认改为 local_confirmed_v1，既有 runtime 集成测试立刻暴露回归：当前批次执行器在 `_persist_article` 落库后立即 `finalize(complete=True)`，新模式判据下必 409 ARTIFACT_NOT_PERSISTED、五路全崩。按 §9「迁移成功前不启用新交付入口」，默认切换推迟到阶段 D（批次执行器/Worker 改为 awaiting_save/waiting_local 流程时）。settle 分支、回执 API、v5 结构均已就绪并有测试覆盖，阶段 D 只切一个默认值。
+- 全量回归：tests_py 93/93；tests_postgres runtime 45/45（schemaVersion 断言 4→5 更新）、worker_pool 1/1、workspaces 8/8、local_delivery 12/12；`npm test` 44 通过 + 2 个既有失败（阶段 A 记录，未改）；`npm run build` 通过。
+- git 事故：引用丢失第 8 次复现，且本次恢复时误用主仓库 HEAD 的 SHA 写引用（错误指向 b5ca955 旧提交），已用本次提交短 SHA `rev-parse 3a24f51` 修正——**恢复引用必须用本次 commit 输出的短 SHA 解析，绝不能用主仓库 HEAD**。推送（无 -c 参数）再次验证空值 helper 重置配置有效。
+
+按交接方案 §9/§8/§12 阶段 C 以 TDD 实现 schema v5、交付回执事务与按 deliveryMode 结算。生产未连接，旧数据无影响。
 
 - schema v5（`schema.py` SCHEMA_VERSION=5 + `database.py` 显式 v5 迁移块，重复初始化安全）：`batches.delivery_mode VARCHAR(32) DEFAULT 'server_legacy'`（新批次 INSERT 固定 `local_confirmed_v1`，幂等重放不改旧值）；`article_artifacts` 新增 `delivery_state`（CHECK pending/delivered/discarded，默认 pending）、`delivered_at`、`purged_at`，`content_cipher` 改可空并加 body-state CHECK（pending 必须有密文，delivered/discarded 必须无密文，不允许空串伪装）；新增 `article_delivery_receipts`（UNIQUE artifact_id 保证一文件一确认 + UNIQUE (tenant_id,user_id,request_id) 幂等）；`jobs` 状态加 `waiting_local`（重建 CHECK）；新增 `article_artifacts_pending_idx`（user_id,tenant_id,delivery_state,created_at）。
 - repository 新增（`repository.py`）：`confirm_local_delivery` 单事务=FOR UPDATE 锁 artifact → 404/幂等/409 分支（delivered 返回既有结果不重复结算；discarded 拒绝；sha256/byteLength 不一致 ARTIFACT_MISMATCH；同 requestId 用于他文 REQUEST_ID_CONFLICT）→ 清密文标记 delivered/purged → 插回执 → 该行全部交付时自动 `settle_task_credit(complete=True)` → 组装 `{artifactId,deliveryState,onlineBodyCleared,billingStatus,batchSeq,alreadyConfirmed}`；`get_article_artifact_meta`（无正文）；`list_pending_artifacts`（created_at/id 游标分页，limit+1 探测 nextCursor）；`_task_delivery_complete`。
