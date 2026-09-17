@@ -4,19 +4,25 @@ import {createBatchRunners} from './batch-runners.js';
 import {initializeWorkspaces} from './workspace-ui.js';
 import {initializeConsole} from './console-view.js';
 import {createLocalOutput} from './local-output.js';
+import {createArticleDelivery} from './article-delivery.js';
 
 export function modelIsLocked(settings,batch) {
   return Boolean(settings?.modelLocked || batch && !['completed','cancelled'].includes(batch.status));
 }
 export function batchStatusLabel(batch) {
   if(batch.status==='completed')return batch.failedTasks?.length?'已结束 · 部分任务未完成':'全部完成';
-  return {cancelled:'已取消',paused:'已暂停',failed:'需要处理'}[batch.status] || (batch.pauseRequested?'正在暂停':batch.phaseLabel);
+  return {cancelled:'已取消',paused:'已暂停',failed:'需要处理',awaiting_save:'等待保存到本机'}[batch.status] || (batch.pauseRequested?'正在暂停':batch.phaseLabel);
 }
 export function pendingOperation(previous,values,makeId=()=>crypto.randomUUID()) {
   const signature=JSON.stringify(values);
   return previous?.signature===signature?previous:{signature,body:{...values,idempotencyKey:makeId()}};
 }
 function localDateTime(value) {const d=new Date(value);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+async function downloadBytes(artifactId) {
+  const response=await fetch('/api/artifacts/'+encodeURIComponent(artifactId),{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(125000)});
+  if(!response.ok){let data={};try{data=await response.json();}catch{}throw Object.assign(new Error(data.error||'文章文件读取失败。'),{status:response.status,code:data.code});}
+  return new Uint8Array(await response.arrayBuffer());
+}
 
 const $ = id => document.getElementById(id);
 function node(tag, text, className) { const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n; }
@@ -40,6 +46,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   const auth=createAuthFlow();
   const consoleView=initializeConsole({changeView,onCreate:()=>workspaces.create()});
   const localOutput=createLocalOutput({});
+  const delivery=createArticleDelivery({api,download:downloadBytes,localOutput,onPendingChange:renderSavingPending});
   function renderSaving() {
     const pane=$('saving-settings');if(!pane)return;
     const operation=auth.epoch;
@@ -88,13 +95,36 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       });
       pane.append(forget);
     });
-    const pending=node('p','待补存文章：—（本地交付将在后续版本启用；当前版本不会自动删除在线正文。）','runtime-hint');
-    pane.append(pending);
+    const pendingWrap=node('div');pendingWrap.id='saving-pending-wrap';
+    pane.append(pendingWrap);
+    renderSavingPending();
+  }
+  function renderSavingPending() {
+    const wrap=$('saving-pending-wrap');if(!wrap)return;
+    wrap.replaceChildren();
+    const count=delivery.pendingCount;
+    const line=node('p',undefined,'runtime-hint');line.setAttribute('role','status');wrap.append(line);
+    if(count===null){line.textContent='待补存文章：读取中…';return;}
+    if(!count){line.textContent='待补存文章：没有。新文章写盘并确认后，服务器才会清理在线正文。';return;}
+    line.textContent=`待补存文章：${count} 篇。写盘并确认成功前，在线正文不会清理。`;
+    const button=node('button','立即保存到本机','geo-run-button');button.type='button';
+    button.addEventListener('click',async()=>{
+      button.disabled=true;
+      try{
+        const result=await delivery.deliverAll();
+        if(!result.skipped){
+          if(result.failed.length)toast(`有 ${result.failed.length} 篇未能确认保存，请稍后重试。`);
+          else if(result.delivered)toast(`已保存 ${result.delivered} 篇文章到本机并确认。`);
+        }
+      }catch(error){toast(error.message||'保存失败。');}
+      finally{button.disabled=false;renderSavingPending();}
+    });
+    wrap.append(button);
   }
   function downloadCurrent(article){const operation=auth.epoch;return download(article,()=>auth.isCurrent(operation));}
   const runners=createBatchRunners({api,onBatch:receiveBatch,onError:(error,id)=>toast(`任务 ${id.slice(0,6)}：${error.message}`),async onFinish(id){
     const operation=auth.epoch;
-    try{receiveBatch(await api('batches/'+id));await refreshSettings();await history();}
+    try{receiveBatch(await api('batches/'+id));await refreshSettings();await history();delivery.sync().catch(()=>{});}
     catch(error){if(auth.isCurrent(operation)&&error.code!=='STALE_RESPONSE')toast(error.message);}
   }});
   workspaces=initializeWorkspaces({api,getSettings:()=>settings,getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange,changeView,consoleView,
@@ -107,7 +137,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   const shell=document.querySelector('.geo-shell');
   function showLogin() {
     auth.invalidate();runners.reset();workspaces.reset();rememberTab(false);clearTimeout(expiryTimer);csrf='';settings=null;activeBatch=null;pendingCredit=null;members=[];
-    localOutput.setScope(null);renderSaving();
+    localOutput.setScope(null);delivery.setScope(null);renderSaving();
     shell.hidden=true;$('login-page').hidden=false;$('login-password').value='';$('login-password').type='password';$('toggle-password').textContent='显示';$('toggle-password').setAttribute('aria-pressed','false');$('toggle-password').setAttribute('aria-label','显示密码');
     $('model-form').reset();$('ima-form').reset();$('member-form').reset();$('credit-form').reset();$('subscription-form').reset();defaultMemberDates();clearUploads();
     for(const id of ['batch-progress','history-list','completed-list','managed-user','managed-user-summary','member-ledger','own-ledger'])$(id).replaceChildren();
@@ -170,7 +200,10 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     if(!auth.isCurrent(operation))return;
     if(!auth.accept(operation,data))throw new Error('登录响应无效，请重新输入账号和密码。');
     csrf=data.csrf;rememberTab(true);clearTimeout(expiryTimer);
-    localOutput.setScope(accountScopeFrom(data));renderSaving();
+    localOutput.setScope(accountScopeFrom(data));
+    delivery.setScope(accountScopeFrom(data));
+    delivery.sync().catch(()=>{});
+    renderSaving();
     expiryTimer=setTimeout(()=>{showLogin();message('login-message','登录已到期，请重新输入密码。');},Math.min(data.expiresAt-Date.now(),2147483647));
     if(location.hash==='#login')window.history.replaceState(null,'',location.pathname+location.search);
     await enter();
@@ -284,6 +317,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   }
   function receiveBatch(b){
     if(!csrf)return;workspaces.updateBatch(b);
+    if(b.status==='awaiting_save'||b.status==='waiting_local')delivery.autoDeliver().catch(()=>{});
     if(activeBatch?.id===b.id&&!(activeBatch.seq>b.seq)&&!(['completed','cancelled'].includes(activeBatch.status)&&!['completed','cancelled'].includes(b.status)))renderBatch(b);
   }
   function drive(b){

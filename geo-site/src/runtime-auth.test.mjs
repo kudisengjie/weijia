@@ -62,6 +62,7 @@ test('partial output is never labelled all successful', () => {
   assert.equal(runtime.batchStatusLabel({status:'completed',failedTasks:[{taskId:'2'}]}),'已结束 · 部分任务未完成');
   assert.equal(runtime.batchStatusLabel({status:'cancelled'}),'已取消');
   assert.equal(runtime.batchStatusLabel({status:'paused'}),'已暂停');
+  assert.equal(runtime.batchStatusLabel({status:'awaiting_save'}),'等待保存到本机');
 });
 
 test('authenticated session hands the account scope to local output; logout clears it', () => {
@@ -75,6 +76,9 @@ test('authenticated session hands the account scope to local output; logout clea
 test('saving pane only enables real directory flows and never fakes a saved state', () => {
   assert.match(source, /saving-settings/);
   assert.match(source, /renderSaving/);
-  assert.match(source, /本地交付将在后续版本启用/);
+  // 阶段 D：保存页显示真实待补存数量，并由 article-delivery 闭环确认，不再用占位文案。
+  assert.match(source, /renderSavingPending/);
+  assert.match(source, /createArticleDelivery/);
   assert.doesNotMatch(source, /localStorage\.(set|get)Item\('lxue\.geo\.dir/);
+  assert.doesNotMatch(source, /本地交付将在后续版本启用/);
 });
