@@ -32,11 +32,11 @@ const expectedModels = {
     secondary: { model: "Qwen3.8 Max", modelId: "qwen3.8-max" },
   },
   doubao: {
-    primary: { model: "Seed 2.0 Lite", modelId: "doubao-seed-2-0-lite-260215" },
-    secondary: { model: "Seed 2.0 Pro", modelId: "doubao-seed-2-0-pro-260215" },
+    primary: { model: "Seed 2.1 Turbo", modelId: "doubao-seed-2-1-turbo-260628" },
+    secondary: { model: "Seed 2.1 Pro", modelId: "doubao-seed-2-1-pro-260628" },
   },
   deepseek: {
-    primary: { model: "V4 Flash", modelId: "deepseek-v4-flash" },
+    primary: { model: "V4.1 Flash", modelId: "deepseek-flash" },
     secondary: { model: "V4 Pro", modelId: "deepseek-v4-pro" },
   },
   minimax: {
@@ -60,7 +60,7 @@ const expectedModels = {
 test("DeepSeek Flash is the default static model", () => {
   assert.equal(modelSwitch.DEFAULT_MODEL_PROVIDER, "deepseek");
   assert.equal(modelSwitch.DEFAULT_MODEL_SLOT, "primary");
-  assert.equal(modelSwitch.getModelPresentation?.().label, "DeepSeek V4 Flash");
+  assert.equal(modelSwitch.getModelPresentation?.().label, "DeepSeek V4.1 Flash");
 });
 
 test("catalog exposes exactly eight providers with their two reference models", () => {

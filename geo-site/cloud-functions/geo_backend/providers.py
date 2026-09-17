@@ -35,7 +35,9 @@ async def complete(model: dict[str, str], key: str, messages: list[dict[str, str
         payload["max_tokens"] = completion_limit
     if model["id"] == "qwen":
         payload["enable_thinking"] = False
-    if model["id"] in {"doubao", "zhipu", "deepseek"}:
+    # GLM-5.3 rejects thinking {"type": "disabled"} with a request error, so zhipu
+    # omits the switch entirely and keeps the provider default.
+    if model["id"] in {"doubao", "deepseek"}:
         payload["thinking"] = {"type": "disabled"}
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
 

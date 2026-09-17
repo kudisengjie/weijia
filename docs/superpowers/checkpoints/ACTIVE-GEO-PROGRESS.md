@@ -2,6 +2,22 @@
 
 更新时间：2026-09-17。本文件只记录可复核的实现、验证和明确未完成项；本地、GitHub、EdgeOne 三层状态分开记录，不把“已保存”“已推送”“已部署”混为一谈。
 
+## 阶段 E（2026-09-17，UI 体验修复 + 模型目录更新 + 仿 IMA 模型选择弹窗）已完成并回归通过；**本地提交未推送**（同 D-2/D-3 口径）；master 未动，EdgeOne 生产无影响。
+
+- **模型目录联网核查后更新（2026-09-16 时点，8 家厂商逐一搜索官方口径）**：
+  1. **豆包** Seed 2.0 Lite/Pro（260215 快照）→ **Seed 2.1 Turbo/Pro**（`doubao-seed-2-1-turbo-260628` / `doubao-seed-2-1-pro-260628`；Seed 2.1 于 2026-06-23 发布，Pro 0915 版 2026-09-16 火山方舟全量上线）。
+  2. **DeepSeek** V4 Flash → **V4.1 Flash**（`deepseek-flash`，官方推荐新 ID；V4.1-Flash 2026-09-10 发布；`deepseek-v4-flash` 旧名暂时路由兼容；V4 Pro 官方宣布 9-14 后继续提供服务、计费不变，secondary 保留）。
+  3. 已最新无需改动：混元 Hy3/Hy4 Preview、千问 Qwen3.8 Flash/Max（0902 快照）、MiniMax M2.7/M3、智谱 GLM-5.3/GLM-5.3-Flash、Kimi K2.7 Code/K3、MiMo V2.5/V2.5 Pro（V2.6 仍在训练直播、未发布）。
+  4. **顺带抓出并修复一个真实兼容性炸弹**：智谱官方文档明确 GLM-5.3 对 `thinking:{"type":"disabled"}` 直接报错（要求迁移到 enabled+reasoning_effort），而 `providers.py` 原来对 zhipu 发送该参数——已把 zhipu 移出发送集合（不发送 thinking 字段用厂商默认），新增测试 `test_zhipu_omits_thinking_switch_because_glm53_rejects_disabled` 固化。
+- **图1 样式闪烁（FOUC/时序）**：根因是会话恢复期间未认证布局（登录页）先绘制、会话确认后整页切换。修复：`index.html` 头部内联脚本加 `html.booting`（4 秒兜底自动解除），CSS `html.booting #login-page{visibility:hidden}`，runtime 在 showLogin/enter 两分支移除 booting——已登录刷新不再闪登录页，未登录短暂空白后正常出现登录表单；app.js 加载失败也有兜底。
+- **图2 任务总览无图标**：`renderOverview` 行首补工作区 SVG 图标（`.console-ws-icon`，与侧边栏批次工作区同款），"我的工作区"面板 h2 加同款前缀图标（`.console-h2-icon`）。
+- **图3 输入框聚焦弹跳与难看选中边框**：①去掉全局 `label:focus-within` 3px 大轮廓（整块 label 发光的元凶）；②`.runtime-field input/select:focus-visible` 由 3px outline 改为 `outline:none + border-color + 3px 柔和 box-shadow 光环`；③登录页滚动跳位——`login-page` 弃用 `justify-content:center`（flex 居中+内容溢出的经典聚焦滚动跳位 bug），改 `.login-layout{margin:auto}` 安全居中。设置页聚焦滚动已在真实 Edge 断言（scrollY 前后差 ≤2px）。
+- **图4-7 模型展示改版（仿 IMA 自定义弹窗）**：8 张厂商卡片矩阵从常驻布局收进触发按钮 + 全屏遮罩弹窗：`#model-picker-trigger`（logo+厂商+模型+配置状态）→ `#model-picker-panel` 弹窗（header + 双列紧凑厂商卡片 + footer 当前选择/modelId）。选完模型自动收起，Esc/遮罩/✕ 均可关闭；`runtime.js` renderCredentials 同步触发器文案与 logo，renderModelLock 锁定期间禁用触发器。旧 `geo-model-summary` footer 移除（data 属性迁入弹窗 footer，querySelectorAll 驱动不受影响）。
+- **新增测试**：`tests_postgres/browser_model_picker.mjs`（真实 Edge + 真实后端 + dist：booting 解除、总览图标（空态创建工作区后断言）、触发器跟随已存模型、弹窗 8 卡片、三次切换（千问/DeepSeek/豆包）触发器文案跟随、选后自动收起、Esc 关闭、聚焦无滚动跳位、无粗轮廓有柔光环、无页面错误）；测试自适应锁定状态（有未结束批次时服务端锁定模型切换是正确产品行为，跳过切换断言）。
+- **回归证据**：tests_py 94/94（新增智谱 1 项）、npm 55+2 既有失败（基线一致）、构建通过、浏览器 e2e PASS（workspaces 模式 fixture，账号 owner-80f318…）。
+- **工程教训（本轮新增）**：①styles.css 同文件并行编辑再次相互覆盖（input focus 修复被 label 移除编辑写回覆盖）——同文件编辑必须串行+grep 回读验证，此教训二次复现；②Bash cwd 在调用间会重置，长命令必须显式 cd 或用绝对路径；③fixture 服务 dist 构建产物——改完源码必须重新 `npm run build` 再跑浏览器测试，否则验证的是旧样式；④Playwright 点击视觉隐藏的 radio（1px opacity:0）hit-target 不稳定，应点其外层 label；⑤已选中 radio 的点击不触发 change 事件（面板不关），测试要先判 isChecked。
+- **明确未做**：本地提交未推送（待用户确认）；**大模型 API Key 与 IMA 真实接入验证（任务 #19）需要用户在设置页填真实 Key 后点"测试已保存模型"逐厂商验证**（测试路由会发一条真实请求消耗少量额度；fixture stub 不算数）；EdgeOne 部署不在本轮。
+
 ## 阶段 D-3（2026-09-17，浏览器端到端与集成缺口修复）已完成并全量回归通过；**本地提交未推送**（用户要求降低推送频率）；master 未动，EdgeOne 生产无影响。
 
 - **端到端发现并修复两个真集成缺口**：

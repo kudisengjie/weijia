@@ -11,8 +11,8 @@ MODEL_PROVIDER_IDS = ("hunyuan", "qwen", "doubao", "deepseek", "minimax", "zhipu
 CATALOG = {
     "hunyuan": {"provider": "腾讯混元", "primary": ("Hy3", "hy3"), "secondary": ("Hy4 Preview", "hy4-preview")},
     "qwen": {"provider": "通义千问", "primary": ("Qwen3.8 Flash", "qwen3.8-flash"), "secondary": ("Qwen3.8 Max", "qwen3.8-max")},
-    "doubao": {"provider": "豆包", "primary": ("Seed 2.0 Lite", "doubao-seed-2-0-lite-260215"), "secondary": ("Seed 2.0 Pro", "doubao-seed-2-0-pro-260215")},
-    "deepseek": {"provider": "DeepSeek", "primary": ("V4 Flash", "deepseek-v4-flash"), "secondary": ("V4 Pro", "deepseek-v4-pro")},
+    "doubao": {"provider": "豆包", "primary": ("Seed 2.1 Turbo", "doubao-seed-2-1-turbo-260628"), "secondary": ("Seed 2.1 Pro", "doubao-seed-2-1-pro-260628")},
+    "deepseek": {"provider": "DeepSeek", "primary": ("V4.1 Flash", "deepseek-flash"), "secondary": ("V4 Pro", "deepseek-v4-pro")},
     "minimax": {"provider": "MiniMax", "primary": ("M2.7", "MiniMax-M2.7"), "secondary": ("M3", "MiniMax-M3")},
     "zhipu": {"provider": "智谱 GLM", "primary": ("GLM-5.3 Flash", "glm-5.3-flash"), "secondary": ("GLM-5.3", "glm-5.3")},
     "kimi": {"provider": "Kimi", "primary": ("K2.7 Code", "kimi-k2.7-code"), "secondary": ("K3", "kimi-k3")},

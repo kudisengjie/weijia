@@ -31,6 +31,25 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(b'"enable_thinking":false', captured["request"].content)
         self.assertEqual("Bearer secret", captured["request"].headers["authorization"])
 
+    async def test_zhipu_omits_thinking_switch_because_glm53_rejects_disabled(self):
+        from geo_backend.models import model_selection
+        from geo_backend.providers import complete
+
+        captured = {}
+
+        def handler(request):
+            captured["body"] = request.content
+            return httpx.Response(
+                200,
+                request=request,
+                json={"model": "glm-5.3", "choices": [{"finish_reason": "stop", "message": {"content": "OK"}}]},
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            await complete(model_selection("zhipu", "secondary"), "secret", [{"role": "user", "content": "test"}], client=client, test=True)
+
+        self.assertNotIn(b'"thinking"', captured["body"])
+
     async def test_mimo_uses_openai_compatible_bearer_header(self):
         from geo_backend.models import model_selection
         from geo_backend.providers import complete

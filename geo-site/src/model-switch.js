@@ -44,14 +44,14 @@ const MODEL_CATALOG = Object.freeze({
     "doubao",
     "豆包",
     "assets/model-logos/doubao.png",
-    freezeModel("primary", "Seed 2.0 Lite", "doubao-seed-2-0-lite-260215", "豆包 Seed 2.0 Lite"),
-    freezeModel("secondary", "Seed 2.0 Pro", "doubao-seed-2-0-pro-260215", "豆包 Seed 2.0 Pro"),
+    freezeModel("primary", "Seed 2.1 Turbo", "doubao-seed-2-1-turbo-260628", "豆包 Seed 2.1 Turbo"),
+    freezeModel("secondary", "Seed 2.1 Pro", "doubao-seed-2-1-pro-260628", "豆包 Seed 2.1 Pro"),
   ),
   deepseek: freezeProvider(
     "deepseek",
     "DeepSeek",
     "assets/model-logos/deepseek.png",
-    freezeModel("primary", "V4 Flash", "deepseek-v4-flash", "DeepSeek V4 Flash"),
+    freezeModel("primary", "V4.1 Flash", "deepseek-flash", "DeepSeek V4.1 Flash"),
     freezeModel("secondary", "V4 Pro", "deepseek-v4-pro", "DeepSeek V4 Pro"),
   ),
   minimax: freezeProvider(

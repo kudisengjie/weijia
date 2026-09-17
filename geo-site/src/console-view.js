@@ -25,6 +25,15 @@ export function initializeConsole({changeView,onCreate}){
   const personal=directory(settings,'settings',[['models','模型与 API'],['saving','文章保存'],['security','登录与安全'],['billing','积分与有效期'],['contact','联系与续费']]);
   personal.panes.models.classList.add('geo-settings-grid');personal.panes.models.append(catalog,credentials);
   personal.panes.billing.append(account);personal.panes.contact.append(el('h2','联系零雪'),contact);
+
+  const pickerTrigger=byId('model-picker-trigger'),pickerPanel=byId('model-picker-panel');
+  function closePicker(){if(!pickerPanel||pickerPanel.hidden)return;pickerPanel.hidden=true;pickerTrigger?.setAttribute('aria-expanded','false');}
+  if(pickerTrigger&&pickerPanel){
+    pickerTrigger.addEventListener('click',()=>{const open=pickerPanel.hidden;pickerPanel.hidden=!open;pickerTrigger.setAttribute('aria-expanded',String(open));if(open)pickerPanel.querySelector('.geo-model-picker__close')?.focus();});
+    pickerPanel.addEventListener('click',event=>{if(event.target.closest('[data-picker-close]'))closePicker();});
+    pickerPanel.addEventListener('change',event=>{if(event.target instanceof HTMLInputElement&&event.target.name==='model-option')closePicker();});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closePicker();});
+  }
   const saving=el('div',undefined,'runtime-panel');saving.id='saving-settings';
   personal.panes.saving.append(saving);
   const security=el('div',undefined,'runtime-panel');security.id='security-settings';
@@ -90,8 +99,10 @@ export function initializeConsole({changeView,onCreate}){
     }
     const table=el('table'),head=el('thead'),header=el('tr'),body=el('tbody');
     for(const label of ['任务工作区','模型','状态','文章输出','操作']){const th=el('th',label);th.scope='col';header.append(th);}head.append(header);
-    for(const batch of batches){const row=el('tr');const state=batch.status==='completed'?(batch.failedTasks?.length?'部分未完成':'已完成'):({draft:'草稿',paused:'已暂停',failed:'需要处理',cancelled:'已取消'}[batch.status]||batch.phaseLabel||'待运行');
-      row.append(el('td',batch.title),el('td',batch.model.label),el('td',state),el('td',`${batch.completed} / ${batch.total}`));
+  function workspaceIcon(){const icon=el('span',undefined,'console-ws-icon');icon.setAttribute('aria-hidden','true');icon.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h8"/></svg>';return icon;}
+  for(const batch of batches){const row=el('tr');const state=batch.status==='completed'?(batch.failedTasks?.length?'部分未完成':'已完成'):({draft:'草稿',paused:'已暂停',failed:'需要处理',cancelled:'已取消'}[batch.status]||batch.phaseLabel||'待运行');
+      const titleCell=el('td');titleCell.append(workspaceIcon(),el('span',batch.title));
+      row.append(titleCell,el('td',batch.model.label),el('td',state),el('td',`${batch.completed} / ${batch.total}`));
       const action=el('td'),button=el('button','打开工作区','console-link-button');button.type='button';button.addEventListener('click',()=>open(batch));action.append(button);row.append(action);body.append(row);
     }
     table.append(head,body);region.append(table);

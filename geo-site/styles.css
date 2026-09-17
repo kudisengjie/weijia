@@ -12,10 +12,10 @@
     --shadow: 0 16px 42px rgba(65, 108, 166, .13);
 }
 
-/* A layout: welcoming artwork beside a focused sign-in form. */
-.login-page { min-height: 100svh; padding: 32px max(24px, calc((100vw - 1280px) / 2)); display: flex; flex-direction: column; justify-content: center; background: radial-gradient(ellipse at 28% 38%, #cbe7ff 0, transparent 53%), linear-gradient(135deg, #eaf5ff, #f9fcff 68%); }
+/* A layout: welcoming artwork beside a focused sign-in form. Centering uses auto margins (not justify-content) so focusing an input never triggers the overflow scroll jump. */
+.login-page { min-height: 100svh; padding: 32px max(24px, calc((100vw - 1280px) / 2)); display: flex; flex-direction: column; background: radial-gradient(ellipse at 28% 38%, #cbe7ff 0, transparent 53%), linear-gradient(135deg, #eaf5ff, #f9fcff 68%); }
 .login-home { align-self: flex-start; color: #526e91; text-decoration: none; font-size: 14px; padding: 10px 0; }
-.login-layout { display: grid; grid-template-columns: 1.15fr 1fr; gap: 60px; align-items: center; width: 100%; max-width: 1080px; margin: 40px auto 24px; }
+.login-layout { display: grid; grid-template-columns: 1.15fr 1fr; gap: 60px; align-items: center; width: 100%; max-width: 1080px; margin: auto; }
 .login-art { position: relative; min-width: 0; }
 .login-eyebrow { color: #537db3; font-size: 11px; letter-spacing: .16em; font-weight: 700; }
 .login-art > img { display: block; width: 100%; max-width: 470px; height: auto; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 24px 26px #4264901a); margin: -4px auto 0; }
@@ -28,7 +28,7 @@
 .login-card > p { color: #687f9c; margin: 0 0 30px; }
 .runtime-field { display: flex; flex-direction: column; gap: 9px; color: #526b8a; font-size: 13px; font-weight: 600; margin: 18px 0; min-width: 0; }
 .runtime-field input, .runtime-field select { display: block; width: 100%; min-width: 0; min-height: 48px; border: 1px solid #cbdcf0; border-radius: 12px; padding: 12px 14px; background: #fff; color: #17304f; font: inherit; font-size: 16px; font-weight: 400; }
-.runtime-field input:focus-visible, .runtime-field select:focus-visible { outline: 3px solid #80b1f540; border-color: #6095e5; }
+.runtime-field input:focus-visible, .runtime-field select:focus-visible { outline: none; border-color: #6095e5; box-shadow: 0 0 0 3px rgba(95, 148, 229, .16); }
 .runtime-field input::placeholder { color: #8a9caf; font-size: 13px; }
 .password-field { position: relative; display: block; }
 .password-field input { padding-right: 62px; }
@@ -89,8 +89,7 @@ button, a, label { touch-action: manipulation; -webkit-tap-highlight-color: rgba
 [hidden] { display: none !important; }
 
 button:focus-visible,
-a:focus-visible,
-label:focus-within {
+a:focus-visible {
     outline: 3px solid rgba(72, 135, 222, .28);
     outline-offset: 3px;
 }
@@ -699,3 +698,41 @@ label:focus-within {
 #saving-settings .geo-run-button { min-width: 140px; }
 #saving-message.is-error { color: #b3423f; }
 @media (max-width: 760px) { #saving-settings { gap: 8px; } }
+
+/* ===== 2026-09-16 boot anti-flash, focus polish, model picker modal, overview icons ===== */
+html.booting #login-page { visibility: hidden; }
+
+.console-h2-icon { width: 15px; height: 15px; margin-right: 7px; vertical-align: -2px; fill: none; stroke: #5c91d9; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.console-ws-cell { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.console-ws-cell > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.console-ws-icon { display: grid; place-items: center; flex: 0 0 26px; width: 26px; height: 26px; border: 1px solid #cfe1f7; border-radius: 7px; background: var(--ice); }
+.console-ws-icon svg { width: 14px; fill: none; stroke: #5c91d9; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.geo-model-picker__trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: 2px; padding: 10px 14px; border: 1px solid #c9dff7; border-radius: 10px; background: #fff; color: var(--ink); text-align: left; cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease; }
+.geo-model-picker__trigger:hover { border-color: #9cc5f0; }
+.geo-model-picker__trigger:focus-visible { outline: 2px solid #548bcd; outline-offset: 2px; }
+.geo-model-picker__current { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.geo-model-picker__current img { width: 30px; height: 30px; object-fit: contain; border: 1px solid #e3eef9; border-radius: 8px; background: #fff; }
+.geo-model-picker__text { min-width: 0; }
+.geo-model-picker__text strong { display: block; font-size: 13px; }
+.geo-model-picker__text small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.geo-model-picker__action { flex: 0 0 auto; color: #3b699a; font-size: 12px; font-style: normal; font-weight: 700; }
+.geo-model-picker { position: fixed; inset: 0; z-index: 260; display: grid; place-items: center; padding: 20px; }
+.geo-model-picker__backdrop { position: absolute; inset: 0; background: rgba(23, 48, 79, .4); }
+.geo-model-picker__dialog { position: relative; width: min(880px, 100%); max-height: min(80vh, 760px); overflow: auto; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 24px 64px rgba(23, 48, 79, .26); }
+.geo-model-picker__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.geo-model-picker__header strong { display: block; font-size: 16px; }
+.geo-model-picker__header small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+.geo-model-picker__close { flex: 0 0 auto; }
+.geo-provider-grid--modal { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.geo-model-picker__footer { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border: 1px solid #cde2fa; border-radius: 10px; background: #f4f9ff; }
+.geo-model-picker__footer > span { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.geo-model-picker__footer strong { color: #285179; font-size: 12px; }
+.geo-model-picker__footer code { margin-left: auto; overflow-wrap: anywhere; color: #6f87a2; font-family: "Cascadia Mono", Consolas, monospace; font-size: 10px; text-align: right; }
+@media (max-width: 760px) {
+    .geo-provider-grid--modal { grid-template-columns: 1fr; }
+    .geo-model-picker { padding: 10px; }
+    .geo-model-picker__dialog { padding: 14px; }
+    .geo-model-picker__footer { flex-wrap: wrap; }
+    .geo-model-picker__footer code { margin-left: 0; text-align: left; }
+}

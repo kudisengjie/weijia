@@ -136,6 +136,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   let expiryTimer;
   const shell=document.querySelector('.geo-shell');
   function showLogin() {
+    document.documentElement.classList.remove('booting');
     auth.invalidate();runners.reset();workspaces.reset();rememberTab(false);clearTimeout(expiryTimer);csrf='';settings=null;activeBatch=null;pendingCredit=null;members=[];
     localOutput.setScope(null);delivery.setScope(null);renderSaving();
     shell.hidden=true;$('login-page').hidden=false;$('login-password').value='';$('login-password').type='password';$('toggle-password').textContent='显示';$('toggle-password').setAttribute('aria-pressed','false');$('toggle-password').setAttribute('aria-label','显示密码');
@@ -162,6 +163,10 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     const choice=selected(),configured=Boolean(settings?.providers[choice.id]?.configured);
     $('credential-provider').textContent=`当前编辑：${choice.provider} · ${choice.model}${configured?' · 已保存密钥':' · 尚未配置'}`;
     $('custom-model-id').placeholder=`留空使用 ${choice.modelId}`;
+    document.querySelectorAll('[data-picker-provider]').forEach(n=>n.textContent=choice.provider);
+    document.querySelectorAll('[data-picker-model]').forEach(n=>n.textContent=choice.model);
+    document.querySelectorAll('[data-picker-status]').forEach(n=>n.textContent=configured?'已配置':'未配置');
+    document.querySelectorAll('[data-picker-logo]').forEach(n=>{n.src=choice.logo;});
     document.querySelectorAll('.geo-provider-card').forEach(card=>{const provider=card.querySelector('input').dataset.provider;card.querySelector('.geo-provider-card__status').textContent=settings?.providers[provider]?.configured?'已配置':'未配置';});
   }
   function renderConnections() {
@@ -191,7 +196,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   function renderModelLock() {const locked=modelIsLocked(settings,activeBatch);document.querySelectorAll('input[name="model-option"], #model-key, #custom-model-id, #model-form button').forEach(input=>{input.disabled=locked;});}
   async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();}
   async function enter() {return bootstrapAuthenticatedWorkspace({
-    showWorkspace(){ $('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
+    showWorkspace(){ document.documentElement.classList.remove('booting');$('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
     refreshSettings,
     async loadHistory(){await history();await loadMembers();},
     showServiceFailure(error){if(error.code!=='STALE_RESPONSE')toast(error.message);},
