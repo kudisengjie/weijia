@@ -58,7 +58,8 @@ function fakeApi({items = [], receiptPlan = () => ({status: 200, data: {billingS
             {status: plan.status, code: plan.data?.code});
         }
         confirmed.add(pathname.split('/')[1]);
-        return plan.data;
+        // 服务器响应契约：{receipt, batch}（回执 + 唤醒后的批次状态，可为 null）。
+        return {receipt: plan.data, batch: plan.batch ?? null};
       }
       throw new Error('意外路径：' + pathname);
     },
@@ -308,6 +309,37 @@ test('re-entrant deliverAll while busy is skipped, not duplicated', async () => 
   releaseDownload();
   const result = await first;
   assert.deepEqual(result, {delivered: 1, failed: []});
+});
+
+test('a resumed batch in the receipt response is forwarded to onBatch for UI refresh', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lxue-delivery-'));
+  const batches = [];
+  const {delivery} = await deliveryWith({
+    items: [item()],
+    localOutput: diskLocalOutput(root),
+    onPendingChange: () => {},
+    receiptPlan: () => ({status: 200, data: {billingStatus: 'settled'}, batch: {id: 'batch-1', status: 'completed'}}),
+  });
+  // 注入 onBatch 需要在创建时传入；此处通过第二实例验证。
+  const fake = fakeApi({items: [], receiptPlan: () => ({status: 200, data: {billingStatus: 'settled'}, batch: {id: 'b', status: 'completed'}})});
+  const outbox2 = memoryOutbox();
+  await outbox2.set('receipt:' + item().artifactId, {
+    artifactId: item().artifactId, requestId: crypto.randomUUID(), sha256: item().sha256,
+    byteLength: bytes(CONTENT).byteLength, queuedAt: 1,
+  });
+  const delivery2 = createArticleDelivery({
+    api: fake.api,
+    download: async () => bytes(CONTENT),
+    localOutput: diskLocalOutput(fs.mkdtempSync(path.join(os.tmpdir(), 'lxue-delivery-'))),
+    outbox: outbox2,
+    accountScope: SCOPE,
+    onPendingChange: () => {},
+    onBatch: batch => batches.push(batch),
+  });
+
+  await delivery2.sync();
+
+  assert.deepEqual(batches, [{id: 'b', status: 'completed'}], 'UI must learn the resumed batch state');
 });
 
 test('unsafe server filenames are sanitized before writing to disk', async () => {
