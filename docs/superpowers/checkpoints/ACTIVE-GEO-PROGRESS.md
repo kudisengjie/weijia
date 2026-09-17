@@ -2,7 +2,24 @@
 
 更新时间：2026-09-16。本文件只记录可复核的实现、验证和明确未完成项；本地、GitHub、EdgeOne 三层状态分开记录，不把“已保存”“已推送”“已部署”混为一谈。
 
-## 阶段 B（2026-09-16，本地目录与账号上下文）已完成，本地提交 1fbe46097bbba1c6c4cd0aff87f5524212139047
+## 阶段 C（2026-09-16，数据库 v5 与交付事务）核心已完成，本地提交 84678ddd362968a947ce99c855c5bfa952a7389b
+
+按交接方案 §9/§8/§12 阶段 C 以 TDD 实现 schema v5、交付回执事务与按 deliveryMode 结算。**仅本地检查点：未推送、未部署；真实 PG 回归（tests_postgres/test_local_delivery.py）因隔离实例被沙箱阻断尚未运行**。生产未连接，旧数据无影响。
+
+- schema v5（`schema.py` SCHEMA_VERSION=5 + `database.py` 显式 v5 迁移块，重复初始化安全）：`batches.delivery_mode VARCHAR(32) DEFAULT 'server_legacy'`（新批次 INSERT 固定 `local_confirmed_v1`，幂等重放不改旧值）；`article_artifacts` 新增 `delivery_state`（CHECK pending/delivered/discarded，默认 pending）、`delivered_at`、`purged_at`，`content_cipher` 改可空并加 body-state CHECK（pending 必须有密文，delivered/discarded 必须无密文，不允许空串伪装）；新增 `article_delivery_receipts`（UNIQUE artifact_id 保证一文件一确认 + UNIQUE (tenant_id,user_id,request_id) 幂等）；`jobs` 状态加 `waiting_local`（重建 CHECK）；新增 `article_artifacts_pending_idx`（user_id,tenant_id,delivery_state,created_at）。
+- repository 新增（`repository.py`）：`confirm_local_delivery` 单事务=FOR UPDATE 锁 artifact → 404/幂等/409 分支（delivered 返回既有结果不重复结算；discarded 拒绝；sha256/byteLength 不一致 ARTIFACT_MISMATCH；同 requestId 用于他文 REQUEST_ID_CONFLICT）→ 清密文标记 delivered/purged → 插回执 → 该行全部交付时自动 `settle_task_credit(complete=True)` → 组装 `{artifactId,deliveryState,onlineBodyCleared,billingStatus,batchSeq,alreadyConfirmed}`；`get_article_artifact_meta`（无正文）；`list_pending_artifacts`（created_at/id 游标分页，limit+1 探测 nextCursor）；`_task_delivery_complete`。
+- 结算分支：`settle_task_credit` 读批次 `delivery_mode`——`local_confirmed_v1` 成功判据=该 Excel 行全部 artifact 有 delivered 记录；`server_legacy` 保持原服务器完整文件判据。退款后迟到回执只清正文不重扣（billingStatus=already_refunded）。
+- 410 语义：`ArtifactService.get` 对 delivered/discarded 返回 `410 ARTIFACT_BODY_CLEARED`（不再暴露正文，也不作为重新生成理由）；pending/legacy 下载不变。
+- 新增 `delivery.py`（DeliveryService）：回执严格校验（字段集合恰为 requestId/sha256/byteLength；requestId 规范小写 UUID；sha256 64 位小写 hex；byteLength 严格正整数拒绝 bool/str/float）、manifest、pending 分页校验（默认 20，最大 100，非法 INVALID_PAGINATION）。
+- 新增路由（`app.py`，静态 `/artifacts/pending` 注册在动态段之前）：GET `/api/artifacts/pending`、GET `/api/artifacts/{id}/manifest`、POST `/api/artifacts/{id}/local-receipt`（LocalReceiptBody extra=forbid+strict，Origin/CSRF/会话沿用现有机制）；无租户上下文时 pending 返回空、manifest/receipt 404。
+- 测试：`tests_py/test_delivery.py` 21 项全绿（fake 仓储契约 18 项 + app 路由契约 3 项：未登录 401、错误 Origin 403、extra 字段 400、静态路由优先、manifest 404）。`tests_py` 全量 93/93；`npm test` 44 通过 + 2 个既有失败（同阶段 A）；`npm run build` 通过。
+- 新增 `tests_postgres/test_local_delivery.py` 10 项（迁移回填与重复安全、waiting_local 可写、新模式未交付禁止 settle、回执结算与清正文、同回执幂等、换 requestId 幂等、requestId 冲突、hash/bytes 不匹配、退款后迟到回执、legacy 模式不变、410、pending 清单隔离），**语法验证通过，等待隔离 PG 可用后运行**。
+- 明确未做（属阶段 D 或后续）：批次 state 中旧路径 article.markdown 副本的防御性清理（新路径 article 只存元数据，正文仅在 content_cipher；批次驱动侧 draft 清理随阶段 D 接线）；worker finish_job 的 waiting_local 映射；前端 article-delivery 模块。
+- 环境记录：隔离 PostgreSQL（E:/codex/.tmp/geo-delivery-pg，端口 55483）在本沙箱无法常驻——WorkBuddy 安全驱动拦截新监听进程并在命令结束后清理进程树；已尝试 Start-Process 脱离、注册 Windows 服务均被权限拦截。**待用户配合以管理员注册服务后即可运行真实 PG 回归**。git 分支引用丢失 bug 第 5 次复现（84678dd 提交后），已从 worktree gitdir 的 reflog 恢复至主仓库 refs；worktree 的分支引用实际存放在主仓库 `E:/codex/weijia/.git/refs/heads/`，不是 worktree gitdir。
+
+下一步：用户授权并梯子可用后推送 84678dd 与 d568753；隔离 PG 可用后运行 `tests_postgres/test_local_delivery.py`；随后接续 §12 阶段 D（运行器、写盘、积分闭环）。
+
+## 阶段 B（2026-09-16，本地目录与账号上下文）已完成，本地提交 1fbe46097bbba1c6c4cd0aff87f5524212139047（已推送，远端 SHA 同 d568753）
 
 按交接方案 §6/§8.2/§12 阶段 B 以 TDD 完成，仅证明目录授权与写盘，**未启用生产文章删除、未清任何在线正文**。仅本地检查点：未推送、未部署。
 
