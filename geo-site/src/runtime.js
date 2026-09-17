@@ -46,7 +46,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   const auth=createAuthFlow();
   const consoleView=initializeConsole({changeView,onCreate:()=>workspaces.create()});
   const localOutput=createLocalOutput({});
-  const delivery=createArticleDelivery({api,download:downloadBytes,localOutput,onPendingChange:renderSavingPending});
+  const delivery=createArticleDelivery({api,download:downloadBytes,localOutput,onPendingChange:renderSavingPending,onBatch:b=>receiveBatch(b)});
   function renderSaving() {
     const pane=$('saving-settings');if(!pane)return;
     const operation=auth.epoch;
@@ -107,7 +107,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     if(count===null){line.textContent='待补存文章：读取中…';return;}
     if(!count){line.textContent='待补存文章：没有。新文章写盘并确认后，服务器才会清理在线正文。';return;}
     line.textContent=`待补存文章：${count} 篇。写盘并确认成功前，在线正文不会清理。`;
-    const button=node('button','立即保存到本机','geo-run-button');button.type='button';
+    const button=node('button','立即保存到本机','geo-run-button');button.type='button';button.id='saving-deliver';
     button.addEventListener('click',async()=>{
       button.disabled=true;
       try{
@@ -317,7 +317,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   }
   function receiveBatch(b){
     if(!csrf)return;workspaces.updateBatch(b);
-    if(b.status==='awaiting_save'||b.status==='waiting_local')delivery.autoDeliver().catch(()=>{});
+    if(b.status==='awaiting_save'||b.status==='waiting_local')delivery.autoDeliver().catch(error=>console.warn('autoDeliver skipped:',error?.code||'',error?.message||error));
     if(activeBatch?.id===b.id&&!(activeBatch.seq>b.seq)&&!(['completed','cancelled'].includes(activeBatch.status)&&!['completed','cancelled'].includes(b.status)))renderBatch(b);
   }
   function drive(b){

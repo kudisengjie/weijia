@@ -26,8 +26,9 @@ def main():
     fixture = PostgresRuntimeTests()
     fixture.setUp()
     workspace_mode = '--workspaces' in sys.argv
-    batch = None if workspace_mode else fixture.prepared_batch(1)
-    if workspace_mode:
+    local_delivery_mode = '--local-delivery' in sys.argv
+    batch = None if (workspace_mode or local_delivery_mode) else fixture.prepared_batch(1)
+    if workspace_mode or local_delivery_mode:
         from geo_backend.models import SettingsService
         fixture.fund(amount=10)
         SettingsService(fixture.repo, MASTER).save_model(fixture.owner, 'deepseek', 'primary', '', 'test-second-key', False)
@@ -52,10 +53,16 @@ def main():
             if question == '问题5':
                 raise ApiError(502, '测试供应商拒绝第五工作区')
             return '{"passed":true,"issues":[]}' if 'draft' in payload else f'# {question}\n这是本机固定测试响应，不是真实模型生成。'
+        if local_delivery_mode:
+            from geo_backend.errors import ApiError
+            question = payload['task']['question']
+            if question in ('问题4', '问题5'):
+                raise ApiError(502, '测试供应商拒绝第四/第五工作区')
+            return '{"passed":true,"issues":[]}' if 'draft' in payload else f'# {question}\n这是本机固定测试响应，不是真实模型生成。'
         return '{"passed":true,"issues":[]}' if 'draft' in payload else '# UI 联调文章\n这是本机固定测试响应，不是真实模型生成。'
 
     # Stub only IMA upstream transport. Real cache/locks, rules, task state and billing execute.
-    if workspace_mode:
+    if workspace_mode or local_delivery_mode:
         from unittest.mock import patch
         async def ima(_credentials, path, payload, **_kwargs):
             kind = path.rsplit('/', 1)[-1]
@@ -100,7 +107,9 @@ def main():
         while not server.started and time.monotonic() < deadline:
             time.sleep(0.05)
         try:
-            script = 'browser_workspace_boundaries.mjs' if '--boundaries' in sys.argv else 'browser_workspaces.mjs' if workspace_mode else 'browser_ui_smoke.mjs'
+            script = ('browser_local_delivery.mjs' if local_delivery_mode
+                      else 'browser_workspace_boundaries.mjs' if '--boundaries' in sys.argv
+                      else 'browser_workspaces.mjs' if workspace_mode else 'browser_ui_smoke.mjs')
             command = ['node', str(Path(__file__).with_name(script)), config.geo_account]
             if '--resume' in sys.argv: command.append('--resume')
             if '--layout-only' in sys.argv: command.append('--layout-only')

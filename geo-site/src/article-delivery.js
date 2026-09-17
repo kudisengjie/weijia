@@ -82,7 +82,7 @@ function defaultOutbox() {
 }
 
 export function createArticleDelivery({api, download, localOutput, outbox, accountScope = null,
-  onPendingChange = () => {}, makeId = () => crypto.randomUUID()} = {}) {
+  onPendingChange = () => {}, onBatch = () => {}, makeId = () => crypto.randomUUID()} = {}) {
   if (!outbox) outbox = defaultOutbox();
   let scope = accountScope;
   let pendingCount = null;
@@ -123,10 +123,12 @@ export function createArticleDelivery({api, download, localOutput, outbox, accou
   }
 
   async function sendReceipt(record) {
-    const result = await api(`artifacts/${encodeURIComponent(record.artifactId)}/local-receipt`,
+    const data = await api(`artifacts/${encodeURIComponent(record.artifactId)}/local-receipt`,
       {requestId: record.requestId, sha256: record.sha256, byteLength: record.byteLength});
     await outbox.delete(OUTBOX_PREFIX + record.artifactId);
-    return result;
+    // 服务器唤醒批次后把最新状态交给 UI（receiveBatch），驱动等待保存 → 完成。
+    if (data?.batch) onBatch(data.batch);
+    return data?.receipt ?? data;
   }
 
   // outbox 补确认：网络失败保留记录下次重试；404（文章已不存在）丢弃陈旧记录。

@@ -412,6 +412,42 @@ class PostgresRuntimeTests(unittest.TestCase):
         self.assertEqual(8, self.repo.credit_balance(self.tenant, self.owner))
         self.assertEqual('completed', self.conn.execute('SELECT status FROM jobs WHERE batch_id = %s', (batch['id'],)).fetchone()[0])
 
+    def test_receipt_route_confirms_and_resumes_awaiting_save_batch(self):
+        # 阶段 D-3 闭环：新模式批次落库后停等待保存；浏览器回执经 HTTP 路由确认，
+        # 路由必须唤醒批次（单行 → completed），否则批次永远卡在 awaiting_save。
+        import hashlib
+        batch = self.prepared_batch(1)
+        article = '# 完整正文\n零雪内容服务。'
+        async def model(_model, _key, messages, **_kwargs):
+            payload = json.loads(messages[-1]['content'])
+            return '{"passed": true, "issues": []}' if 'draft' in payload else article
+        async def drive():
+            service = self.service(model_complete=model)
+            result = batch
+            for _ in range(30):
+                if result['status'] != 'ready':
+                    break
+                result = await service.advance(batch['id'], {'seq': result['seq']}, self.owner)
+            return result
+        stopped = asyncio.run(drive())
+        self.assertEqual('awaiting_save', stopped['status'], stopped)
+        row = self.conn.execute(
+            'SELECT id, sha256, byte_length FROM article_artifacts WHERE batch_id = %s', (batch['id'],)).fetchone()
+        request_id = str(uuid.uuid4())
+        async def run():
+            async with self.http_client() as client:
+                login = await client.post('/auth/login', json={'account': self.config().geo_account, 'password': 'test-password'})
+                self.assertEqual(200, login.status_code)
+                client.headers['x-csrf-token'] = login.json()['csrf']
+                return await client.post(f"/artifacts/{row[0]}/local-receipt",
+                    json={'requestId': request_id, 'sha256': str(row[1]), 'byteLength': int(row[2])})
+        response = asyncio.run(run())
+        self.assertEqual(200, response.status_code, response.text)
+        self.assertEqual('settled', response.json()['receipt']['billingStatus'])
+        self.assertEqual('completed', response.json()['batch']['status'], response.json())
+        self.assertEqual('completed', self.repo.get_batch(self.owner, batch['id'])['status'])
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+
     def body(self, count=5):
         return {
             'requestId': str(uuid.uuid4()),

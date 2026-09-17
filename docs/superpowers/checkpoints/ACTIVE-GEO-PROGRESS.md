@@ -1,6 +1,20 @@
 # 零雪 GEO 当前检查点
 
-更新时间：2026-09-16。本文件只记录可复核的实现、验证和明确未完成项；本地、GitHub、EdgeOne 三层状态分开记录，不把“已保存”“已推送”“已部署”混为一谈。
+更新时间：2026-09-17。本文件只记录可复核的实现、验证和明确未完成项；本地、GitHub、EdgeOne 三层状态分开记录，不把“已保存”“已推送”“已部署”混为一谈。
+
+## 阶段 D-3（2026-09-17，浏览器端到端与集成缺口修复）已完成并全量回归通过；**本地提交未推送**（用户要求降低推送频率）；master 未动，EdgeOne 生产无影响。
+
+- **端到端发现并修复两个真集成缺口**：
+  1. `app.py` 从未 import `DeliveryService`——任何已认证请求打到 `/artifacts/pending`、`/manifest`、`/local-receipt` 都会 NameError 500（既有契约测试只覆盖 401/403 前置失败，未暴露）。
+  2. `resume_after_delivery` 无 HTTP 路由——回执成功后批次永远卡在 `awaiting_save`。修复：local-receipt 路由在 confirm 成功后调用 `batch_service.resume_after_delivery`，响应结构改为 `{receipt, batch}`（唤醒后的批次状态），前端 sendReceipt 把 batch 转发给 onBatch→receiveBatch 驱动 UI。
+- **新增测试**：`test_receipt_route_confirms_and_resumes_awaiting_save_batch`（PG+HTTP 组合，固化闭环语义）；`browser_local_delivery.mjs` + `serve_ui_fixture.py --local-delivery` 模式（五工作区基建 + 第四/第五注入失败 + IMA stub）。
+- **浏览器端到端四个场景（真实 Edge + 真实后端 + 真实 dist）**：①手势授权目录（FSA 契约打桩，OS 选择器无法自动化，磁盘级校验由 Node 真实磁盘测试覆盖）；②ACK 丢失 → 批次停“等待保存到本机” → outbox 补确认 → 自动完成；③五工作区并行，第四/第五注入失败退款，三篇落盘，余额 7；④取消与迟到回执竞争——两种合法结局（cancel 先→退款 already_refunded 余额 7；回执先→settled+批次完成+取消乐观锁 409）均不重复扣费、discarded 脱离 pending 清单。
+- **前端**：保存页“立即保存到本机”按钮补 `id=saving-deliver`；autoDeliver 失败改为 console.warn 诊断（不打扰 UI）。
+- **回归证据**：tests_postgres 72/72、tests_py 93/93、npm 55+2 既有失败（基线一致）、构建通过、浏览器 e2e PASS。
+- **工程教训**：①调试期临时 console 探针删行时会把同一行的 `return{` 一起删掉造成页面语法错误（"Unexpected token ','"全页 JS 瘫痪）——清理探针必须逐处核对而非批量删行；②UI 状态断言必须等异步交付链的确定性信号（`__saved.length`、pending 数量刷新），不能跟在状态标签出现后立即断言；③UI 余额徽标由 refreshSettings 驱动，overview 刷新不更新它，断账用 `/api/settings` 服务器真相；④乐观锁 409 在并发取消/完成竞争中是正确语义，端到端断言要允许两种合法结局。
+- **明确未做（后续）**：本地提交未推送（待用户确认）；EdgeOne 部署与线上验收不在本轮。
+
+## 阶段 D-2（2026-09-17，前端 article-delivery 模块）本地提交 b83597b（未推送，同上）。
 
 ## 阶段 D-1（2026-09-17，awaiting_save/waiting_local 流程与新模式默认切换）已完成并全量回归通过，已推送，远端 SHA = 533b5738dddf4728d1e3c52c6c88ea57e8e54065（本地 HEAD 一致）；master 未动，EdgeOne 生产无影响。
 

@@ -18,6 +18,7 @@ from .security import SESSION_TTL
 from .artifacts import ArtifactService
 from .batches import BatchService
 from .config import Settings
+from .delivery import DeliveryService
 from .errors import ApiError
 from .ima import load_ima_credentials, update_ima_credentials
 from .models import SettingsService
@@ -578,9 +579,19 @@ def create_app(
             context = tenant_context(repository, current.user_id)
             if not context:
                 raise ApiError(404, "文章文件不存在或不属于当前账号。", "ARTIFACT_NOT_FOUND")
-            return delivery_service(repository).confirm(
+            receipt = delivery_service(repository).confirm(
                 tenant_id=str(context["tenantId"]), user_id=current.user_id,
                 artifact_id=artifact_id, payload=body.model_dump())
+            # 交付确认即唤醒批次：单行 → completed，多行 → ready 继续生成。
+            # 已取消/已放弃的迟到回执不唤醒（resume_after_delivery 自行判断）。
+            resumed = None
+            if receipt.get("deliveryState") == "delivered":
+                meta = repository.get_article_artifact_meta(
+                    str(context["tenantId"]), artifact_id, user_id=current.user_id)
+                if meta:
+                    resumed = batch_service(repository, context).resume_after_delivery(
+                        str(meta["batchId"]), current.user_id)
+            return {"receipt": receipt, "batch": resumed}
 
     @app.get("/artifacts/{artifact_id}")
     def artifact_download(artifact_id: str, request: Request):
