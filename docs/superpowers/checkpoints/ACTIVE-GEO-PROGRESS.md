@@ -233,3 +233,8 @@ ce83602 是 SaaS 原型检查点，不是已完成的发布版。此前 58 项 P
 - 模型失败/超时不自动重发；运行权声明过期且无法确定结果时，该任务跳过并退款，不以暂停后的“继续”重发结果不明的请求。
 - IMA 证据最多读取前六份完整原文；超长或不支持格式明确报错，不静默截断。
 - `.local`、数据库连接串、密码、管理员口令、IMA 与模型 Key 不得进入 Git 或进度记录。
+
+### Phase E 补充：真实凭据验证（2026-09-16 晚）
+- DeepSeek（deepseek-flash / deepseek-v4-pro）、腾讯混元（hy3 / hy4-preview）、IMA（clientId+apiKey，search_knowledge_base 可见 copilot）全部真实端点验证通过；凭据来源为 Windows 用户级环境变量，验证脚本 `scripts/verify_real_providers.py`（从 `.local/verify-keys.json` 读取，用后即删，密钥不进日志）。
+- 发现并修复：`complete(test=True)` 探测上限 128 tokens 会被思考型模型（hy4-preview 实测 reasoning_tokens=133）耗尽 → finish_reason=length → 设置页「测试连接」误报失败。上限提高为 2048，新增回归测试，Python 套件 95/95。
+- `AGNES_API_KEY`（51 位）归属供应商待用户确认，未消耗探测请求。

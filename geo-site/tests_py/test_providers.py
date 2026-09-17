@@ -123,8 +123,30 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
                 async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
                     await complete(selected, "secret", [{"role": "user", "content": "test"}], client=client, test=True)
 
-                self.assertIn(b'"max_completion_tokens":128', captured["body"])
+                self.assertIn(b'"max_completion_tokens":2048', captured["body"])
                 self.assertNotIn(b'"max_tokens"', captured["body"])
+
+    async def test_connection_probe_cap_allows_reasoning_model_budget(self):
+        from geo_backend.models import model_selection
+        from geo_backend.providers import complete
+
+        # hy4-preview burned 133 reasoning tokens on a trivial probe; a 128 cap
+        # made the real endpoint return finish_reason=length (false failure).
+        selected = model_selection("hunyuan", "secondary")
+        captured = {}
+
+        def handler(request):
+            captured["body"] = request.content
+            return httpx.Response(
+                200,
+                request=request,
+                json={"model": selected["modelId"], "choices": [{"finish_reason": "stop", "message": {"content": "OK"}}]},
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            await complete(selected, "secret", [{"role": "user", "content": "test"}], client=client, test=True)
+
+        self.assertIn(b'"max_tokens":2048', captured["body"])
 
     async def test_reasoning_models_allow_full_length_article_output(self):
         from geo_backend.models import model_selection

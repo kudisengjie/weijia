@@ -28,7 +28,10 @@ async def complete(model: dict[str, str], key: str, messages: list[dict[str, str
     if not key:
         raise ApiError(422, "请先在设置中填写所选模型的 API Key。", "MODEL_KEY_REQUIRED")
     payload: dict[str, object] = {"model": model["modelId"], "messages": messages, "stream": False}
-    completion_limit = 128 if test else COMPLETION_LIMITS.get(model["id"], 8192)
+    # 2048 instead of 128: reasoning models such as hy4-preview spend the whole
+    # probe budget on reasoning_content (finish_reason=length), which made the
+    # settings "test connection" button report a false failure.
+    completion_limit = 2048 if test else COMPLETION_LIMITS.get(model["id"], 8192)
     if model["id"] in {"minimax", "kimi", "mimo"}:
         payload["max_completion_tokens"] = completion_limit
     else:
