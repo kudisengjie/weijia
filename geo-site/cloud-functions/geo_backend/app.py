@@ -533,7 +533,8 @@ def create_app(
     def batches_cancel(batch_id: str, request: Request):
         with factory() as repository:
             current = authentication(request, repository)
-            return batch_service(repository, tenant_context(repository, current.user_id)).cancel(batch_id, current.user_id)
+            return batch_service(repository, tenant_context(repository, current.user_id)).cancel(
+                batch_id, current.user_id, discard_pending=True)
 
     @app.post('/batches/{batch_id}/pause')
     def batches_pause(batch_id: str, request: Request):

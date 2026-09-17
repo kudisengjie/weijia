@@ -4,6 +4,7 @@ Requires the isolated loopback test database (127.0.0.1:55483). Never Neon produ
 """
 import hashlib
 import json
+import asyncio
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -265,6 +266,187 @@ class LocalDeliveryTests(unittest.TestCase):
         listed = [entry['artifactId'] for entry in items]
         self.assertNotIn(str(artifact_id), listed, 'pending listing must not leak other users')
         self.assertNotIn(first['id'], listed, 'delivered artifacts are no longer pending')
+
+
+
+class LocalDeliveryFlowTests(unittest.TestCase):
+    """新模式批次流：落库不结算 → awaiting_save/waiting_local → 回执 → 唤醒继续/完成。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.schema = 'geo_test_' + uuid.uuid4().hex
+        with psycopg.connect(TEST_URL, autocommit=True) as conn:
+            conn.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
+            conn.execute(sql.SQL('CREATE SCHEMA {}').format(sql.Identifier(cls.schema)))
+        with cls.connect() as conn:
+            ensure_schema(conn, MASTER)
+            ensure_schema(conn, MASTER)
+
+    @classmethod
+    def connect(cls):
+        return psycopg.connect(TEST_URL, autocommit=True, options=f'-c search_path={cls.schema},public')
+
+    @classmethod
+    def tearDownClass(cls):
+        if not cls.schema.startswith('geo_test_'):
+            raise AssertionError('Unsafe test schema')
+        with psycopg.connect(TEST_URL, autocommit=True) as conn:
+            conn.execute(sql.SQL('DROP SCHEMA {} CASCADE').format(sql.Identifier(cls.schema)))
+
+    def setUp(self):
+        from geo_backend.batches import BatchService
+        from geo_backend.tenant_access import TenantAccessService
+        self.conn = self.connect()
+        self.addCleanup(self.conn.close)
+        self.repo = PostgresRepository(self.conn, MASTER)
+        self.owner = self.repo.upsert_configured_user('owner-' + uuid.uuid4().hex, hash_password('test-password'))['id']
+        self.tenant = self.repo.ensure_owner_tenant(self.owner, 'tenant-' + uuid.uuid4().hex)['tenantId']
+        self.context = self.repo.get_tenant_context(self.owner, datetime.now(timezone.utc))
+        self.repo.adjust_credits(self.tenant, self.owner, 10, str(uuid.uuid4()), 'grant')
+        from geo_backend.models import SettingsService
+        SettingsService(self.repo, MASTER).save_model(self.owner, 'qwen', 'primary', '', 'test-model-key', False)
+        self._BatchService = BatchService
+        self._TenantAccess = TenantAccessService
+
+    # ---- 夹具 ----
+
+    def service(self, model_complete=None):
+        return self._BatchService(self.repo, MASTER,
+            {'clientId': 'test-client', 'apiKey': 'test-ima'},
+            tenant_context=self.context, model_complete=model_complete)
+
+    def new_mode_batch(self, rows=1):
+        body = {
+            'requestId': str(uuid.uuid4()),
+            'rows': [['品牌名', 'GEO知识库', '问句']] + [['零雪', '品牌库', f'零雪问题{i}？'] for i in range(rows)],
+            'companies': [{'name': 'company.md', 'brand': '零雪', 'text': '零雪内容服务。'}],
+        }
+        result = self.service().create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+        batch = self.repo.get_batch(self.owner, result['id'])
+        self.conn.execute("UPDATE batches SET delivery_mode = 'local_confirmed_v1' WHERE id = %s", (batch['id'],))
+        batch['phase'] = 'generate'
+        batch['rules'] = {'generation': ['写完整文章'], 'audit': ['检查事实'], 'memory': ['零雪']}
+        batch['sources'] = [{'title': '已缓存证据', 'text': '零雪内容服务'}]
+        batch['evidenceCache'] = {'品牌库|' + task['question']: batch['sources'] for task in batch['tasks']}
+        self.assertTrue(self.repo.save_batch(self.owner, batch['id'], batch, batch['seq']))
+        return self.repo.get_batch(self.owner, batch['id'])
+
+    @staticmethod
+    def stub_model():
+        async def model(model, key, messages, **kwargs):
+            payload = json.loads(messages[-1]['content'])
+            article = '# 零雪完整文章' + chr(10) + '有依据的完整正文。'
+            return '{"passed":true,"issues":[]}' if 'draft' in payload else article
+        return model
+
+    def advance_loop(self, batch_id):
+        result = None
+        for _ in range(30):
+            batch = self.repo.get_batch(self.owner, batch_id)
+            if batch['status'] != 'ready':
+                return self.repo.get_batch(self.owner, batch_id)
+            result = asyncio.run(self.service(model_complete=self.stub_model()).advance(batch_id, {'seq': batch['seq']}, self.owner))
+        return result
+
+    def receipt(self, artifact_id, sha256, byte_length):
+        return self.repo.confirm_local_delivery(
+            tenant_id=self.tenant, artifact_id=artifact_id, user_id=self.owner,
+            request_id=str(uuid.uuid4()), sha256=sha256, byte_length=byte_length)
+
+    def job_status(self, batch_id):
+        row = self.conn.execute('SELECT status FROM jobs WHERE batch_id = %s', (batch_id,)).fetchone()
+        return row[0] if row else None
+
+    def balance(self):
+        return self.conn.execute(
+            'SELECT balance FROM member_credit_accounts WHERE tenant_id = %s AND user_id = %s',
+            (self.tenant, self.owner)).fetchone()[0]
+
+    # ---- 用例 ----
+
+    def test_new_mode_persist_waits_for_local_receipt(self):
+        from geo_backend.batches import BatchService  # noqa: F401
+        batch = self.new_mode_batch(rows=1)
+
+        result = self.advance_loop(batch['id'])
+
+        self.assertEqual('awaiting_save', result['status'], result)
+        row = self.conn.execute(
+            "SELECT id, sha256, byte_length, delivery_state FROM article_artifacts WHERE batch_id = %s", (batch['id'],)).fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual('pending', row[3])
+        state = self.conn.execute(
+            "SELECT status FROM credit_task_states WHERE batch_id = %s AND task_id = '1'", (batch['id'],)).fetchone()[0]
+        self.assertEqual('reserved', state, 'new mode must not settle on persist')
+        self.assertEqual(9, self.balance())  # 预扣保留
+
+    def test_finish_job_maps_awaiting_save_to_waiting_local(self):
+        batch = self.new_mode_batch(rows=1)
+        self.repo.create_job(self.tenant, batch['id'], str(uuid.uuid4()))
+        job = self.repo.claim_next_job(90)
+        self.assertIsNotNone(job)
+        self.assertTrue(self.repo.finish_job(job['id'], 'awaiting_save', job['leaseToken']))
+        self.assertEqual('waiting_local', self.job_status(batch['id']))
+        self.assertIsNone(self.repo.claim_next_job(90), 'waiting_local must not be claimed by workers')
+
+    def test_receipt_then_resume_completes_single_task_batch(self):
+        batch = self.new_mode_batch(rows=1)
+        self.advance_loop(batch['id'])
+        row = self.conn.execute(
+            'SELECT id, sha256, byte_length FROM article_artifacts WHERE batch_id = %s', (batch['id'],)).fetchone()
+        result = self.receipt(str(row[0]), row[1], row[2])
+        self.assertEqual('settled', result['billingStatus'])
+
+        resumed = self.service().resume_after_delivery(batch['id'], self.owner)
+
+        self.assertEqual('completed', resumed['status'], resumed)
+        self.assertEqual('complete', self.conn.execute(
+            "SELECT status FROM credit_task_states WHERE batch_id = %s AND task_id = '1'", (batch['id'],)).fetchone()[0])
+        self.assertEqual(9, self.balance())  # 预扣 1 变实扣
+        self.assertEqual('completed', self.job_status(batch['id']))
+
+    def test_multi_row_batch_resumes_ready_then_completes(self):
+        batch = self.new_mode_batch(rows=2)
+        first = self.advance_loop(batch['id'])
+        self.assertEqual('awaiting_save', first['status'], first)
+        row = self.conn.execute(
+            "SELECT id, sha256, byte_length, task_id FROM article_artifacts WHERE batch_id = %s ORDER BY task_id", (batch['id'],)).fetchone()
+        self.receipt(str(row[0]), row[1], row[2])
+
+        resumed = self.service().resume_after_delivery(batch['id'], self.owner)
+        self.assertEqual('ready', resumed['status'], resumed)
+        self.assertEqual('queued', self.job_status(batch['id']))
+
+        second = self.advance_loop(batch['id'])
+        self.assertEqual('awaiting_save', second['status'], second)
+        second_row = self.conn.execute(
+            "SELECT id, sha256, byte_length FROM article_artifacts WHERE batch_id = %s AND task_id = '2'", (batch['id'],)).fetchone()
+        self.assertIsNotNone(second_row)
+        self.receipt(str(second_row[0]), second_row[1], second_row[2])
+        final = self.service().resume_after_delivery(batch['id'], self.owner)
+        self.assertEqual('completed', final['status'], final)
+        self.assertEqual(8, self.balance())  # 两行各实扣 1
+
+    def test_cancel_discards_pending_body_and_refunds_once(self):
+        batch = self.new_mode_batch(rows=1)
+        self.advance_loop(batch['id'])
+        row = self.conn.execute(
+            'SELECT id, sha256, byte_length FROM article_artifacts WHERE batch_id = %s', (batch['id'],)).fetchone()
+
+        self.service().cancel(batch['id'], self.owner, discard_pending=True)
+
+        state = self.conn.execute(
+            "SELECT delivery_state, content_cipher, purged_at FROM article_artifacts WHERE id = %s", (row[0],)).fetchone()
+        self.assertEqual('discarded', state[0])
+        self.assertIsNone(state[1])
+        self.assertIsNotNone(state[2])
+        self.assertEqual('refunded', self.conn.execute(
+            "SELECT status FROM credit_task_states WHERE batch_id = %s AND task_id = '1'", (batch['id'],)).fetchone()[0])
+        self.assertEqual(10, self.balance())
+
+        late = self.receipt(str(row[0]), row[1], row[2])
+        self.assertEqual('already_refunded', late['billingStatus'])
+        self.assertEqual(10, self.balance())
 
 
 if __name__ == '__main__':

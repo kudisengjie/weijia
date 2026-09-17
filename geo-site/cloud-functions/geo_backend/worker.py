@@ -33,7 +33,10 @@ class BatchWorker:
         try:
             service = self.service_factory(job)
             result = await service.advance(job['batchId'], {'seq': int(job['seq'])}, job['userId'])
-            self.repository.finish_job(job['id'], str(result['status']), job['leaseToken'], delay_seconds=2 if result.get('pauseRequested') else 0)
+            status = str(result['status'])
+            if status == 'awaiting_save':
+                status = 'waiting_local'  # Hold the lane; the browser must confirm the local save first.
+            self.repository.finish_job(job['id'], status, job['leaseToken'], delay_seconds=2 if result.get('pauseRequested') else 0)
         except ApiError as error:
             if error.code in {'STEP_CLAIMED', 'IMA_CACHE_BUSY'}:
                 self.repository.finish_job(job['id'], 'queued', job['leaseToken'], delay_seconds=2)

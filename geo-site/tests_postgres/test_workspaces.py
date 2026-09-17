@@ -141,6 +141,8 @@ class WorkspaceTests(unittest.TestCase):
             draft['rows'][1][2] = f'工作区{i}'
             w = self.service.save(w['id'], self.owner, 0, draft)
             started = self.service.start(w['id'], self.owner, w['version'], self.fx.context['expiresAt'])
+            # Legacy finalize-on-persist coverage; new-mode receipt flow lives in test_local_delivery.
+            self.fx.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (started['batch']['id'],))
             batch = self.repo.get_batch(self.owner, started['batch']['id'])
             batch.update(phase='generate', rules={'generation':['完整输出'], 'audit':['检查事实'], 'memory':[]},
                          sources=[{'title':'固定缓存资料', 'text':'零雪内容服务'}])

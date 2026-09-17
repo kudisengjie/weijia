@@ -42,6 +42,8 @@ class WorkerPoolTests(unittest.TestCase):
             body['rows'][1][2] = 'Worker问题' + str(i)
             w = service.save(w['id'], fx.owner, 0, {'title': 'Worker工作区'+str(i), 'rows': body['rows'], 'companies': body['companies'], 'model': {'id': 'qwen', 'slot': 'primary'}})
             w = service.start(w['id'], fx.owner, w['version'], fx.context['expiresAt'])
+            # Legacy finalize-on-persist coverage; new-mode receipt flow lives in test_local_delivery.
+            fx.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (w['batchId'],))
             ids.append(w['batchId'])
             # Evidence/rules already persisted, as when a user resumes after IMA cache retrieval.
             b = fx.repo.get_batch(fx.owner, w['batchId'])

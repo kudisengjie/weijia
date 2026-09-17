@@ -396,7 +396,7 @@ class PostgresRuntimeTests(unittest.TestCase):
 
     def test_worker_finishes_articles_without_http_driving(self):
         from geo_backend.worker import BatchWorker
-        batch = self.prepared_batch(2)
+        batch = self.prepared_batch(2, legacy=True)
         self.conn.execute("UPDATE jobs SET next_run_at = NOW() + INTERVAL '1 day' WHERE batch_id <> %s", (batch['id'],))
         async def model(model, key, messages, **kwargs):
             payload = json.loads(messages[-1]['content'])
@@ -670,6 +670,8 @@ class PostgresRuntimeTests(unittest.TestCase):
                     service = BatchService(self.repo, MASTER, {'clientId': 'test-client', 'apiKey': 'test-ima'},
                         tenant_context=context, client=client, model_complete=model)
                     result = service.create(self.body(1), user, now + timedelta(days=30))
+                    # Legacy finalize-on-persist coverage; new-mode receipt flow lives in test_local_delivery.
+                    self.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (result['id'],))
                     for _ in range(30):
                         if result['status'] != 'ready': break
                         result = await service.advance(result['id'], {'seq': result['seq']}, user)
@@ -699,13 +701,16 @@ class PostgresRuntimeTests(unittest.TestCase):
         self.assertEqual([], result['failedTasks'])
         self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
 
-    def prepared_batch(self, count=5):
+    def prepared_batch(self, count=5, legacy=False):
         self.fund()
         body = self.body(count)
         for index, row in enumerate(body['rows'][1:]):
             row[2] = f'问题{index + 1}'
         result = self.service().create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))
         batch = self.repo.get_batch(self.owner, result['id'])
+        if legacy:
+            # Legacy finalize-on-persist coverage; new-mode receipt flow lives in test_local_delivery.
+            self.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (batch['id'],))
         batch['phase'] = 'generate'
         batch['rules'] = {'generation': ['写完整文章'], 'audit': ['检查事实'], 'memory': ['零雪']}
         batch['sources'] = [{'title': '已缓存证据', 'text': '零雪内容服务'}]
@@ -725,7 +730,7 @@ class PostgresRuntimeTests(unittest.TestCase):
 
     def test_middle_failure_finishes_remaining_rows_and_refunds_one(self):
         from geo_backend.errors import ApiError
-        batch = self.prepared_batch()
+        batch = self.prepared_batch(legacy=True)
         calls = []
         async def model(model, key, messages, **kwargs):
             payload = json.loads(messages[-1]['content'])

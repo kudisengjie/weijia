@@ -338,6 +338,24 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         ).fetchone()[0]
         return found == len(expected)
 
+    def batch_delivery_mode(self, tenant_id, batch_id):
+        return self._batch_delivery_mode(tenant_id, batch_id)
+
+    def count_pending_artifacts(self, tenant_id, batch_id):
+        return int(self.conn.execute(
+            """SELECT COUNT(*) FROM article_artifacts
+               WHERE tenant_id = %s AND batch_id = %s AND delivery_state = 'pending'""",
+            (tenant_id, batch_id),
+        ).fetchone()[0])
+
+    def discard_batch_artifacts(self, tenant_id, batch_id):
+        self.conn.execute(
+            """UPDATE article_artifacts
+               SET delivery_state = 'discarded', purged_at = NOW(), content_cipher = NULL
+               WHERE tenant_id = %s AND batch_id = %s AND delivery_state = 'pending'""",
+            (tenant_id, batch_id),
+        )
+
     def _batch_delivery_mode(self, tenant_id, batch_id):
         row = self.conn.execute(
             "SELECT delivery_mode FROM batches WHERE tenant_id = %s AND id = %s", (tenant_id, batch_id)
@@ -698,7 +716,28 @@ class PostgresRepository(WorkspaceRepositoryMixin):
                     already=True, receipt_request_id=str(existing[0]) if existing else request_id,
                 )
             if row[5] == 'discarded':
-                raise ApiError(409, "已放弃的文章不能再次确认交付。", "ARTIFACT_DISCARDED")
+                # §8.2: a late/duplicate ACK for a discarded artifact is idempotent —
+                # never 409, never settle. If somehow still reserved, refund exactly once.
+                credit = self.conn.execute(
+                    "SELECT status FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND task_id = %s",
+                    (tenant_id, batch_id, task_id),
+                ).fetchone()
+                credit_status = str(credit[0]) if credit else 'missing'
+                if credit_status == 'reserved':
+                    self.settle_task_credit(tenant_id, batch_id, task_id, False)
+                    credit_status = 'refunded'
+                seq_row = self.conn.execute(
+                    "SELECT seq FROM batches WHERE tenant_id = %s AND id = %s", (tenant_id, batch_id)
+                ).fetchone()
+                return {
+                    "artifactId": str(artifact_pk),
+                    "deliveryState": "discarded",
+                    "onlineBodyCleared": True,
+                    "billingStatus": 'already_refunded' if credit_status in ('refunded', 'released') else credit_status,
+                    "batchSeq": int(seq_row[0]) if seq_row else 0,
+                    "alreadyConfirmed": False,
+                    "requestId": request_id,
+                }
             if int(row[3]) != int(byte_length) or str(row[4]) != sha256:
                 raise ApiError(409, "回执哈希或字节数与服务器记录不一致。", "ARTIFACT_MISMATCH")
             conflict = self.conn.execute(
@@ -871,7 +910,10 @@ class PostgresRepository(WorkspaceRepositoryMixin):
             return {"id": str(row[0]), "batchId": row[1], "userId": str(row[2]), "seq": int(row[3]), "attempts": int(updated[0]), 'leaseToken': str(updated[1])}
 
     def finish_job(self, job_id: str, status: str, lease_token: str, delay_seconds: int = 0) -> bool:
-        final_status = status if status in {"completed", "failed", "cancelled"} else "queued"
+        if status == 'awaiting_save':
+            # Defense in depth: never requeue a phase that already consumed an upstream call.
+            status = 'waiting_local'
+        final_status = status if status in {"completed", "failed", "cancelled", "waiting_local"} else "queued"
         return self.conn.execute(
             """UPDATE jobs SET status = %s, lease_until = NULL, locked_at = NULL, lease_token = NULL,
                next_run_at = NOW() + (%s || ' seconds')::INTERVAL, updated_at = NOW()
@@ -1032,8 +1074,8 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         with self.conn.transaction():
             self.conn.execute(
                 """
-                INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, state_cipher, seq, status)
-                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s)
+                INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, state_cipher, seq, status, delivery_mode)
+                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s, 'local_confirmed_v1')
                 ON CONFLICT (user_id, request_id_hash) DO NOTHING
                 """,
                 (batch_id, user_id, state.get("tenantId"), request_id_hash,

@@ -352,7 +352,26 @@ class BatchService:
             self.repository.set_batch_job_status(batch_id, 'queued')
             return _summary(batch)
 
-    def cancel(self, batch_id, user_id, *, reason='批次已取消，未完成的任务积分已返还。'):
+    def resume_after_delivery(self, batch_id, user_id):
+        """本地回执确认后唤醒 awaiting_save 批次：还有待交付则保持，否则继续或完成。"""
+        with self.repository.transaction():
+            self.repository.lock_user(user_id)
+            batch = self.repository.get_batch(user_id, batch_id)
+            if not batch or batch['status'] != 'awaiting_save':
+                return _summary(batch) if batch else None
+            if hasattr(self.repository, 'count_pending_artifacts') and self.tenant_context:
+                pending = self.repository.count_pending_artifacts(str(self.tenant_context['tenantId']), batch_id)
+                if pending:
+                    return _summary(batch)
+            done = batch['taskIndex'] >= len(batch['tasks']) and batch.get('phase') == 'done'
+            seq = batch['seq']
+            batch.update(status='completed' if done else 'ready', error='')
+            if not self.repository.save_batch(user_id, batch_id, batch, seq):
+                raise ApiError(409, '批次进度已变化，请刷新状态。', 'BATCH_CONFLICT')
+            self.repository.set_batch_job_status(batch_id, 'completed' if done else 'queued')
+            return _summary(batch)
+
+    def cancel(self, batch_id, user_id, *, reason='批次已取消，未完成的任务积分已返还。', discard_pending=False):
         with self.repository.transaction():
             self.repository.lock_user(user_id)
             batch = self.repository.get_batch(user_id, batch_id)
@@ -368,6 +387,9 @@ class BatchService:
             batch.update(status='cancelled', error=reason, seq=seq + 1)
             if not self.repository.save_batch(user_id, batch_id, batch, seq):
                 raise ApiError(409, '进度已变化，请刷新后取消。', 'BATCH_CONFLICT')
+            if discard_pending and hasattr(self.repository, 'discard_batch_artifacts') and self.tenant_context:
+                # Only an explicit user cancel may drop pending bodies; expiry keeps them for re-save (§8.5).
+                self.repository.discard_batch_artifacts(str(self.tenant_context['tenantId']), batch_id)
             self.repository.set_batch_job_status(batch_id, 'cancelled')
             return _summary(batch)
 
@@ -395,10 +417,16 @@ class BatchService:
         else:
             self._prepare_task(batch)
 
+    def _delivery_mode(self, batch):
+        if self.tenant_context and hasattr(self.repository, 'batch_delivery_mode'):
+            return self.repository.batch_delivery_mode(str(self.tenant_context['tenantId']), str(batch['id']))
+        return 'server_legacy'
+
     def _persist_article(self, batch, user_id):
         article = batch.pop('_pendingArticle')
         index = batch['taskIndex']
         billing_id = self._billing_id(batch, index)
+        local_mode = self._delivery_mode(batch) == 'local_confirmed_v1'
         if self.artifact_service:
             artifact = self.artifact_service.save_complete(
                 tenant_id=str(self.tenant_context['tenantId']), batch_id=str(batch['id']),
@@ -407,13 +435,19 @@ class BatchService:
                 markdown=str(batch['draft']), audit_status='accepted',
             )
             article.update(artifactId=artifact['id'], filename=artifact['filename'], byteLength=artifact['byteLength'])
-            if self.credit_service and (index + 1 == len(batch['tasks']) or self._billing_id(batch, index + 1) != billing_id):
+            if local_mode:
+                # New mode: settle only after the user confirms the local save (§8.5).
+                article['deliveryState'] = 'pending'
+            elif self.credit_service and (index + 1 == len(batch['tasks']) or self._billing_id(batch, index + 1) != billing_id):
                 self.credit_service.finalize(str(self.tenant_context['tenantId']), str(batch['id']), billing_id, complete=True)
         else:
             article['markdown'] = batch['draft']
         batch['articles'].append(article)
         batch['taskIndex'] += 1
         self._next_task(batch)
+        if local_mode and batch['status'] in {'ready', 'completed'}:
+            # Never present awaiting local saves as completed (§7.2).
+            batch['status'] = 'awaiting_save'
 
     @staticmethod
     def _media(raw: dict[str, object]) -> dict[str, object]:
