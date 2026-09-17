@@ -2,6 +2,17 @@
 
 更新时间：2026-09-16。本文件只记录可复核的实现、验证和明确未完成项；本地、GitHub、EdgeOne 三层状态分开记录，不把“已保存”“已推送”“已部署”混为一谈。
 
+## 阶段 D-1（2026-09-17，awaiting_save/waiting_local 流程与新模式默认切换）已完成并全量回归通过，已推送，远端 SHA = 533b5738dddf4728d1e3c52c6c88ea57e8e54065（本地 HEAD 一致）；master 未动，EdgeOne 生产无影响。
+
+- **流程语义**：`local_confirmed_v1` 批次落库不结算——`_persist_article` 置 artifact `delivery_state=pending`、批次 `awaiting_save`；Worker 把 `awaiting_save` 映射为 `waiting_local`（车道保持，不领执行槽）；浏览器回执（`confirm_local_delivery`）按行实扣结算，`resume_after_delivery` 逐行确认后唤醒批次继续或置 `completed`；`cancel(discard_pending=True)` 丢弃 pending 正文（content_cipher=NULL、discarded）并退款一次。
+- **防御语义（两条关键裁决）**：① `finish_job` 内也做 `awaiting_save→waiting_local` 映射——任何路径传入都扣住车道，绝不回 `queued` 重派（否则会重发已消耗上游调用的阶段，违反"不重发结果不明的模型调用"铁律）；② discarded artifact 的迟到/重复 ACK 幂等返回 `billingStatus=already_refunded`（不再 409 ARTIFACT_DISCARDED），若积分仍 reserved 则只退一次、绝不结算。
+- **默认切换**：`create_or_get_batch` 默认改为 `local_confirmed_v1`（阶段 C 推迟的 §9 决策在本阶段执行）。
+- **测试**：新增 `LocalDeliveryFlowTests` 5 项（真实 PG）：落库不结算（余额 9 预扣保留）、finish_job 映射与 waiting_local 不可认领、单行回执→resume→completed（余额 9）、双行逐行确认→ready→completed（余额 8）、取消丢弃+退款+迟到回执幂等（余额 10 不变）。既有 5 个 legacy e2e（runtime 3 + workspaces 1 + worker_pool 1）显式固定 `server_legacy`，保留旧 finalize-on-persist 语义覆盖；新模式浏览器端到端留待 D-3 `browser_local_delivery.mjs`。
+- **回归证据**：tests_postgres 71/71、tests_py 93/93、npm 44+2 既有失败（runtime gates / desktop typography，与阶段 C 基线一致）、`npm run build` 通过。
+- **排查记录**：此前"finish_job 运行时代码与磁盘不一致"的疑团已解——SQL 拦截看到的 `('queued',...)` 是磁盘新代码对测试输入 `awaiting_save` 的正确兜底输出，属测试预期与映射分工歧义，非缓存/双副本问题；另确认 Edit 工具对同一文件的并行编辑会相互覆盖（第二条写回被第一条的旧缓冲覆盖），同文件编辑必须串行并回读验证。
+- **Git 事故记录**：本次 commit 后 worktree 分支引用再次被吞（第 6+ 次），按既定恢复法处理：`git --git-dir=E:/codex/weijia/.git rev-parse <短SHA>` → `mkdir -p refs/heads/feat` → 写 `refs/heads/feat/static-geo-model-catalog` → 推送成功。
+- **明确未做（属 D-2/D-3）**：前端 `src/article-delivery.js`（待交付清单、File System Access 落盘、回执上报、IndexedDB outbox 幂等）、runtime/batch-runners 接线、保存页待补存数量、浏览器端到端与全量回归推送。
+
 ## 阶段 C（2026-09-16，数据库 v5 与交付事务）已完成并全量回归通过，已推送，远端核验 SHA = 3a24f51085b81748fec8b5968de6c0d7aaed007a（本地 HEAD 一致）；master 未动（远端仍 e12d424），EdgeOne 生产无影响。
 
 真实 PG 回归（2026-09-17 上午，用户以管理员注册 pgtest55483 服务常驻 55483 后运行）：
