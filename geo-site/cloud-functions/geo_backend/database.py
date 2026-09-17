@@ -38,6 +38,11 @@ def ensure_schema(conn: object, master_key: str) -> int:
             conn.execute("ALTER TABLE batches ADD CONSTRAINT batches_no_plaintext_state CHECK (state = '{}'::jsonb)")
             conn.execute('INSERT INTO schema_migrations (version) VALUES (3)')
         conn.execute('INSERT INTO schema_migrations (version) VALUES (4) ON CONFLICT (version) DO NOTHING')
+        if not conn.execute('SELECT 1 FROM schema_migrations WHERE version = 5').fetchone():
+            # v4 → v5：旧批次/旧文件明确回到 server_legacy / pending，再启用交付模式。
+            conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE delivery_mode IS NULL")
+            conn.execute("UPDATE article_artifacts SET delivery_state = 'pending' WHERE delivery_state IS NULL")
+            conn.execute('INSERT INTO schema_migrations (version) VALUES (5)')
     return SCHEMA_VERSION
 
 

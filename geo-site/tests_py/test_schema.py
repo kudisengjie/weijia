@@ -8,10 +8,10 @@ sys.path.insert(0, str(FUNCTIONS_DIR))
 
 
 class SchemaTests(unittest.TestCase):
-    def test_schema_v4_contains_saas_runtime_tables(self):
+    def test_schema_v5_contains_saas_runtime_tables(self):
         from geo_backend.schema import SCHEMA_SQL, SCHEMA_VERSION
 
-        self.assertEqual(4, SCHEMA_VERSION)
+        self.assertEqual(5, SCHEMA_VERSION)
         for table in (
             "tenants",
             "tenant_members",
@@ -62,6 +62,21 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("api_key_cipher BYTEA", SCHEMA_SQL)
         self.assertIn("credentials_cipher BYTEA", SCHEMA_SQL)
         self.assertNotIn("api_key TEXT", SCHEMA_SQL)
+
+    def test_schema_v5_contains_local_delivery_structure(self):
+        from geo_backend.schema import SCHEMA_SQL
+
+        # 交付回执：唯一 artifact + user+request 幂等。
+        self.assertIn("CREATE TABLE IF NOT EXISTS article_delivery_receipts", SCHEMA_SQL)
+        self.assertIn("UNIQUE (tenant_id, user_id, request_id)", SCHEMA_SQL)
+        # 正文一致性：pending 必须有密文，delivered/discarded 必须已清密文。
+        self.assertIn("article_artifacts_body_state_check", SCHEMA_SQL)
+        self.assertIn("delivery_state = 'pending' AND content_cipher IS NOT NULL", SCHEMA_SQL)
+        self.assertIn("ALTER TABLE article_artifacts ALTER COLUMN content_cipher DROP NOT NULL", SCHEMA_SQL)
+        # 批次交付模式 + Worker 等待本地保存状态 + 待交付索引。
+        self.assertIn("delivery_mode VARCHAR(32) NOT NULL DEFAULT 'server_legacy'", SCHEMA_SQL)
+        self.assertIn("'waiting_local'", SCHEMA_SQL)
+        self.assertIn("article_artifacts_pending_idx", SCHEMA_SQL)
 
 
 if __name__ == "__main__":

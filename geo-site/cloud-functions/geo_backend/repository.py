@@ -338,6 +338,29 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         ).fetchone()[0]
         return found == len(expected)
 
+    def _batch_delivery_mode(self, tenant_id, batch_id):
+        row = self.conn.execute(
+            "SELECT delivery_mode FROM batches WHERE tenant_id = %s AND id = %s", (tenant_id, batch_id)
+        ).fetchone()
+        return str(row[0]) if row and row[0] else "server_legacy"
+
+    def _task_delivery_complete(self, tenant_id, batch_id, task_id):
+        """新模式成功判据：该 Excel 行全部 artifact 都有有效交付回执（正文已清）。"""
+        row = self.conn.execute("SELECT user_id FROM batches WHERE tenant_id = %s AND id = %s", (tenant_id, batch_id)).fetchone()
+        if not row:
+            return False
+        batch = self.get_batch(str(row[0]), batch_id)
+        expected = [str(i + 1) for i, task in enumerate(batch["tasks"]) if str(task.get("billingTaskId", i + 1)) == task_id]
+        if not expected:
+            return False
+        total, delivered = self.conn.execute(
+            """SELECT COUNT(*), COUNT(*) FILTER (WHERE delivery_state = 'delivered')
+               FROM article_artifacts WHERE tenant_id = %s AND batch_id = %s
+               AND task_id = ANY(%s) AND status = 'complete' AND audit_status = 'accepted'""",
+            (tenant_id, batch_id, expected),
+        ).fetchone()
+        return int(total) > 0 and int(total) == int(delivered)
+
     def settle_task_credit(self, tenant_id, batch_id, task_id, complete, *, release=False):
         from .errors import ApiError
         with self.conn.transaction():
@@ -349,7 +372,10 @@ class PostgresRepository(WorkspaceRepositoryMixin):
             ).fetchone()
             if not row or row[0] != 'reserved':
                 return {"status": row[0] if row else "missing", "refunded": False}
-            artifact_complete = self._task_artifacts_complete(tenant_id, batch_id, task_id)
+            if self._batch_delivery_mode(tenant_id, batch_id) == 'local_confirmed_v1':
+                artifact_complete = self._task_delivery_complete(tenant_id, batch_id, task_id)
+            else:
+                artifact_complete = self._task_artifacts_complete(tenant_id, batch_id, task_id)
             if complete and not artifact_complete:
                 raise ApiError(409, "完整文章尚未保存，不能确认扣分。", "ARTIFACT_NOT_PERSISTED")
             final_status = "complete" if artifact_complete else "released" if release else "refunded"
@@ -602,7 +628,7 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         row = self.conn.execute(
             """
             SELECT id, batch_id, task_id, filename, pgp_sym_decrypt(content_cipher, %s)::TEXT,
-                   byte_length, sha256, status, audit_status, created_at
+                   byte_length, sha256, status, audit_status, created_at, delivery_state
             FROM article_artifacts
             WHERE tenant_id = %s AND id = %s AND user_id = %s AND status = 'complete'
             """,
@@ -621,7 +647,139 @@ class PostgresRepository(WorkspaceRepositoryMixin):
             "status": row[7],
             "auditStatus": row[8],
             "createdAt": row[9],
+            "deliveryState": row[10],
         }
+
+    def get_article_artifact_meta(self, tenant_id: str, artifact_id: str, *, user_id: str) -> dict[str, object] | None:
+        row = self.conn.execute(
+            """
+            SELECT id, batch_id, task_id, filename, byte_length, sha256, delivery_state, created_at
+            FROM article_artifacts
+            WHERE tenant_id = %s AND id = %s AND user_id = %s AND status = 'complete'
+            """,
+            (tenant_id, artifact_id, user_id),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "artifactId": str(row[0]),
+            "batchId": str(row[1]),
+            "taskId": str(row[2]),
+            "filename": row[3],
+            "byteLength": int(row[4]),
+            "sha256": row[5],
+            "deliveryState": row[6],
+            "createdAt": row[7].isoformat(),
+        }
+
+    def confirm_local_delivery(
+        self, *, tenant_id: str, artifact_id: str, user_id: str, request_id: str, sha256: str, byte_length: int
+    ) -> dict[str, object]:
+        from .errors import ApiError
+        with self.conn.transaction():
+            row = self.conn.execute(
+                """
+                SELECT id, batch_id, task_id, byte_length, sha256, delivery_state
+                FROM article_artifacts
+                WHERE tenant_id = %s AND id = %s AND user_id = %s AND status = 'complete'
+                FOR UPDATE
+                """,
+                (tenant_id, artifact_id, user_id),
+            ).fetchone()
+            if not row:
+                raise ApiError(404, "文章文件不存在或不属于当前账号。", "ARTIFACT_NOT_FOUND")
+            artifact_pk, batch_id, task_id = row[0], str(row[1]), str(row[2])
+            if row[5] == 'delivered':
+                existing = self.conn.execute(
+                    "SELECT request_id FROM article_delivery_receipts WHERE artifact_id = %s", (artifact_pk,)
+                ).fetchone()
+                return self._delivery_result(
+                    tenant_id, artifact_pk, batch_id, task_id,
+                    already=True, receipt_request_id=str(existing[0]) if existing else request_id,
+                )
+            if row[5] == 'discarded':
+                raise ApiError(409, "已放弃的文章不能再次确认交付。", "ARTIFACT_DISCARDED")
+            if int(row[3]) != int(byte_length) or str(row[4]) != sha256:
+                raise ApiError(409, "回执哈希或字节数与服务器记录不一致。", "ARTIFACT_MISMATCH")
+            conflict = self.conn.execute(
+                """SELECT artifact_id FROM article_delivery_receipts
+                   WHERE tenant_id = %s AND user_id = %s AND request_id = %s""",
+                (tenant_id, user_id, request_id),
+            ).fetchone()
+            if conflict and str(conflict[0]) != str(artifact_pk):
+                raise ApiError(409, "同一 requestId 已用于其他文章。", "REQUEST_ID_CONFLICT")
+            self.conn.execute(
+                """UPDATE article_artifacts
+                   SET delivery_state = 'delivered', delivered_at = NOW(), purged_at = NOW(), content_cipher = NULL
+                   WHERE id = %s""",
+                (artifact_pk,),
+            )
+            self.conn.execute(
+                """INSERT INTO article_delivery_receipts (tenant_id, artifact_id, user_id, request_id, sha256, byte_length)
+                   VALUES (%s, %s, %s, %s, %s, %s)
+                   ON CONFLICT (artifact_id) DO NOTHING""",
+                (tenant_id, artifact_pk, user_id, request_id, sha256, int(byte_length)),
+            )
+            return self._delivery_result(tenant_id, artifact_pk, batch_id, task_id, already=False)
+
+    def _delivery_result(self, tenant_id, artifact_pk, batch_id, task_id, *, already, receipt_request_id):
+        status_row = self.conn.execute(
+            "SELECT status FROM credit_task_states WHERE tenant_id = %s AND batch_id = %s AND task_id = %s",
+            (tenant_id, batch_id, task_id),
+        ).fetchone()
+        status = str(status_row[0]) if status_row else "missing"
+        if status == 'reserved' and self._task_delivery_complete(tenant_id, batch_id, task_id):
+            settle = self.settle_task_credit(tenant_id, batch_id, task_id, True)
+            billing = 'settled' if settle['status'] == 'complete' else str(settle['status'])
+        elif status in ('refunded', 'released'):
+            billing = 'already_refunded'
+        elif status == 'complete':
+            billing = 'settled'
+        else:
+            billing = 'reserved_pending'
+        seq_row = self.conn.execute("SELECT seq FROM batches WHERE tenant_id = %s AND id = %s", (tenant_id, batch_id)).fetchone()
+        return {
+            "artifactId": str(artifact_pk),
+            "deliveryState": "delivered",
+            "onlineBodyCleared": True,
+            "billingStatus": billing,
+            "batchSeq": int(seq_row[0]) if seq_row else 0,
+            "alreadyConfirmed": already,
+            "requestId": receipt_request_id,
+        }
+
+    def list_pending_artifacts(self, tenant_id: str, user_id: str, *, limit: int, cursor: str | None) -> dict[str, object]:
+        params: list[object] = [tenant_id, user_id, int(limit) + 1]
+        where_extra = ""
+        if cursor:
+            created, _, artifact_id = str(cursor).partition("|")
+            where_extra = " AND (a.created_at, a.id) > (%s::timestamptz, %s::uuid)"
+            params.extend([created, artifact_id])
+        rows = self.conn.execute(
+            f"""
+            SELECT a.id, a.batch_id, a.task_id, a.filename, a.byte_length, a.sha256, a.delivery_state, a.created_at
+            FROM article_artifacts a
+            WHERE a.tenant_id = %s AND a.user_id = %s AND a.delivery_state = 'pending'{where_extra}
+            ORDER BY a.created_at, a.id
+            LIMIT %s
+            """,
+            params,
+        ).fetchall()
+        items = [{
+            "artifactId": str(r[0]),
+            "batchId": str(r[1]),
+            "taskId": str(r[2]),
+            "filename": r[3],
+            "byteLength": int(r[4]),
+            "sha256": r[5],
+            "deliveryState": r[6],
+            "createdAt": r[7].isoformat(),
+        } for r in rows[:limit]]
+        next_cursor = None
+        if len(rows) > limit:
+            last = rows[limit - 1]
+            next_cursor = f"{last[7].isoformat()}|{last[0]}"
+        return {"items": items, "nextCursor": next_cursor}
 
     def create_job(self, tenant_id: str, batch_id: str, idempotency_key: str) -> None:
         self.conn.execute(
@@ -874,8 +1032,8 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         with self.conn.transaction():
             self.conn.execute(
                 """
-                INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, state_cipher, seq, status)
-                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s)
+                INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, state_cipher, seq, status, delivery_mode)
+                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s, 'local_confirmed_v1')
                 ON CONFLICT (user_id, request_id_hash) DO NOTHING
                 """,
                 (batch_id, user_id, state.get("tenantId"), request_id_hash,

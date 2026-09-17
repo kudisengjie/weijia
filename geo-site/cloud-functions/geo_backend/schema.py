@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 SCHEMA_SQL = r"""
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -295,4 +295,41 @@ CREATE TABLE IF NOT EXISTS workspaces (
     CHECK ((status = 'started') = (batch_id IS NOT NULL))
 );
 CREATE INDEX IF NOT EXISTS workspaces_user_status_idx ON workspaces(user_id, status);
+
+-- v5: 本地交付模式（local_confirmed_v1）。旧行保持 server_legacy 默认值。
+ALTER TABLE batches ADD COLUMN IF NOT EXISTS delivery_mode VARCHAR(32) NOT NULL DEFAULT 'server_legacy';
+
+-- v5: artifact 交付状态与在线正文清理。正文清理后密文必须为空，不能用空串伪装。
+ALTER TABLE article_artifacts ADD COLUMN IF NOT EXISTS delivery_state VARCHAR(16) NOT NULL DEFAULT 'pending';
+ALTER TABLE article_artifacts ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;
+ALTER TABLE article_artifacts ADD COLUMN IF NOT EXISTS purged_at TIMESTAMPTZ;
+ALTER TABLE article_artifacts ALTER COLUMN content_cipher DROP NOT NULL;
+ALTER TABLE article_artifacts DROP CONSTRAINT IF EXISTS article_artifacts_delivery_state_check;
+ALTER TABLE article_artifacts ADD CONSTRAINT article_artifacts_delivery_state_check
+    CHECK (delivery_state IN ('pending', 'delivered', 'discarded'));
+ALTER TABLE article_artifacts DROP CONSTRAINT IF EXISTS article_artifacts_body_state_check;
+ALTER TABLE article_artifacts ADD CONSTRAINT article_artifacts_body_state_check CHECK (
+    (delivery_state = 'pending' AND content_cipher IS NOT NULL)
+    OR (delivery_state IN ('delivered', 'discarded') AND content_cipher IS NULL)
+);
+CREATE INDEX IF NOT EXISTS article_artifacts_pending_idx
+    ON article_artifacts (user_id, tenant_id, delivery_state, created_at);
+
+-- v5: 交付回执。唯一 artifact 保证一篇文章只确认一次；user+request 保证回执幂等。
+CREATE TABLE IF NOT EXISTS article_delivery_receipts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    artifact_id UUID NOT NULL UNIQUE REFERENCES article_artifacts(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    request_id UUID NOT NULL,
+    sha256 CHAR(64) NOT NULL,
+    byte_length INTEGER NOT NULL CHECK (byte_length > 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (tenant_id, user_id, request_id)
+);
+
+-- v5: waiting_local 让 Worker 不把等待本地保存的批次当作可执行任务。
+ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_status_check;
+ALTER TABLE jobs ADD CONSTRAINT jobs_status_check
+    CHECK (status IN ('queued', 'running', 'waiting_local', 'completed', 'failed', 'cancelled'));
 """

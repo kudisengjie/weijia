@@ -117,6 +117,13 @@ class SubscriptionBody(BaseModel):
     expiresAt: str
 
 
+class LocalReceiptBody(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    requestId: str
+    sha256: str
+    byteLength: int
+
+
 def _epoch_ms(value) -> int:
     return int(value.timestamp() * 1000)
 
@@ -539,6 +546,40 @@ def create_app(
         with factory() as repository:
             current = authentication(request, repository)
             return batch_service(repository, tenant_context(repository, current.user_id)).resume(batch_id, current.user_id)
+
+    def delivery_service(repository: object) -> DeliveryService:
+        return DeliveryService(repository)
+
+    @app.get("/artifacts/pending")
+    def artifacts_pending(request: Request, limit: int = 20, cursor: str | None = None):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id)
+            if not context:
+                return {"items": [], "nextCursor": None}
+            return delivery_service(repository).pending(
+                tenant_id=str(context["tenantId"]), user_id=current.user_id, limit=limit, cursor=cursor)
+
+    @app.get("/artifacts/{artifact_id}/manifest")
+    def artifact_manifest(artifact_id: str, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id)
+            if not context:
+                raise ApiError(404, "文章文件不存在或不属于当前账号。", "ARTIFACT_NOT_FOUND")
+            return delivery_service(repository).manifest(
+                tenant_id=str(context["tenantId"]), user_id=current.user_id, artifact_id=artifact_id)
+
+    @app.post("/artifacts/{artifact_id}/local-receipt")
+    def artifact_local_receipt(artifact_id: str, body: LocalReceiptBody, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id)
+            if not context:
+                raise ApiError(404, "文章文件不存在或不属于当前账号。", "ARTIFACT_NOT_FOUND")
+            return delivery_service(repository).confirm(
+                tenant_id=str(context["tenantId"]), user_id=current.user_id,
+                artifact_id=artifact_id, payload=body.model_dump())
 
     @app.get("/artifacts/{artifact_id}")
     def artifact_download(artifact_id: str, request: Request):

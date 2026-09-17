@@ -62,6 +62,9 @@ class ArtifactService:
         row = self.repository.get_article_artifact(tenant_id, artifact_id, self.master_key, user_id=user_id)
         if not row:
             raise ApiError(404, "文章文件不存在或不属于当前工作区。", "ARTIFACT_NOT_FOUND")
+        if row.get('deliveryState') in ('delivered', 'discarded'):
+            # 已交付文章正文只保存在用户本机；410 不暴露他人文章，也不作为重新生成的理由。
+            raise ApiError(410, "文章已交付到本机，服务器不再保存正文。", "ARTIFACT_BODY_CLEARED")
         payload = str(row['markdown']).encode('utf-8')
         if len(payload) != row['byteLength'] or hashlib.sha256(payload).hexdigest() != row['sha256'] or row['auditStatus'] != 'accepted':
             raise ApiError(503, '文章文件校验失败，请联系管理员恢复文件。', 'ARTIFACT_INTEGRITY_ERROR')
