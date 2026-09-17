@@ -62,7 +62,7 @@ class LocalDeliveryTests(unittest.TestCase):
         """直接落一个批次 + 预扣 1 分，避免依赖完整 BatchService 创建链。"""
         batch_id = uuid.uuid4().hex
         state = {
-            'userId': self.owner, 'batchId': batch_id, 'seq': 0, 'status': 'ready',
+            'userId': self.owner, 'batchId': batch_id, 'id': batch_id, 'seq': 0, 'status': 'ready',
             'tenantId': self.tenant, 'taskIndex': 0, 'tasks': [{'brand': '零雪', 'question': '零雪是什么？', 'billingTaskId': 1}],
             'articles': [],
         }
@@ -70,7 +70,7 @@ class LocalDeliveryTests(unittest.TestCase):
             """INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, state_cipher, seq, status, delivery_mode)
                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), 0, 'ready', %s)""",
             (batch_id, self.owner, self.tenant, uuid.uuid4().hex,
-             json.dumps(state), MASTER, delivery_mode),
+             json.dumps({"userId": self.owner, "batchId": batch_id, "state": state}, ensure_ascii=False), MASTER, delivery_mode),
         )
         self.repo.reserve_task_credits(self.tenant, self.owner, batch_id, ['1'])
         return batch_id
@@ -102,12 +102,15 @@ class LocalDeliveryTests(unittest.TestCase):
         version = self.conn.execute('SELECT MAX(version) FROM schema_migrations').fetchone()[0]
         self.assertEqual(5, version)
         mode = self.conn.execute(
-            "SELECT delivery_mode FROM information_schema.columns WHERE table_name = 'batches'"
-            " AND column_name = 'delivery_mode'").fetchone()
-        # 新批次固定 local_confirmed_v1；列默认 server_legacy 已由建表语句保证。
-        batch_id = self.new_batch()
-        self.assertEqual('local_confirmed_v1', self.conn.execute(
+            "SELECT column_name FROM information_schema.columns"
+            " WHERE table_name = 'batches' AND column_name = 'delivery_mode'").fetchone()
+        # 新批次默认 server_legacy：local_confirmed_v1 由阶段 D 在批次执行器改造后启用（§9 迁移不启用新入口）。
+        batch_id = self.new_batch(delivery_mode='server_legacy')
+        self.assertEqual('server_legacy', self.conn.execute(
             'SELECT delivery_mode FROM batches WHERE id = %s', (batch_id,)).fetchone()[0])
+        new_mode = self.new_batch(delivery_mode='local_confirmed_v1')
+        self.assertEqual('local_confirmed_v1', self.conn.execute(
+            'SELECT delivery_mode FROM batches WHERE id = %s', (new_mode,)).fetchone()[0])
         legacy = self.new_batch(delivery_mode='server_legacy')
         self.assertEqual('server_legacy', self.conn.execute(
             'SELECT delivery_mode FROM batches WHERE id = %s', (legacy,)).fetchone()[0])
@@ -159,7 +162,7 @@ class LocalDeliveryTests(unittest.TestCase):
         self.assertFalse(first['alreadyConfirmed'])
         self.assertTrue(second['alreadyConfirmed'])
         self.assertEqual(first['billingStatus'], second['billingStatus'])
-        count = self.conn.execute('SELECT COUNT(*) FROM article_delivery_receipts').fetchone()[0]
+        count = self.conn.execute('SELECT COUNT(*) FROM article_delivery_receipts WHERE artifact_id = %s', (uuid.UUID(artifact['id']),)).fetchone()[0]
         self.assertEqual(1, count)
 
     def test_new_request_id_after_delivery_returns_existing_result(self):
@@ -171,7 +174,8 @@ class LocalDeliveryTests(unittest.TestCase):
         again = self.receipt(artifact['id'], sha256=artifact['sha256'], byte_length=artifact['byteLength'])
 
         self.assertTrue(again['alreadyConfirmed'])
-        self.assertEqual(1, self.conn.execute('SELECT COUNT(*) FROM article_delivery_receipts').fetchone()[0])
+        self.assertEqual(1, self.conn.execute(
+            'SELECT COUNT(*) FROM article_delivery_receipts WHERE artifact_id = %s', (uuid.UUID(artifact['id']),)).fetchone()[0])
         self.assertEqual(before, self.balance())
 
     def test_same_request_id_for_other_artifact_conflicts(self):
@@ -202,7 +206,8 @@ class LocalDeliveryTests(unittest.TestCase):
             "SELECT delivery_state, content_cipher IS NOT NULL FROM article_artifacts WHERE id = %s",
             (uuid.UUID(artifact['id']),)).fetchone()
         self.assertEqual(('pending', True), state)
-        self.assertEqual(0, self.conn.execute('SELECT COUNT(*) FROM article_delivery_receipts').fetchone()[0])
+        self.assertEqual(0, self.conn.execute(
+            'SELECT COUNT(*) FROM article_delivery_receipts WHERE artifact_id = %s', (uuid.UUID(artifact['id']),)).fetchone()[0])
 
     def test_late_receipt_after_refund_clears_body_without_recharging(self):
         batch_id = self.new_batch()
@@ -257,8 +262,9 @@ class LocalDeliveryTests(unittest.TestCase):
         self.receipt(first['id'], sha256=first['sha256'], byte_length=first['byteLength'])
 
         items = self.repo.list_pending_artifacts(self.tenant, self.owner, limit=20, cursor=None)['items']
-        self.assertNotIn(str(artifact_id), [item['artifactId']], 'pending listing must not leak other users')
-        self.assertNotIn(first['id'], [item['artifactId']], 'delivered artifacts are no longer pending')
+        listed = [entry['artifactId'] for entry in items]
+        self.assertNotIn(str(artifact_id), listed, 'pending listing must not leak other users')
+        self.assertNotIn(first['id'], listed, 'delivered artifacts are no longer pending')
 
 
 if __name__ == '__main__':

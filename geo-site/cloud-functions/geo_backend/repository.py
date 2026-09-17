@@ -720,7 +720,7 @@ class PostgresRepository(WorkspaceRepositoryMixin):
                    ON CONFLICT (artifact_id) DO NOTHING""",
                 (tenant_id, artifact_pk, user_id, request_id, sha256, int(byte_length)),
             )
-            return self._delivery_result(tenant_id, artifact_pk, batch_id, task_id, already=False)
+            return self._delivery_result(tenant_id, artifact_pk, batch_id, task_id, already=False, receipt_request_id=request_id)
 
     def _delivery_result(self, tenant_id, artifact_pk, batch_id, task_id, *, already, receipt_request_id):
         status_row = self.conn.execute(
@@ -1032,8 +1032,8 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         with self.conn.transaction():
             self.conn.execute(
                 """
-                INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, state_cipher, seq, status, delivery_mode)
-                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s, 'local_confirmed_v1')
+                INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, state_cipher, seq, status)
+                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s)
                 ON CONFLICT (user_id, request_id_hash) DO NOTHING
                 """,
                 (batch_id, user_id, state.get("tenantId"), request_id_hash,
