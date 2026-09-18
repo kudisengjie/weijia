@@ -808,6 +808,47 @@ class PostgresRuntimeTests(unittest.TestCase):
         asyncio.run(run())
         self.assertEqual(1, self.conn.execute("SELECT COUNT(*) FROM admin_audit WHERE tenant_id = %s AND action = 'ima.cache.refresh'", (self.tenant,)).fetchone()[0])
 
+    def test_question_discover_charges_refunds_and_mines_questions(self):
+        from geo_backend.errors import ApiError
+        from geo_backend.questions import QuestionService
+        def handler(request):
+            if request.url.host == 'www.sogou.com':
+                return httpx.Response(200, text=self.sogou_page(WEB_RESULTS))
+            self.fail('Unexpected host ' + request.url.host)
+        async def model(model, key, messages, **kwargs):
+            payload = messages[-1]['content']
+            if '搜索线索' not in payload:
+                return '{"industry":"宠物服务","business":"宠物寄养与洗护","products":["宠物寄养"],"audience":"城市养宠家庭"}'
+            return json.dumps([
+                {'question': f'城市养宠家庭选宠物寄养哪家好？第{i}条', 'intent': '交易型', 'stage': '筛选对比', 'score': 90 - i, 'reason': '商业价值高'}
+                for i in range(1, 6)], ensure_ascii=False)
+        async def run():
+            self.fund(amount=2)
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                service = QuestionService(self.repo, MASTER, client=client, model_complete=model)
+                before = self.repo.credit_balance(self.tenant, self.owner)
+                result = await service.discover([{'name': '公司介绍.docx', 'text': '我们提供宠物寄养与洗护服务。'}], 5, self.owner, self.tenant)
+                self.assertEqual(5, len(result['questions']))
+                self.assertEqual('宠物服务', result['analysis']['industry'])
+                self.assertEqual('交易型', result['questions'][0]['intent'])
+                self.assertEqual(before - 1, self.repo.credit_balance(self.tenant, self.owner), '成功查询预扣 1 积分')
+                self.assertIn('问句查询报告', result['markdown'])
+                self.assertIn('宠物寄养', result['markdown'])
+                # 数量越界直接拒绝且不扣分
+                for bad in (4, 51):
+                    with self.assertRaises(ApiError) as invalid:
+                        await service.discover([{'name': 'a', 'text': '内容'}], bad, self.owner, self.tenant)
+                    self.assertEqual('INVALID_QUESTION_COUNT', invalid.exception.code)
+                self.assertEqual(before - 1, self.repo.credit_balance(self.tenant, self.owner))
+                # 模型失败：预扣积分全额返还
+                async def broken(model, key, messages, **kwargs):
+                    raise ApiError(502, '模型不可用', 'PROVIDER_DOWN')
+                broken_service = QuestionService(self.repo, MASTER, client=client, model_complete=broken)
+                with self.assertRaises(ApiError):
+                    await broken_service.discover([{'name': 'a', 'text': '内容'}], 5, self.owner, self.tenant)
+                self.assertEqual(before - 1, self.repo.credit_balance(self.tenant, self.owner), '失败后积分必须返还')
+        asyncio.run(run())
+
     @staticmethod
     def sogou_page(results):
         items = []

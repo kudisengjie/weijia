@@ -41,7 +41,7 @@ export async function bootstrapAuthenticatedWorkspace({showWorkspace,refreshSett
   try {await refreshSettings();await loadHistory();return true;}
   catch(error) {showServiceFailure(error);return false;}
 }
-export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{},getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange}) {
+export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{},getDraftUploads,restoreDraftUploads,uploadsAreReading,getQuestionDocs=()=>[],onUploadsChange}) {
   let csrf='',settings=null,activeBatch=null,pendingCredit=null,members=[],workspaces;
   const auth=createAuthFlow();
   const consoleView=initializeConsole({changeView,onCreate:()=>workspaces.create().then(()=>{historyLoadedAt=0;})});
@@ -184,6 +184,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     document.querySelectorAll('[data-ima-status]').forEach(n=>n.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 等待管理员配置');
     document.querySelectorAll('[data-verify-model]').forEach(n=>n.textContent=`${model.label} · ${configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-verify-ima]').forEach(n=>n.textContent=settings.ima.configured?'缓存已就绪':'等待管理员配置');
+    document.querySelectorAll('[data-question-model]').forEach(n=>n.textContent=`${settings.model.label} · 跟随默认模型`);
     document.querySelectorAll('[data-ima-badge-status]').forEach(n=>n.textContent=settings.ima.configured?'已配置':'未配置');
     const chip=document.querySelector('.geo-service-chips > span');chip.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 未配置';
     const expiry=settings.ima.expiresAt;
@@ -252,6 +253,50 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   $('clear-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
     if(!confirm('确认清除全站共享缓存？新批次会重新获取所需资料，正在运行的批次保留其资料版本。')){message('ima-cache-message','已取消。');return;}
     const result=await api('ima/cache/clear',{});message('ima-cache-message',`新批次将使用第 ${result.generation} 版缓存；运行中批次不受影响。`);
+  }));
+  $('refresh-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
+    // 只获取两个知识库：copilot 全部内容 + GEO优化知识库列表；服务端强制刷新当前代缓存。
+    const result=await api('ima/cache/refresh',{});
+    for(const warning of result.warnings||[])toast(warning);
+    message('ima-cache-message',`缓存更新完成：copilot 已更新 ${result.copilotFiles} 个文件，GEO优化知识库列表 ${result.geoListed} 项。后续任务直接使用新缓存。`);
+  }));
+  // 问句板块：上传公司文档 → 模型判断行业 → 联网挖掘问句 → 九大维度排序；预扣 1 积分，失败返还。
+  let lastQuestionResult=null;
+  async function saveQuestionMarkdown(result){
+    const now=new Date(),pad=n=>String(n).padStart(2,'0');
+    const stamp=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const name=`问句查询-${result.analysis.industry}-${stamp}.md`;
+    await localOutput.saveFile([],name,result.markdown);
+  }
+  function renderQuestions(result){
+    lastQuestionResult=result;
+    const panel=$('question-results');if(!panel)return;
+    panel.hidden=false;
+    const analysis=$('question-analysis');
+    const products=result.analysis.products?.length?` · 主要产品：${result.analysis.products.join('、')}`:'';
+    analysis.textContent=`行业判断：${result.analysis.industry} · 核心业务：${result.analysis.business||'—'}${products} · 目标客户：${result.analysis.audience||'—'}`;
+    const list=$('question-list');list.replaceChildren();
+    result.questions.forEach((item,index)=>{
+      const row=node('li',undefined,'question-item');
+      row.append(node('strong',`${index+1}. ${item.question}`));
+      row.append(node('span',`${item.intent} · ${item.stage} · 评分 ${item.score}${item.reason?` · ${item.reason}`:''}`,'question-item__meta'));
+      list.append(row);
+    });
+  }
+  $('question-run').addEventListener('click',event=>action(event.currentTarget,'question-message',async()=>{
+    const docs=getQuestionDocs();
+    if(!docs.length)throw new Error('请先上传并成功读取至少 1 份公司文档。');
+    const count=Math.floor(Number($('question-count').value));
+    const result=await api('questions/discover',{docs,count});
+    renderQuestions(result);
+    const hint=`已产出 ${result.questions.length} 条问句，预扣 1 积分。`;
+    try{await saveQuestionMarkdown(result);message('question-message',`${hint}问句报告已保存到本机文件夹。`);}
+    catch(error){message('question-message',`${hint}本机保存未完成：${error.message}，可点击“保存到本机”重试。`);}
+  }));
+  $('question-save').addEventListener('click',event=>action(event.currentTarget,'question-message',async()=>{
+    if(!lastQuestionResult)throw new Error('还没有可保存的查询结果。');
+    await saveQuestionMarkdown(lastQuestionResult);
+    message('question-message','问句报告已保存到本机文件夹并逐字校验。');
   }));
   function defaultMemberDates(){const form=$('member-form');form.elements.startsAt.value=localDateTime(Date.now());form.elements.expiresAt.value=localDateTime(Date.now()+30*86400000);}
   defaultMemberDates();

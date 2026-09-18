@@ -25,6 +25,7 @@ from .errors import ApiError
 from .ima import load_ima_credentials, update_ima_credentials
 from .ima_warm import warm_ima_cache
 from .batches import IMA_CACHE_TTL
+from .questions import QuestionService
 from .models import SettingsService
 from .providers import complete
 from .repository import postgres_repository
@@ -167,6 +168,18 @@ class WorkspaceVersionBody(BaseModel):
 
 class WorkspaceSaveBody(WorkspaceVersionBody):
     draft: dict[str, object]
+
+
+class QuestionDocBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = ""
+    text: str
+
+
+class QuestionDiscoverBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    docs: list[QuestionDocBody]
+    count: int
 
 
 class BatchRunBody(BaseModel):
@@ -435,6 +448,19 @@ def create_app(
                 if context:
                     repository.record_admin_audit(str(context['tenantId']), current.user_id, 'ima.cache.clear', details={'generation': generation})
             return {"cleared": True, "generation": generation}
+
+    @app.post("/questions/discover")
+    async def questions_discover(body: QuestionDiscoverBody, request: Request):
+        # 吕老师 2026-09-18 需求：问句板块——上传公司文档，模型判断行业后联网挖掘
+        # 消费者常搜问句，按九大维度排序输出；预扣 1 积分，失败自动返还。
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            tenant_id = str(context['tenantId']) if context else current.user_id
+            service = QuestionService(repository, config.geo_master_key, model_complete=model_complete)
+            return await service.discover(
+                [doc.model_dump() for doc in body.docs], body.count, current.user_id, tenant_id
+            )
 
     @app.get("/credits")
     def credits_view(request: Request):

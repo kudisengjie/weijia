@@ -417,9 +417,71 @@ modelOptionInputs.forEach((input) => input.addEventListener("change", () => {
 renderSelectedModel();
 updateStatus();
 
+// 侧边栏大目录（问句板块/内容板块）：点击标题展开或收缩。
+document.querySelectorAll(".geo-nav-group__toggle").forEach((button) => {
+  button.addEventListener("click", () => {
+    const group = button.closest(".geo-nav-group");
+    if (!group) return;
+    const collapsed = group.classList.toggle("is-collapsed");
+    button.setAttribute("aria-expanded", String(!collapsed));
+  });
+});
+
+// 问句板块：公司文档读取（复用公司文档的解析能力），读取结果供问句查询使用。
+const questionInput = document.getElementById("question-files");
+let currentQuestionDocs = [];
+
+async function handleQuestionFiles() {
+  const list = document.getElementById("question-file-list");
+  const state = document.getElementById("question-state");
+  const check = document.getElementById("question-check-docs");
+  if (!list || !state) return;
+  const files = Array.from(questionInput?.files || []);
+  currentQuestionDocs = files.map((file) => ({ file, result: null, error: "" }));
+  list.replaceChildren();
+  if (!files.length) {
+    const empty = document.createElement("li");
+    empty.className = "geo-file-list__empty";
+    empty.textContent = "尚未选择公司文档";
+    list.appendChild(empty);
+    state.textContent = "0 个文档";
+    if (check) check.textContent = "等待选择";
+    return;
+  }
+  state.textContent = "读取中";
+  if (check) check.textContent = "正在读取";
+  const reading = currentQuestionDocs;
+  for (let index = 0; index < currentQuestionDocs.length; index += 1) {
+    const item = currentQuestionDocs[index];
+    const row = document.createElement("li");
+    row.textContent = `${item.file.name} · 读取中`;
+    list.appendChild(row);
+    try {
+      item.result = await readCompanyDocument(item.file);
+    } catch (error) {
+      item.error = error instanceof Error ? error.message : "文件读取失败。";
+    }
+    if (currentQuestionDocs !== reading) return;
+    row.className = item.error ? "is-error" : "is-ready";
+    row.textContent = item.error
+      ? `${item.file.name} · ${item.error}`
+      : `${item.file.name} · ${(item.result.total || 0).toLocaleString("zh-CN")} 字符`;
+  }
+  const ok = currentQuestionDocs.filter((item) => item.result).length;
+  state.textContent = `${ok}/${files.length} 已读取`;
+  if (check) check.textContent = ok ? `已读取 ${ok} 份` : "读取失败";
+}
+
+questionInput?.addEventListener("change", handleQuestionFiles);
+
 initializeRuntime({
   renderSelectedModel, changeView, clearUploads:clearFiles,
   getDraftUploads, restoreDraftUploads, uploadsAreReading,
+  getQuestionDocs() {
+    return currentQuestionDocs
+      .filter((item) => item.result && !item.error)
+      .map((item) => ({ name: item.file.name, text: item.result.fullText || "" }));
+  },
   onUploadsChange(listener){onUploadsChanged=listener;},
   getUploads() {
     if (!currentTask?.data) throw new Error('请先选择并成功读取任务表。');

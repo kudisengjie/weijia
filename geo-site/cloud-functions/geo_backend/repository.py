@@ -457,13 +457,17 @@ class PostgresRepository(WorkspaceRepositoryMixin):
             row = self.conn.execute("SELECT balance FROM member_credit_accounts WHERE tenant_id = %s AND user_id = %s", (tenant_id, user_id)).fetchone()
         return int(row[0]) if row else 0
 
-    def adjust_credits(self, tenant_id, user_id, amount, idempotency_key, kind, metadata=None):
+    # 记账方向：正向入账（入金/返还/释放/完成结算）与负向出账（发放收回/预扣）。
+    POSITIVE_CREDIT_KINDS = {'grant', 'refund', 'release', 'consume'}
+
+    def adjust_credits(self, tenant_id, user_id, amount, idempotency_key, kind, metadata=None, *, allowed_kinds=None):
         from .errors import ApiError
-        if isinstance(amount, bool) or not isinstance(amount, int) or not 1 <= amount <= 1000000 or kind not in {'grant', 'revoke'}:
+        kinds = allowed_kinds or {'grant', 'revoke'}
+        if isinstance(amount, bool) or not isinstance(amount, int) or not 1 <= amount <= 1000000 or kind not in kinds:
             raise ValueError("INVALID_CREDIT_ADJUSTMENT")
         if not 16 <= len(idempotency_key) <= 200:
             raise ValueError("INVALID_CREDIT_ADJUSTMENT")
-        signed = amount if kind == 'grant' else -amount
+        signed = amount if kind in self.POSITIVE_CREDIT_KINDS else -amount
         with self.conn.transaction():
             balance = self._credit_account(tenant_id, user_id)
             existing = self.conn.execute(
