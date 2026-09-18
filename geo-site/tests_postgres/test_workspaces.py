@@ -245,7 +245,8 @@ class WorkspaceTests(unittest.TestCase):
                 w = response.json()
                 saved = await client.post('/workspaces/'+w['id']+'/save', json={'version': 0, 'draft': self.draft()})
                 self.assertEqual(200, saved.status_code, saved.text)
-                self.assertEqual(1, (await client.get('/workspaces')).json()['occupied'])
+                # 草稿不占名额：occupied 只统计未结束的批次。
+                self.assertEqual(0, (await client.get('/workspaces')).json()['occupied'])
                 invalid = await client.post('/workspaces/'+w['id']+'/save', json={'version': 1, 'draft': {**self.draft(), 'apiKey':'should-not-be-accepted'}})
                 self.assertEqual(400, invalid.status_code)
                 self.assertNotIn('should-not-be-accepted', invalid.text)

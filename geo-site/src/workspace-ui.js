@@ -8,7 +8,7 @@ function modelValue(model){return `${model.id}:${model.slot}:${model.modelId}`;}
 function draftModel(model){const {id,slot,modelId,provider,label}=model;return {id,slot,modelId,provider,label,model:model.model};}
 
 // Coordinates only the currently edited draft. Each running batch has its own driver.
-export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange,changeView,consoleView,onSelect,onModelChange,onStarted,onError,onSuccess=()=>{}}){
+export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange,changeView,consoleView,onSelect,onModelChange,onStarted,onError,onSuccess=()=>{},onMutated=()=>{}}){
   const records=new Map();let selected=null,busy=false,revision=0,savedRevision=0,epoch=0,restoring=false,conflict=false,uncertain=false;
   let timer,savePromise=null,pendingCreate=null,serverOccupied=0,legacyCount=0,models=[];
   const strip=el('nav',undefined,'workspace-tabs');strip.className='workspace-tabs';strip.setAttribute('aria-label','独立任务工作区');$('geo-main').prepend(strip);
@@ -130,23 +130,32 @@ export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDra
     return operate(async()=>{
       if(uploadsAreReading())throw new Error('文件仍在读取，请稍候再新建工作区。');
       await flush();pendingCreate??=crypto.randomUUID();
+      // 先切到工作区视图再等接口：用户点击后立即看到"正在创建…"，不再白屏等待。
+      changeView('workspace');
       status('正在创建…');state.setAttribute('aria-busy','true');
       let result;
       try{result=await api('workspaces',{requestId:pendingCreate});}
       catch(error){if(error.status>=400&&error.status<500)pendingCreate=null;throw error;}
       finally{state.removeAttribute('aria-busy');}
-      pendingCreate=null;serverOccupied++;display(result);changeView('workspace');
+      pendingCreate=null;serverOccupied++;display(result);onMutated();
       setTimeout(()=>{if(selected?.id===result.id&&!title.disabled)title.focus();},0);
     });
   }
   $('new-workspace').addEventListener('click',()=>{create().catch(()=>{});});
   save.addEventListener('click',()=>operate(flush));
   reload.addEventListener('click',()=>operate(async()=>{if((dirty()||uncertain)&&!confirm('重新读取会丢弃本页尚未保存的修改，读取服务器最新资料与启动状态。确认继续？'))return;if(savePromise)await savePromise.catch(()=>{});display(await api('workspaces/'+selected.id));}));
-  close.addEventListener('click',()=>operate(async()=>{
+  close.addEventListener('click',()=>{
+    if(busy||selected?.status!=='draft')return;
     if(!confirm('关闭此草稿？不会启动任务或扣分，未保存修改会被放弃。'))return;
-    if(savePromise)await savePromise;
-    const result=await api(`workspaces/${selected.id}/archive`,{version:selected.version});records.set(result.id,result);serverOccupied=Math.max(0,serverOccupied-1);display(null);changeView('overview');
-  }));
+    // 先退出到任务总览再后台归档：确认后界面立即响应，不再等待接口往返。
+    const target=selected,version=target.version;
+    display(null);changeView('overview');
+    operate(async()=>{
+      if(savePromise)await savePromise;
+      const result=await api(`workspaces/${target.id}/archive`,{version});
+      records.set(result.id,result);serverOccupied=Math.max(0,serverOccupied-1);renderTabs();onMutated();
+    }).catch(()=>{});
+  });
   title.addEventListener('input',changed);model.addEventListener('change',changed);onUploadsChange(changed);
   window.addEventListener('beforeunload',event=>{if(dirty()||savePromise){event.preventDefault();event.returnValue='';}});
   async function start(validate){

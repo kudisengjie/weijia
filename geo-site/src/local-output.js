@@ -27,11 +27,7 @@ export function safeFileName(name, fallback = 'article') {
   return text;
 }
 
-// 授权根目录内的固定层级：品牌根 / 账号 / 工作区 / 批次。稳定 ID 防止重复补存混淆。
-export function relativePath({accountScope, workspaceId, batchId}) {
-  return ['零雪GEO', accountScope, workspaceId, batchId].map(segment => safeFileName(String(segment), 'unknown'));
-}
-
+// 用户要求：文章按问句命名直接保存在所选文件夹根部，不再建子文件夹层级。
 export function scopeKey(scope) {
   return `lxue.geo.dir.${scope}`;
 }

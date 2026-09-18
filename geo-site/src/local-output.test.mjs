@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const {createLocalOutput, safeFileName, relativePath, scopeKey, ERRORS} =
+const {createLocalOutput, safeFileName, scopeKey, ERRORS} =
   await import('./local-output.js');
 
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -105,11 +105,7 @@ test('safe file names strip separators, reserved names and control characters', 
   assert.doesNotMatch(safeFileName('..'), /^\.+$/);
 });
 
-test('relative path nests 零雪GEO, scope, workspace and batch segments', () => {
-  assert.deepEqual(
-    relativePath({accountScope: 'a'.repeat(32), workspaceId: 'ws-1', batchId: 'b-1'}),
-    ['零雪GEO', 'a'.repeat(32), 'ws-1', 'b-1'],
-  );
+test('scope key is namespaced per account', () => {
   assert.equal(scopeKey('a'.repeat(32)), 'lxue.geo.dir.' + 'a'.repeat(32));
 });
 

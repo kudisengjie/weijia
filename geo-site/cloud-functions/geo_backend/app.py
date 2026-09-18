@@ -23,6 +23,8 @@ from .config import Settings
 from .delivery import DeliveryService
 from .errors import ApiError
 from .ima import load_ima_credentials, update_ima_credentials
+from .ima_warm import warm_ima_cache
+from .batches import IMA_CACHE_TTL
 from .models import SettingsService
 from .providers import complete
 from .repository import postgres_repository
@@ -395,7 +397,31 @@ def create_app(
             if context:
                 TenantAccessService.require_owner(context)
             generation = repository.get_ima_cache_generation() if hasattr(repository, "get_ima_cache_generation") else None
-            return {"generation": generation}
+            meta = repository.get_ima_cache_meta() if hasattr(repository, "get_ima_cache_meta") else {}
+            updated = meta.get("updatedAt")
+            stale = True
+            if isinstance(updated, datetime):
+                if updated.tzinfo is None:
+                    updated = updated.replace(tzinfo=timezone.utc)
+                stale = datetime.now(timezone.utc) - updated > IMA_CACHE_TTL
+                updated = updated.isoformat()
+            return {"generation": generation, "updatedAt": updated, "stale": stale}
+
+    @app.post("/ima/cache/refresh")
+    async def ima_cache_refresh(request: Request):
+        # 吕老师 2026-09-18 需求：管理中心一键「更新获取 IMA 缓存」。
+        # 仅获取两个知识库：copilot（全部内容）+ GEO优化知识库（仅列表）；详见 ima_warm.py。
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            if context:
+                TenantAccessService.require_owner(context)
+            credentials = load_ima_credentials(repository, config.geo_master_key, config.ima_client_id, config.ima_api_key)
+            result = await warm_ima_cache(repository, credentials, config.geo_master_key)
+            if context:
+                repository.record_admin_audit(str(context['tenantId']), current.user_id, 'ima.cache.refresh',
+                    details={'copilotFiles': result.get('copilotFiles'), 'geoListed': result.get('geoListed')})
+            return result
 
     @app.post("/ima/cache/clear")
     def ima_cache_clear(request: Request):

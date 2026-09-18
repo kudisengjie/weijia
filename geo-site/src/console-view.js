@@ -46,7 +46,7 @@ export function initializeConsole({changeView,onCreate}){
   management.panes.members.append(members);management.panes.credits.append(el('h2','调整账号积分'),credits);management.panes.subscription.append(subscription);
   management.panes.ledger.append(el('h2','所选账号积分记录'),ledgerButton,ledger);
   shared.querySelector('.ima-admin').open=true;management.panes.ima.append(shared);
-  management.panes.cache.append(el('h2','共享 IMA 缓存'),el('p','缓存由站点统一维护。只有你主动清除后，新任务才重新获取所需资料；运行中的任务继续使用已锁定的资料版本。'),cacheControls);
+  management.panes.cache.append(el('h2','共享 IMA 缓存'),el('p','缓存由站点统一维护，每 15 天由主账号更新一次。「更新获取 IMA 缓存」会重新拉取 copilot 知识库全部内容与 GEO优化知识库列表写入共享缓存；「清除共享缓存」后，新任务才重新获取所需资料；运行中的任务继续使用已锁定的资料版本。'),cacheControls);
   tenant.addEventListener('directorychange',event=>{picker.hidden=!['credits','subscription','ledger'].includes(event.detail);});picker.hidden=true;
 
   const workspace=document.querySelector('[data-view-panel=workspace]'),uploads=workspace.querySelector('.geo-workspace'),progress=byId('batch-progress');
@@ -87,12 +87,18 @@ export function initializeConsole({changeView,onCreate}){
   // 复用同一个吉祥物节点，避免每次渲染重新解码图片造成闪烁。
   const overviewMascot=document.createElement('img');
   overviewMascot.src='assets/lxue-geo-founder.png';overviewMascot.alt='';overviewMascot.width=56;overviewMascot.height=56;overviewMascot.loading='lazy';overviewMascot.decoding='async';
+  let overviewSignature='';
   function renderOverview(batches,open){
-    const region=byId('overview-list');region.replaceChildren();
+    const region=byId('overview-list');
     const setStat=(id,value)=>{const n=byId(id);const text=String(value);if(n.textContent!==text)n.textContent=text;};
     setStat('overview-total',batches.length);
     setStat('overview-active',batches.filter(b=>!['completed','cancelled'].includes(b.status)).length);
     setStat('overview-articles',batches.reduce((sum,b)=>sum+b.completed,0));
+    // 数据未变时跳过重建，避免总览表格反复重绘造成闪烁。
+    const signature=batches.map(b=>`${b.id}:${b.status}:${b.completed}:${b.failedTasks?.length||0}`).join('|');
+    if(signature===overviewSignature&&region.childElementCount)return;
+    overviewSignature=signature;
+    region.replaceChildren();
     if(!batches.length){
       const empty=el('div',undefined,'console-empty-state');
       empty.append(overviewMascot,el('strong','还没有任务'),el('p','请到“批次工作区”上传 Excel 任务表与公司资料，开始生成文章。'));
@@ -133,7 +139,7 @@ export function initializeConsole({changeView,onCreate}){
     }
     for(const article of batch.articles){const row=el('div',undefined,'runtime-article'),name=el('div');name.append(el('strong',article.title),el('p',article.filename||'Markdown 文章','runtime-hint'));const button=el('button','下载 MD');button.type='button';button.addEventListener('click',()=>download(article).catch(onError));row.append(name,button);articles.append(row);}
   }
-  function reset(){setOwner(false);workspaceEmpty=true;setBatch(null);byId('overview-list').replaceChildren();for(const id of ['overview-total','overview-active','overview-articles'])byId(id).textContent='0';renderArticles(null);personal.select('models');management.select('members');detailTab('materials');changeView('workspace');}
+  function reset(){setOwner(false);workspaceEmpty=true;setBatch(null);overviewSignature='';byId('overview-list').replaceChildren();for(const id of ['overview-total','overview-active','overview-articles'])byId(id).textContent='0';renderArticles(null);personal.select('models');management.select('members');detailTab('materials');changeView('workspace');}
   setOwner(false);setBatch(null);changeView('workspace');
   return {setOwner,setBatch,setWorkspaceEmpty,detailTab,renderOverview,renderArticles,reset};
 }

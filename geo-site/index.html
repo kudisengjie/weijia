@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#eef6ff">
     <title>零雪 GEO｜批量文章工作台</title>
     <meta name="description" content="零雪 GEO 批量文章工作台。登录后连接自己的模型 API，使用共享 IMA 知识库生成与审核文章。">
-    <link rel="stylesheet" href="styles.css?v=20260919d">
+    <link rel="stylesheet" href="styles.css?v=20260919e">
     <link rel="preload" as="image" href="assets/lxue-geo-founder.png">
     <script>document.documentElement.classList.add('booting');setTimeout(function(){document.documentElement.classList.remove('booting');},4000);</script>
 </head>
@@ -99,7 +99,7 @@
                         <div class="geo-verify-panel__title"><span aria-hidden="true">✓</span><div><h2 id="verify-title">连接验证</h2><p>保存密钥后，首次运行任务时自动验证连接；验证未通过的任务会自动返还积分。</p></div></div>
                         <div class="geo-verify-panel__grid">
                             <div><span>当前模型</span><strong data-verify-model>未配置</strong></div>
-                            <div><span>IMA 知识库</span><strong data-verify-ima>等待检查</strong></div>
+                            <div><span>IMA 缓存</span><strong data-verify-ima>等待检查</strong></div>
                         </div>
                     </section>
                     <p class="runtime-hint">任务表需包含：品牌名、GEO知识库、问句；可选篇数、媒体平台、AI平台、备注。开始后，正文会加密保存至工作台，并发送给你所选模型处理。</p>
@@ -171,7 +171,7 @@
                         </fieldset>
                     </article>
                     <section class="runtime-panel runtime-settings" aria-labelledby="credentials-title"><h2 id="credentials-title">模型 API 凭据</h2><p id="credential-provider"></p><form id="model-form"><label class="runtime-field">API Key<input id="model-key" type="password" autocomplete="off" maxlength="4096" placeholder="填写所选厂商的 API Key；留空保留已保存密钥"></label><label class="runtime-field">实际模型 ID（可选）<input id="custom-model-id" type="text" autocomplete="off" maxlength="160" placeholder="默认使用上方选项；可填写你账户开通的模型 ID"></label><p class="runtime-hint">仅连接该厂商官方接口，不接收任意代理地址。密钥按账号加密保存在服务端，退出登录不会清除。不会在浏览器持久化；任务未结束前不可切换模型。</p><div class="runtime-buttons"><button class="runtime-primary" type="submit">保存模型与密钥</button><button type="button" id="test-model">测试已保存模型</button><button type="button" id="remove-model-key">移除所选厂商密钥</button></div><p id="model-message" role="status"></p></form></section>
-                    <section class="runtime-panel runtime-settings" aria-labelledby="ima-title"><h2 id="ima-title">共享 IMA 知识库</h2><p data-ima-status>等待检查</p><p id="ima-expiry" class="runtime-hint"></p><details class="ima-admin"><summary>管理员：更新 IMA 凭据</summary><p>普通用户无需填写。新凭据访问验证通过后替换旧凭据，后续请求立即使用新值。</p><form id="ima-form"><label class="runtime-field">管理员更新口令<input name="adminSecret" type="password" autocomplete="off" required maxlength="256"></label><div class="runtime-columns"><label class="runtime-field">新的 IMA Client ID<input name="clientId" type="password" autocomplete="off" required maxlength="4096"></label><label class="runtime-field">新的 IMA API Key<input name="apiKey" type="password" autocomplete="off" required maxlength="4096"></label></div><label class="runtime-field">凭据到期日期<input name="expiresAt" type="date" required></label><button type="submit" class="runtime-primary">验证并更新 IMA</button><p id="ima-message" role="status"></p></form><div class="runtime-buttons"><button type="button" id="clear-ima-cache">清除共享 IMA 缓存</button><span id="ima-cache-message" class="runtime-hint" role="status"></span></div></details></section>
+                    <section class="runtime-panel runtime-settings" aria-labelledby="ima-title"><h2 id="ima-title">共享 IMA 知识库</h2><p data-ima-status>等待检查</p><p id="ima-expiry" class="runtime-hint"></p><details class="ima-admin"><summary>管理员：更新 IMA 凭据</summary><p>普通用户无需填写。新凭据访问验证通过后替换旧凭据，后续请求立即使用新值。</p><form id="ima-form"><label class="runtime-field">管理员更新口令<input name="adminSecret" type="password" autocomplete="off" required maxlength="256"></label><div class="runtime-columns"><label class="runtime-field">新的 IMA Client ID<input name="clientId" type="password" autocomplete="off" required maxlength="4096"></label><label class="runtime-field">新的 IMA API Key<input name="apiKey" type="password" autocomplete="off" required maxlength="4096"></label></div><label class="runtime-field">凭据到期日期<input name="expiresAt" type="date" required></label><button type="submit" class="runtime-primary">验证并更新 IMA</button><p id="ima-message" role="status"></p></form><div class="runtime-buttons"><button type="button" id="refresh-ima-cache">更新获取 IMA 缓存</button><button type="button" id="clear-ima-cache">清除共享 IMA 缓存</button><span id="ima-cache-message" class="runtime-hint" role="status"></span></div></details></section>
                     <section class="runtime-panel runtime-settings" id="tenant-admin" aria-labelledby="tenant-admin-title" hidden>
                         <h2 id="tenant-admin-title">账号与积分管理</h2>
                         <p class="runtime-hint">仅总账号可操作。每个子账号独立计分、独立有效期，使用自己的模型 API Key。</p>
@@ -237,6 +237,6 @@
         </aside>
     </div>
     <div id="runtime-toast" class="runtime-toast" role="status" hidden></div>
-    <script src="assets/app.js?v=20260919d" defer></script>
+    <script src="assets/app.js?v=20260919e" defer></script>
 </body>
 </html>

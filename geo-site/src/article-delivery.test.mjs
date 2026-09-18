@@ -107,8 +107,8 @@ test('end-to-end delivery downloads, writes to real disk, sends receipt and clea
   const result = await delivery.deliverAll();
 
   assert.deepEqual(result, {delivered: 1, failed: []});
-  // 真实磁盘：品牌根/账号/批次/文件名
-  const expected = path.join(root, '零雪GEO', SCOPE, 'batch-1', '1-零雪.md');
+  // 真实磁盘：用户所选文件夹根部，按问句命名，不建子文件夹
+  const expected = path.join(root, '1-零雪.md');
   assert.ok(fs.existsSync(expected), 'article must exist on real disk');
   assert.equal(fs.readFileSync(expected, 'utf8'), '# 完整文章\n有依据的完整正文。\n');
   // 回执字段：规范 UUID、服务器记录的 sha256/byteLength
@@ -189,7 +189,7 @@ test('tampered on-disk content blocks the receipt and keeps the artifact pending
   assert.equal(result.failed[0].code, 'VERIFY_FAILED');
   assert.equal(receipts.length, 0, 'mismatched content must never be confirmed');
   assert.equal((await outbox.keys()).length, 0);
-  assert.ok(fs.existsSync(path.join(root, '零雪GEO', SCOPE, 'batch-1', '1-零雪.md')), 'tampered file stays on disk for inspection');
+  assert.ok(fs.existsSync(path.join(root, '1-零雪.md')), 'tampered file stays on disk for inspection');
 });
 
 test('save failure sends no receipt and queues nothing', async () => {
@@ -354,7 +354,7 @@ test('unsafe server filenames are sanitized before writing to disk', async () =>
   const result = await delivery.deliverAll();
 
   assert.equal(result.delivered, 1);
-  const written = fs.readdirSync(path.join(root, '零雪GEO', SCOPE, 'batch-1'));
+  const written = fs.readdirSync(root);
   assert.equal(written.length, 1);
   assert.doesNotMatch(written[0], /[<>:?]/, 'forbidden characters must be stripped');
 });

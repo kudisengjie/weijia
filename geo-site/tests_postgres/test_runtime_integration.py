@@ -736,6 +736,78 @@ class PostgresRuntimeTests(unittest.TestCase):
         asyncio.run(run())
         self.assertEqual(['test-model-key'] * 2 + ['member-model-key'] * 2, model_keys)
 
+    def test_ima_cache_refresh_warms_copilot_full_and_geo_listing_inplace(self):
+        from geo_backend.ima import ImaCache
+        from geo_backend.ima_warm import warm_ima_cache
+        self.repo.clear_ima_cache_generation(self.owner)
+        calls = []
+        def handler(request):
+            if request.url.host != 'ima.qq.com':
+                if request.method == 'GET':
+                    return httpx.Response(200, text='# 完整资料\n零雪提供内容服务。')
+                self.fail('Unexpected non-IMA POST ' + str(request.url))
+            payload = json.loads(request.content)
+            path = request.url.path.rsplit('/', 1)[-1]
+            calls.append((path, payload.get('knowledge_base_id'), payload.get('folder_id', '')))
+            if path == 'search_knowledge_base':
+                data = {'info_list': [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Geo', 'name': 'GEO优化知识库'}], 'is_end': True}
+            elif path == 'get_knowledge_list':
+                folder = payload.get('folder_id', '')
+                if payload['knowledge_base_id'] == 'KB-Copilot':
+                    files = {'': [{'folder_id': 'folder_gen', 'name': 'geo-content-generator'},
+                                  {'media_id': 'memory', 'title': '零雪AI_记忆库完整档案.md'}],
+                             'folder_gen': [{'media_id': 'gen', 'title': '生成规则.md'}]}
+                    self.assertIn(folder, files, 'copilot 必须递归获取全部内容')
+                    data = {'knowledge_list': files[folder], 'is_end': True}
+                else:
+                    self.assertEqual('KB-Geo', payload['knowledge_base_id'])
+                    self.assertEqual('', folder, 'GEO优化知识库只获取列表，不进入文件夹')
+                    data = {'knowledge_list': [{'media_id': 'geo-doc', 'title': 'GEO优化指南.md'}, {'folder_id': 'folder_geo', 'name': '资料夹'}], 'is_end': True}
+            elif path == 'get_media_info':
+                self.assertIn(payload['media_id'], {'memory', 'gen'}, 'GEO优化知识库的文件不读取正文')
+                data = {'media_type': 1, 'url_info': {'url': 'https://test.cos.ap-guangzhou.myqcloud.com/' + payload['media_id'] + '.md'}}
+            else:
+                self.fail('Unexpected IMA call ' + path)
+            return httpx.Response(200, json={'code': 0, 'data': data})
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                generation = self.repo.get_ima_cache_generation()
+                result = await warm_ima_cache(self.repo, {'clientId': 'test-client', 'apiKey': 'test-ima'}, MASTER, client=client)
+                self.assertEqual({'bases': 2, 'copilotFiles': 2, 'geoListed': 2, 'warnings': []}, result)
+                self.assertEqual(generation, self.repo.get_ima_cache_generation(), '就地刷新不得 bump generation')
+                # 预热后同代缓存直接命中：批次运行时不再重复调用 IMA 上游。
+                cache = ImaCache(self.repo, MASTER)
+                async def forbidden():
+                    self.fail('预热后的缓存必须直接命中，不允许再访问上游')
+                memory = await cache.get_or_fetch('media', {'knowledgeBaseId': 'KB-Copilot', 'mediaId': 'memory'}, forbidden)
+                self.assertIn('完整资料', memory['text'])
+                await cache.get_or_fetch('search', {'query': '', 'cursor': '', 'limit': 20, 'endpoint': 'openapi/wiki/v1/search_knowledge_base'}, forbidden)
+                await cache.get_or_fetch('rules', {'knowledge_base_id': 'KB-Geo', 'cursor': '', 'limit': 50, 'endpoint': 'openapi/wiki/v1/get_knowledge_list'}, forbidden)
+        asyncio.run(run())
+
+    def test_http_owner_can_refresh_shared_ima_cache_but_members_cannot(self):
+        from unittest.mock import patch
+        now = datetime.now(timezone.utc)
+        member = self.repo.create_member(tenant_id=self.tenant, username='m-' + uuid.uuid4().hex,
+            password_hash=hash_password('member-password'), role='member', starts_at=now, expires_at=now + timedelta(days=30))
+        async def fake_warm(repository, credentials, master_key, *, client=None):
+            return {'bases': 2, 'copilotFiles': 3, 'geoListed': 5, 'warnings': []}
+        async def run():
+            async with self.http_client() as client:
+                login = await client.post('/auth/login', json={'account': member['username'], 'password': 'member-password'})
+                client.headers['x-csrf-token'] = login.json()['csrf']
+                self.assertEqual(403, (await client.post('/ima/cache/refresh', json={})).status_code)
+                login = await client.post('/auth/login', json={'account': self.config().geo_account, 'password': 'test-password'})
+                client.headers['x-csrf-token'] = login.json()['csrf']
+                status = await client.get('/ima/cache')
+                self.assertEqual({'generation', 'updatedAt', 'stale'}, set(status.json()))
+                with patch('geo_backend.app.warm_ima_cache', fake_warm):
+                    response = await client.post('/ima/cache/refresh', json={})
+                self.assertEqual(200, response.status_code, response.text)
+                self.assertEqual(3, response.json()['copilotFiles'])
+        asyncio.run(run())
+        self.assertEqual(1, self.conn.execute("SELECT COUNT(*) FROM admin_audit WHERE tenant_id = %s AND action = 'ima.cache.refresh'", (self.tenant,)).fetchone()[0])
+
     @staticmethod
     def sogou_page(results):
         items = []

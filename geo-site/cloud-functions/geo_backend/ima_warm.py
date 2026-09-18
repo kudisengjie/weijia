@@ -1,0 +1,140 @@
+"""主账号手动触发的 IMA 缓存更新获取（吕老师 2026-09-18 需求）。
+
+只获取两个知识库：
+- copilot：全部内容（递归遍历所有文件夹并读取全部文件正文），供生成/审核规则与记忆文档使用；
+- GEO优化知识库：仅获取列表（知识库列仅作展示，不读取文件正文）。
+
+实现要点：使用 force_refresh 就地刷新当前代缓存，不 bump generation——
+中途失败不会让既有缓存失效，任务仍可继续使用旧缓存。
+缓存键与 BatchService 的 cached_post/cached_media 完全一致，
+任务运行时可直接命中这里预热好的缓存，不再重复调用 IMA 上游。
+"""
+from __future__ import annotations
+
+import httpx
+
+from .errors import ApiError
+from .ima import ImaCache, ima_post, next_cursor, normalize, read_media
+
+GEO_KB_NAME = "GEO优化知识库"
+MAX_BASES = 400
+MAX_COPILOT_FILES = 500
+MAX_FOLDERS = 100
+
+
+def _media(raw: dict[str, object]) -> dict[str, object]:
+    """与 BatchService._media 保持一致的条目规范化。"""
+    media_id = raw.get("media_id") or raw.get("folder_id")
+    title = raw.get("title") or raw.get("name")
+    if not isinstance(media_id, str) or not isinstance(title, str):
+        raise ApiError(502, "IMA 文件信息不完整。")
+    folder = bool(raw.get("folder_id")) or media_id.startswith("folder_")
+    return {"media_id": media_id, "title": title, "media_type": 99 if folder else raw.get("media_type")}
+
+
+async def warm_ima_cache(
+    repository: object, credentials: dict[str, object], master_key: str, *, client: httpx.AsyncClient | None = None
+) -> dict[str, object]:
+    cache = ImaCache(repository, master_key)
+    http = client if client is not None else httpx.AsyncClient(timeout=60)
+    owned_client = client is None
+    result: dict[str, object] = {"bases": 0, "copilotFiles": 0, "geoListed": 0, "warnings": []}
+
+    async def force_post(kind: str, payload: dict[str, object], path: str) -> dict[str, object]:
+        return await cache.get_or_fetch(
+            kind,
+            {**payload, "endpoint": path},
+            lambda: ima_post(credentials, path, payload, client=http),
+            allow_fetch=True,
+            force_refresh=True,
+        )
+
+    async def force_media(kb_id: str, media: dict[str, object]) -> dict[str, str]:
+        return await cache.get_or_fetch(
+            "media",
+            {"knowledgeBaseId": kb_id, "mediaId": media["media_id"]},
+            lambda: read_media(credentials, {**media, "kbId": kb_id}, client=http),
+            allow_fetch=True,
+            force_refresh=True,
+        )
+
+    try:
+        # 第一段：分页扫描全部知识库（与批次的 bases 阶段同一缓存键）。
+        bases: list[dict[str, object]] = []
+        cursor = ""
+        while True:
+            data = await force_post(
+                "search", {"query": "", "cursor": cursor, "limit": 20}, "openapi/wiki/v1/search_knowledge_base"
+            )
+            bases.extend(data.get("info_list", []))
+            result["bases"] = len(bases)
+            cursor = next_cursor(data, cursor)
+            if cursor is None:
+                break
+            if len(bases) > MAX_BASES:
+                raise ApiError(422, "知识库数量超过扫描上限，请联系管理员。")
+
+        def find_base(name: str) -> str | None:
+            matches = [item for item in bases if normalize(item.get("name") or item.get("kb_name")) == normalize(name)]
+            if len(matches) != 1:
+                result["warnings"].append(f"知识库「{name}」不存在或同名不唯一，已跳过。")
+                return None
+            base_id = matches[0].get("id") or matches[0].get("kb_id")
+            if not base_id:
+                result["warnings"].append(f"知识库「{name}」信息不完整，已跳过。")
+                return None
+            return str(base_id)
+
+        copilot_id = find_base("copilot")
+        if copilot_id is None:
+            raise ApiError(422, "知识库「copilot」不存在或同名不唯一，请管理员检查 IMA。")
+        geo_id = find_base(GEO_KB_NAME)
+
+        # 第二段：copilot 全量获取——递归遍历文件夹并读取全部文件正文。
+        queue: list[dict[str, str]] = [{"folder": "", "cursor": ""}]
+        visited: list[str] = []
+        files = 0
+        while queue:
+            job = queue[0]
+            payload: dict[str, object] = {"knowledge_base_id": copilot_id, "cursor": job["cursor"], "limit": 50}
+            if job["folder"]:
+                payload["folder_id"] = job["folder"]
+            data = await force_post("rules", payload, "openapi/wiki/v1/get_knowledge_list")
+            for raw in data.get("knowledge_list", []):
+                item = _media(raw)
+                if item["media_type"] == 99:
+                    if item["media_id"] in visited:
+                        continue
+                    visited.append(item["media_id"])
+                    queue.append({"folder": item["media_id"], "cursor": ""})
+                else:
+                    files += 1
+                    result["copilotFiles"] = files
+                    await force_media(copilot_id, item)
+            if files > MAX_COPILOT_FILES or len(visited) > MAX_FOLDERS:
+                raise ApiError(413, "copilot 知识库内容超过上限，请整理后再更新获取。")
+            cursor = next_cursor(data, job["cursor"])
+            if cursor is not None:
+                job["cursor"] = cursor
+                continue
+            queue.pop(0)
+
+        # 第三段：GEO优化知识库——仅获取列表（知识库列仅作展示）。
+        if geo_id is not None:
+            listed = 0
+            cursor = ""
+            while True:
+                data = await force_post(
+                    "rules",
+                    {"knowledge_base_id": geo_id, "cursor": cursor, "limit": 50},
+                    "openapi/wiki/v1/get_knowledge_list",
+                )
+                listed += len(data.get("knowledge_list", []))
+                result["geoListed"] = listed
+                cursor = next_cursor(data, cursor)
+                if cursor is None:
+                    break
+        return result
+    finally:
+        if owned_client:
+            await http.aclose()

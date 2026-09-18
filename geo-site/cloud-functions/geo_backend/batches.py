@@ -147,7 +147,8 @@ class BatchService:
         if hasattr(self.repository, 'count_open_workspaces'):
             from .workspaces import WORKSPACE_LIMIT
             occupied = self.repository.count_open_workspaces(user_id)
-            if occupied > WORKSPACE_LIMIT or (workspace_id is None and occupied >= WORKSPACE_LIMIT):
+            # 名额只按"同时进行的任务"计：无论工作区启动还是旧版直连，满 5 个即拒绝。
+            if occupied >= WORKSPACE_LIMIT:
                 raise ApiError(409, '同时进行的任务最多五个，请等待任务完成或取消后再启动。', 'WORKSPACE_LIMIT_REACHED')
         if workspace_id is None and hasattr(self.repository, 'has_active_batch') and self.repository.has_active_batch(user_id):
             raise ApiError(409, '请先完成或取消当前批次。', 'BATCH_ALREADY_ACTIVE')
@@ -458,7 +459,8 @@ class BatchService:
             artifact = self.artifact_service.save_complete(
                 tenant_id=str(self.tenant_context['tenantId']), batch_id=str(batch['id']),
                 task_id=str(index + 1), user_id=user_id,
-                filename=f"{index + 1}-{batch['tasks'][index]['brand']}.md",
+                # 文章文件按问句命名（用户要求），保存时直接落在所选文件夹根部。
+                filename=f"{batch['tasks'][index]['question']}.md",
                 markdown=str(batch['draft']), audit_status='accepted',
             )
             article.update(artifactId=artifact['id'], filename=artifact['filename'], byteLength=artifact['byteLength'])

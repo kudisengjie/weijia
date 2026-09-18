@@ -110,9 +110,8 @@ export function createArticleDelivery({api, download, localOutput, outbox, accou
       throw fail(DELIVERY_ERRORS.VERIFY_FAILED, `文章「${safeFileName(entry.filename)}」下载内容与服务器记录不一致，未确认保存。`);
     }
 
-    // 批次目录隔离：品牌根 / 账号 / 批次；文件名经安全净化。
-    const saved = await localOutput.saveFile(['零雪GEO', scope, safeFileName(String(entry.batchId), 'unknown')],
-      safeFileName(entry.filename), contents);
+    // 用户要求：文章直接保存在所选文件夹根部，按问句命名，不建子文件夹。
+    const saved = await localOutput.saveFile([], safeFileName(entry.filename), contents);
     if (saved.sha256 !== entry.sha256 || saved.byteLength !== entry.byteLength) {
       throw fail(DELIVERY_ERRORS.VERIFY_FAILED, `文章「${safeFileName(entry.filename)}」写盘内容与服务器记录不一致，未确认保存。`);
     }

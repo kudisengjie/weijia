@@ -44,7 +44,7 @@ export async function bootstrapAuthenticatedWorkspace({showWorkspace,refreshSett
 export function initializeRuntime({renderSelectedModel,changeView,getUploads,clearUploads=()=>{},getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange}) {
   let csrf='',settings=null,activeBatch=null,pendingCredit=null,members=[],workspaces;
   const auth=createAuthFlow();
-  const consoleView=initializeConsole({changeView,onCreate:()=>workspaces.create()});
+  const consoleView=initializeConsole({changeView,onCreate:()=>workspaces.create().then(()=>{historyLoadedAt=0;})});
   const localOutput=createLocalOutput({});
   const delivery=createArticleDelivery({api,download:downloadBytes,localOutput,onPendingChange:renderSavingPending,onBatch:b=>receiveBatch(b)});
   function renderSaving() {
@@ -76,7 +76,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       if(!state.directoryName){statusLine.textContent='尚未选择本机保存文件夹。新文章生成前需要先完成目录授权。';return;}
       const authorized=state.permission==='granted';
       statusLine.textContent=`保存文件夹：${state.directoryName} · ${authorized?'已授权':'需要重新授权'}`;
-      messageLine.before(node('p',`保存根路径：${state.directoryName}\\零雪GEO\\<登录账号>\\<工作区>\\<批次>\\文章.md（每次任务自动建好子文件夹）`,'runtime-hint'));
+      messageLine.before(node('p',`保存路径：${state.directoryName}（文章按问句命名，直接保存在此文件夹中）`,'runtime-hint'));
       if(!authorized){
         const authorize=node('button','重新授权','geo-run-button');authorize.type='button';authorize.id='saving-authorize';
         authorize.addEventListener('click',async()=>{
@@ -129,6 +129,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     catch(error){if(auth.isCurrent(operation)&&error.code!=='STALE_RESPONSE')toast(error.message);}
   }});
   workspaces=initializeWorkspaces({api,getSettings:()=>settings,getDraftUploads,restoreDraftUploads,uploadsAreReading,onUploadsChange,changeView,consoleView,
+    onMutated(){historyLoadedAt=0;},
     onSelect(w){activeBatch=w?.batch||null;consoleView?.setWorkspaceEmpty(!w);if(activeBatch)renderBatch(activeBatch);else{$('batch-progress').replaceChildren();consoleView?.setBatch(null);}},
     onModelChange:renderConnections,onStarted:drive,onError:error=>toast(error.message),onSuccess(){ $('runtime-toast').hidden=true; }});
   document.querySelector('[data-view-panel=settings]').addEventListener('directorychange',event=>{if(event.detail==='saving')renderSaving();});
@@ -182,7 +183,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     document.querySelectorAll('[data-selected-model-connection]').forEach(n=>n.textContent=`已保存：${model.label} · ${configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-ima-status]').forEach(n=>n.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 等待管理员配置');
     document.querySelectorAll('[data-verify-model]').forEach(n=>n.textContent=`${model.label} · ${configured?'已配置':'未配置'}`);
-    document.querySelectorAll('[data-verify-ima]').forEach(n=>n.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 等待管理员配置');
+    document.querySelectorAll('[data-verify-ima]').forEach(n=>n.textContent=settings.ima.configured?'缓存已就绪':'等待管理员配置');
     document.querySelectorAll('[data-ima-badge-status]').forEach(n=>n.textContent=settings.ima.configured?'已配置':'未配置');
     const chip=document.querySelector('.geo-service-chips > span');chip.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 未配置';
     const expiry=settings.ima.expiresAt;
@@ -348,35 +349,66 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   // 空状态与 index.html 里的静态占位保持一致：两页文案不同、无装饰图案，打开页面即时显示。
   function historyEmptyShell(){
     const shell=node('div',undefined,'list-empty list-empty--history');
+    shell.dataset.renderKey='empty-history';
     shell.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4l3 2M21 12a9 9 0 1 1-3-6.7"/></svg>';
     shell.append(node('span','快开始你的内容创作吧！','list-empty-phrase'));
     return shell;
   }
   function completedEmptyShell(){
     const shell=node('div',undefined,'list-empty list-empty--completed');
+    shell.dataset.renderKey='empty-completed';
     shell.append(node('span','文章生成后会保存在这里','list-empty-phrase'));
     return shell;
   }
-  let historyInFlight=null;
-  function history() {
+  // 仅当渲染结果与当前内容不同才替换 DOM：数据未变时不重绘，消除"出现又消失"的闪烁。
+  function swapList(list,build){
+    const fragment=document.createDocumentFragment();
+    build(fragment);
+    const keyOf=n=>n.dataset.renderKey||`${n.tagName}.${n.className}`;
+    const current=[...list.children].map(keyOf);
+    const next=[...fragment.children].map(keyOf);
+    if(current.length===next.length&&current.every((key,index)=>key===next[index]))return;
+    list.replaceChildren(fragment);
+  }
+  let historyInFlight=null,historyLoadedAt=0;
+  function history({force=false}={}) {
     // 登录恢复与视图切换可能并发触发；共享同一次执行，避免清空后重复追加空状态。
     if(historyInFlight)return historyInFlight;
+    // 4 秒内的重复视图切换直接复用上次结果：省掉两次网络往返，切换视图即时响应。
+    if(!force&&historyLoadedAt&&Date.now()-historyLoadedAt<4000)return Promise.resolve();
     historyInFlight=(async()=>{
-    const {batches}=await api('batches');const list=$('history-list'),completed=$('completed-list');list.replaceChildren();completed.replaceChildren();
+    const {batches}=await api('batches');
+    historyLoadedAt=Date.now();
+    const list=$('history-list'),completed=$('completed-list');
     await workspaces.load(batches);
+    // 数据就绪后一次性原子替换，加载期间保留旧内容/静态占位，不再先清空再等待。
+    swapList(list,fragment=>{
+      if(!batches.length){fragment.append(historyEmptyShell());return;}
+      for(const b of batches){
+        const row=node('article',undefined,'runtime-panel runtime-history');
+        row.dataset.renderKey=`batch:${b.id}:${b.status}:${b.completed}`;
+        row.append(node('h2',b.title),node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${batchStatusLabel(b)}`));
+        const button=node('button','打开批次');button.addEventListener('click',()=>openBatch(b));row.append(button);
+        fragment.append(row);
+      }
+    });
+    swapList(completed,fragment=>{
+      for(const b of batches){
+        if(!b.completed)continue;
+        const group=node('article',undefined,'runtime-panel');
+        group.dataset.renderKey=`done:${b.id}:${b.completed}`;
+        group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));
+        const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>downloadCurrent(article).catch(error=>toast(error.message)));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);
+        fragment.append(group);
+      }
+      if(!fragment.childElementCount)fragment.append(completedEmptyShell());
+    });
     consoleView?.renderOverview([...workspaces.summaries,...batches.filter(b=>!workspaces.forBatch(b.id))],b=>b.workspaceId?workspaces.open(b.workspaceId):openBatch(b));
-    if(!batches.length){list.append(historyEmptyShell());completed.append(completedEmptyShell());return;}
-    for(const b of batches){
-      const row=node('article',undefined,'runtime-panel runtime-history');row.append(node('h2',b.title),node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${batchStatusLabel(b)}`));
-      const button=node('button','打开批次');button.addEventListener('click',()=>openBatch(b));row.append(button);list.append(row);
-      if(b.completed){const group=node('article',undefined,'runtime-panel');group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>downloadCurrent(article).catch(error=>toast(error.message)));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);completed.append(group);}
-    }
-    if(!completed.childElementCount)completed.append(completedEmptyShell());
-    })().finally(()=>{historyInFlight=null;});
+    })().catch(error=>{historyLoadedAt=0;throw error;}).finally(()=>{historyInFlight=null;});
     return historyInFlight;
   }
   async function openBatch(b){const workspace=workspaces.forBatch(b.id);if(workspace)return workspaces.open(workspace.id);return workspaces.leave(async()=>{renderBatch(await api('batches/'+b.id));changeView('workspace');consoleView?.detailTab('progress');});}
-  $('refresh-overview')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await history();}catch(error){toast(error.message);}finally{button.disabled=false;}});
+  $('refresh-overview')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await history({force:true});}catch(error){toast(error.message);}finally{button.disabled=false;}});
   document.querySelectorAll('[data-view="overview"],[data-view="history"],[data-view="completed"]').forEach(button=>button.addEventListener('click',()=>history().catch(e=>toast(e.message))));
   document.querySelectorAll('[data-view="settings"],[data-view="admin"]').forEach(button=>button.addEventListener('click',()=>refreshSettings().then(()=>loadMembers()).catch(e=>toast(e.message))));
   let tabAuthenticated=false;try{tabAuthenticated=sessionStorage.getItem(AUTH_TAB_MARKER)==='1';}catch{}
