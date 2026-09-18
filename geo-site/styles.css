@@ -807,3 +807,33 @@ html.booting #login-page { visibility: hidden; }
 /* ===== 2026-09-18 晚二：统计卡片文字居中；已完成空状态去水印、文案区分 ===== */
 .console-summary > div { justify-content: center; }
 .list-empty--completed img { display: none; }
+
+/* ===== 2026-09-18 晚四：全局布局改造（双列上传卡 / 状态条 / 操作通栏 / 状态舱全页 / 限宽居中） ===== */
+@media (min-width: 1151px) {
+    /* 状态舱扩展到所有页面：三栏网格，顶栏横跨，右侧常驻 */
+    .geo-shell { grid-template-columns: 180px minmax(0, 1fr) 230px; grid-template-areas: "side top top" "side main cabin"; grid-template-rows: 54px minmax(calc(100vh - 54px), auto); gap: 0 22px; max-width: 1500px; margin: 0 auto; }
+    .geo-shell .geo-cabin { display: flex; margin-top: 27px; padding: 16px; border-radius: 12px; box-shadow: none; background: linear-gradient(180deg, #f0f7ff, #fbfdff); }
+    .geo-shell[data-view=workspace] .geo-cabin { margin-top: 27px; }
+    .geo-character { width: 72px; height: 72px; margin: 14px 0; }
+}
+/* 批次工作区：上传卡双列并排，其余区块通栏 */
+@media (min-width: 900px) {
+    .geo-workspace { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+    .geo-upload-card { margin: 0 !important; display: flex; flex-direction: column; }
+    .geo-upload-card .geo-dropzone { flex: 1; }
+    .geo-workspace > .geo-preflight, .geo-workspace > .runtime-hint, .geo-workspace > .geo-actions { grid-column: 1 / -1; }
+    .geo-upload-card + .geo-upload-card { margin-top: 0; }
+}
+/* 创作准备：水平四段状态条 */
+.geo-preflight { padding: 14px 18px 16px; }
+.geo-preflight__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.geo-preflight__grid div { flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 5px; padding: 12px 8px; }
+.geo-preflight__grid span { font-size: 11px; }
+.geo-preflight__grid strong { text-align: center; font-size: 12px; }
+/* 底部操作通栏：清除靠左，主按钮加大靠右 */
+.geo-actions { margin-top: 14px; padding-top: 14px; }
+.geo-run-button { min-height: 48px; padding: 0 30px; font-size: 14px; border-radius: 12px; }
+.geo-clear-button { min-height: 44px; }
+/* 标题层级拉大，页面更精神 */
+.geo-shell h1 { font-size: 26px; }
+.geo-shell .geo-heading { margin: 0 0 16px; }
