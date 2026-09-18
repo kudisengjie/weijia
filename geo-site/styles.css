@@ -748,3 +748,27 @@ html.booting #login-page { visibility: hidden; }
     .geo-model-picker__footer { flex-wrap: wrap; }
     .geo-model-picker__footer code { margin-left: 0; text-align: left; }
 }
+
+/* ===== 2026-09-18 P3 二次优化：总览统计卡片、状态徽章、工作区精修 ===== */
+.console-summary > div { padding: 16px 26px; border-right: 0; border-radius: 14px; background: #ffffffc4; box-shadow: 0 6px 18px #365d8e0f; gap: 14px; }
+.console-summary { gap: 14px; }
+.console-summary strong { font-size: 26px; color: #24496f; }
+
+.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 650; line-height: 1.5; white-space: nowrap; }
+.status-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.status-badge--ok { background: #e5f5ea; color: #23774a; }
+.status-badge--info { background: #e3eefc; color: #2d5f9e; }
+.status-badge--warn { background: #fdf1dd; color: #9a6412; }
+.status-badge--error { background: #fbe7e7; color: #a84040; }
+.status-badge--muted { background: #eef1f6; color: #66788f; }
+
+.console-table-wrap table { font-size: 13px; }
+.console-table-wrap th { font-size: 12px; letter-spacing: .04em; }
+.console-table-wrap tbody tr { transition: background .15s ease; }
+.console-ws-icon { color: #5486c6; }
+
+.workspace-tabs button { border-radius: 10px; padding: 10px 12px; transition: border-color .15s ease, box-shadow .15s ease; }
+.workspace-tabs button[aria-current=page] { border-color: #5486c6; box-shadow: inset 0 2px #5486c6; }
+.workspace-toolbar { border-radius: 12px; box-shadow: 0 6px 18px #365d8e0a; }
+.workspace-toolbar input, .workspace-toolbar select { border-radius: 8px; }
+.console-panel-heading__actions button, .console-panel-heading__actions .console-new-task-button { min-height: 38px; }

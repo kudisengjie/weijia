@@ -99,12 +99,17 @@ export function initializeConsole({changeView,onCreate}){
       empty.append(mascot,el('strong','还没有任务'),el('p','新建一个工作区，上传 Excel 任务表与公司资料，开始生成文章。'),createButton);
       region.append(empty);return;
     }
+  function statusBadge(batch){
+    const state=batch.status==='completed'?(batch.failedTasks?.length?'部分未完成':'已完成'):({draft:'草稿',paused:'已暂停',failed:'需要处理',cancelled:'已取消'}[batch.status]||batch.phaseLabel||'待运行');
+    const tone=batch.status==='completed'?(batch.failedTasks?.length?'warn':'ok'):({draft:'muted',paused:'warn',failed:'error',cancelled:'muted'}[batch.status]||'info');
+    const badge=el('span',state);badge.className=`status-badge status-badge--${tone}`;return badge;
+  }
     const table=el('table'),head=el('thead'),header=el('tr'),body=el('tbody');
     for(const label of ['任务工作区','模型','状态','文章输出','操作']){const th=el('th',label);th.scope='col';header.append(th);}head.append(header);
   function workspaceIcon(){const icon=el('span',undefined,'console-ws-icon');icon.setAttribute('aria-hidden','true');icon.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h8"/></svg>';return icon;}
-  for(const batch of batches){const row=el('tr');const state=batch.status==='completed'?(batch.failedTasks?.length?'部分未完成':'已完成'):({draft:'草稿',paused:'已暂停',failed:'需要处理',cancelled:'已取消'}[batch.status]||batch.phaseLabel||'待运行');
-      const titleCell=el('td');titleCell.append(workspaceIcon(),el('span',batch.title));
-      row.append(titleCell,el('td',batch.model.label),el('td',state),el('td',`${batch.completed} / ${batch.total}`));
+  for(const batch of batches){const row=el('tr');const titleCell=el('td');titleCell.append(workspaceIcon(),el('span',batch.title));
+      const stateCell=el('td');stateCell.append(statusBadge(batch));
+      row.append(titleCell,el('td',batch.model.label),stateCell,el('td',`${batch.completed} / ${batch.total}`));
       const action=el('td'),button=el('button','打开工作区','console-link-button');button.type='button';button.addEventListener('click',()=>open(batch));action.append(button);row.append(action);body.append(row);
     }
     table.append(head,body);region.append(table);
