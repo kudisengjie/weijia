@@ -57,8 +57,9 @@ class WorkspaceTests(unittest.TestCase):
                     return error.code
         with ThreadPoolExecutor(max_workers=8) as executor:
             result = list(executor.map(create, ids))
-        self.assertEqual(5, sum(isinstance(row, dict) for row in result))
-        self.assertEqual(3, result.count('WORKSPACE_LIMIT_REACHED'))
+        # 草稿不占名额：8 个并发创建全部成功，幂等由 request_id 保证。
+        self.assertEqual(8, sum(isinstance(row, dict) for row in result))
+        self.assertEqual(0, result.count('WORKSPACE_LIMIT_REACHED'))
         index = next(i for i, row in enumerate(result) if isinstance(row, dict))
         self.assertEqual(result[index]['id'], self.service.create(ids[index], self.owner)['id'])
         other = self.repo.upsert_configured_user('other-' + uuid.uuid4().hex, 'unused-test-hash')['id']
@@ -113,12 +114,20 @@ class WorkspaceTests(unittest.TestCase):
             with self.assertRaises(ApiError) as locked:
                 self.service.save(w['id'], self.owner, w['version'], self.draft())
             self.assertEqual('WORKSPACE_LOCKED', locked.exception.code)
+        # 草稿不占名额：可以继续建草稿，但同时进行的任务最多 5 个
+        sixth = self.service.save(self.create()['id'], self.owner, 0, self.draft())
+        self.assertEqual(5, self.service.list(self.owner)['occupied'])
         with self.assertRaises(ApiError) as full:
-            self.create()
+            self.service.start(sixth['id'], self.owner, sixth['version'], self.fx.context['expiresAt'])
         self.assertEqual('WORKSPACE_LIMIT_REACHED', full.exception.code)
+        # 旧版直连入口同样不能绕过“同时进行 5 个任务”的限制
+        with self.assertRaises(ApiError) as legacy:
+            self.fx.service().create(self.fx.body(1), self.owner, self.fx.context['expiresAt'])
+        self.assertEqual('WORKSPACE_LIMIT_REACHED', legacy.exception.code)
         self.fx.service().cancel(started[0]['batch']['id'], self.owner)
         self.assertEqual(6, self.repo.credit_balance(self.fx.tenant, self.owner))
-        self.create()
+        self.assertEqual(4, self.service.list(self.owner)['occupied'])
+        self.service.start(sixth['id'], self.owner, sixth['version'], self.fx.context['expiresAt'])
         self.assertEqual(5, self.service.list(self.owner)['occupied'])
 
     def test_failed_start_rolls_back_and_archive_releases_draft(self):
@@ -194,12 +203,13 @@ class WorkspaceTests(unittest.TestCase):
             self.assertIn('工作区' + str(i), artifact['markdown'])
         self.assertEqual(0, self.service.list(self.owner)['occupied'])
 
-    def test_legacy_entry_cannot_bypass_reserved_slots_and_start_checks_version(self):
+    def test_legacy_entry_checks_running_limit_and_start_checks_version(self):
         self.fx.fund(amount=10)
         drafts = [self.create() for _ in range(5)]
-        with self.assertRaises(ApiError) as full:
-            self.fx.service().create(self.fx.body(1), self.owner, self.fx.context['expiresAt'])
-        self.assertEqual('WORKSPACE_LIMIT_REACHED', full.exception.code)
+        # 草稿不占名额：无进行中任务时，旧版直连入口可正常创建批次
+        legacy = self.fx.service().create(self.fx.body(1), self.owner, self.fx.context['expiresAt'])
+        self.assertIsNotNone(legacy)
+        self.fx.service().cancel(legacy['id'], self.owner)
         w = self.service.save(drafts[0]['id'], self.owner, 0, self.draft())
         with self.assertRaises(ApiError) as stale:
             self.service.start(w['id'], self.owner, 0, self.fx.context['expiresAt'])

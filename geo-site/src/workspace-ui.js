@@ -34,7 +34,7 @@ export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDra
     save.disabled=busy||!editable||conflict;close.disabled=busy||!editable;reload.disabled=busy||!selected;
     save.hidden=close.hidden=!editable;reload.hidden=!selected;
     $('new-workspace').disabled=busy||count()>=5;
-    $('new-workspace').querySelector('small').textContent=`名额 ${count()} / 5 · ${count()>=5?'已满':'可新建'}`;
+    $('new-workspace').querySelector('small').textContent=`进行中 ${count()} / 5 · ${count()>=5?'已满':'可新建'}`;
     for(const button of strip.children)button.disabled=busy;
   }
   function renderTabs(){
@@ -143,7 +143,7 @@ export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDra
   save.addEventListener('click',()=>operate(flush));
   reload.addEventListener('click',()=>operate(async()=>{if((dirty()||uncertain)&&!confirm('重新读取会丢弃本页尚未保存的修改，读取服务器最新资料与启动状态。确认继续？'))return;if(savePromise)await savePromise.catch(()=>{});display(await api('workspaces/'+selected.id));}));
   close.addEventListener('click',()=>operate(async()=>{
-    if(!confirm('关闭此草稿并释放名额？不会启动任务或扣分，未保存修改会被放弃。'))return;
+    if(!confirm('关闭此草稿？不会启动任务或扣分，未保存修改会被放弃。'))return;
     if(savePromise)await savePromise;
     const result=await api(`workspaces/${selected.id}/archive`,{version:selected.version});records.set(result.id,result);serverOccupied=Math.max(0,serverOccupied-1);display(null);changeView('overview');
   }));

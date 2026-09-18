@@ -148,7 +148,7 @@ class BatchService:
             from .workspaces import WORKSPACE_LIMIT
             occupied = self.repository.count_open_workspaces(user_id)
             if occupied > WORKSPACE_LIMIT or (workspace_id is None and occupied >= WORKSPACE_LIMIT):
-                raise ApiError(409, '最多五个未结束工作区，请先释放名额。', 'WORKSPACE_LIMIT_REACHED')
+                raise ApiError(409, '同时进行的任务最多五个，请等待任务完成或取消后再启动。', 'WORKSPACE_LIMIT_REACHED')
         if workspace_id is None and hasattr(self.repository, 'has_active_batch') and self.repository.has_active_batch(user_id):
             raise ApiError(409, '请先完成或取消当前批次。', 'BATCH_ALREADY_ACTIVE')
         tasks, companies = parse_tasks(body.get("rows"), body.get("companies"))

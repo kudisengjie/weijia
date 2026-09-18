@@ -6,10 +6,10 @@ from .errors import ApiError
 
 class WorkspaceRepositoryMixin:
     def count_open_workspaces(self, user_id):
+        # 名额只按“同时进行的任务”计：未结束批次占用名额，草稿不占。
         return self.conn.execute("""
-            SELECT (SELECT COUNT(*) FROM workspaces WHERE user_id = %s AND status = 'draft')
-                 + (SELECT COUNT(*) FROM batches WHERE user_id = %s AND status NOT IN ('completed', 'cancelled'))
-        """, (user_id, user_id)).fetchone()[0]
+            SELECT COUNT(*) FROM batches WHERE user_id = %s AND status NOT IN ('completed', 'cancelled')
+        """, (user_id,)).fetchone()[0]
 
     @staticmethod
     def _workspace_payload(user_id, tenant_id, workspace_id, draft):

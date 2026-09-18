@@ -8,6 +8,7 @@
     <title>零雪 GEO｜批量文章工作台</title>
     <meta name="description" content="零雪 GEO 批量文章工作台。登录后连接自己的模型 API，使用共享 IMA 知识库生成与审核文章。">
     <link rel="stylesheet" href="styles.css?v=20260916-model-picker">
+    <link rel="preload" as="image" href="assets/lxue-geo-founder.png">
     <script>document.documentElement.classList.add('booting');setTimeout(function(){document.documentElement.classList.remove('booting');},4000);</script>
 </head>
 <body>
@@ -55,7 +56,7 @@
         <main class="geo-main" id="geo-main">
             <section class="geo-view" data-view-panel="overview" hidden>
                 <div class="geo-heading"><div><span class="geo-heading__eyebrow">CONTENT WORKSPACE</span><h1>任务总览</h1><p>查看任务进度，进入工作区处理资料与文章。</p></div></div>
-                <div class="console-summary"><div><span>任务批次</span><strong id="overview-total">—</strong></div><div><span>未结束</span><strong id="overview-active">—</strong></div><div><span>已保存文章</span><strong id="overview-articles">—</strong></div></div>
+                <div class="console-summary"><div><span>任务批次</span><strong id="overview-total">0</strong></div><div><span>进行中</span><strong id="overview-active">0</strong></div><div><span>已保存文章</span><strong id="overview-articles">0</strong></div></div>
                 <section class="runtime-panel console-overview-panel"><div class="console-panel-heading"><h2><svg class="console-h2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h8"/></svg>我的工作区</h2><div class="console-panel-heading__actions"><button id="refresh-overview" type="button">刷新进度</button></div></div><div id="overview-list" class="console-table-wrap"><p class="console-empty">正在读取任务…</p></div></section>
                 <div class="console-brand-note"><img src="assets/lxue-geo-founder.png" alt="" width="64" height="64"><div><strong>零雪陪你，把内容做好</strong><p>知识库统一维护 · 模型由你选择 · 文章按任务归档</p></div></div>
             </section>

@@ -95,8 +95,7 @@ class WorkspaceService:
             existing = self.repository.workspace_request_id(user_id, self.tenant_id, request_hash)
             if existing:
                 return self.get(existing, user_id)
-            if self.repository.count_open_workspaces(user_id) >= WORKSPACE_LIMIT:
-                raise ApiError(409, '最多保留五个未结束工作区，请完成、取消任务或关闭草稿后再新建。', 'WORKSPACE_LIMIT_REACHED')
+            # 草稿不占用任务名额；名额在批次启动时按“同时进行的任务”校验。
             workspace_id = uuid.uuid4().hex
             model = SettingsService(self.repository, self.master_key).private(user_id)['model']
             draft = validate_draft({'model': model})

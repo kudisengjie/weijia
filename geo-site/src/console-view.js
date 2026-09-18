@@ -56,7 +56,7 @@ export function initializeConsole({changeView,onCreate}){
   const emptyCreate=el('button','新建任务','workspace-empty__create');emptyCreate.type='button';emptyCreate.id='empty-create';
   emptyCreate.addEventListener('click',()=>{emptyCreate.disabled=true;Promise.resolve(onCreate?.()).catch(()=>{}).finally(()=>{emptyCreate.disabled=false;});});
   emptyState.append(el('strong','从这里开始新的 GEO 任务'),
-    el('p','先新建一个任务工作区：上传 Excel 任务表与公司资料，保存为草稿后即可启动生成。每个账号最多保留五个未结束工作区。'),
+    el('p','先新建一个任务工作区：上传 Excel 任务表与公司资料，保存为草稿后即可启动生成。草稿不占名额，同时进行的任务最多 5 个。'),
     emptyCreate);
   workspace.insertBefore(materials,uploads);materials.append(uploads,materialSummary);materials.before(emptyState);
   const tabbar=el('nav',undefined,'console-detail-tabs');tabbar.setAttribute('aria-label','当前工作区内容');
@@ -84,15 +84,18 @@ export function initializeConsole({changeView,onCreate}){
     uploads.hidden=Boolean(currentBatch)||empty;
   }
   function setOwner(owner){shell.dataset.owner=String(owner);document.querySelectorAll('[data-view=admin]').forEach(n=>{n.hidden=!owner;});tenant.hidden=!owner;if(!owner&&shell.dataset.view==='admin')changeView('settings');}
+  // 复用同一个吉祥物节点，避免每次渲染重新解码图片造成闪烁。
+  const overviewMascot=document.createElement('img');
+  overviewMascot.src='assets/lxue-geo-founder.png';overviewMascot.alt='';overviewMascot.width=56;overviewMascot.height=56;overviewMascot.loading='lazy';overviewMascot.decoding='async';
   function renderOverview(batches,open){
     const region=byId('overview-list');region.replaceChildren();
-    byId('overview-total').textContent=String(batches.length);
-    byId('overview-active').textContent=String(batches.filter(b=>!['completed','cancelled'].includes(b.status)).length);
-    byId('overview-articles').textContent=String(batches.reduce((sum,b)=>sum+b.completed,0));
+    const setStat=(id,value)=>{const n=byId(id);const text=String(value);if(n.textContent!==text)n.textContent=text;};
+    setStat('overview-total',batches.length);
+    setStat('overview-active',batches.filter(b=>!['completed','cancelled'].includes(b.status)).length);
+    setStat('overview-articles',batches.reduce((sum,b)=>sum+b.completed,0));
     if(!batches.length){
       const empty=el('div',undefined,'console-empty-state');
-      const mascot=document.createElement('img');mascot.src='assets/lxue-geo-founder.png';mascot.alt='';mascot.width=72;mascot.height=72;mascot.loading='lazy';mascot.decoding='async';
-      empty.append(mascot,el('strong','还没有任务'),el('p','请到「批次工作区」上传 Excel 任务表与公司资料，开始生成文章。'));
+      empty.append(overviewMascot,el('strong','还没有任务'),el('p','请到“批次工作区”上传 Excel 任务表与公司资料，开始生成文章。'));
       region.append(empty);return;
     }
   function statusBadge(batch){
@@ -120,7 +123,7 @@ export function initializeConsole({changeView,onCreate}){
         try{
           const result=await saveAll();
           if(result?.skipped)articles.append(el('p','保存任务正在进行中，请稍候。','runtime-hint'));
-          else if(result?.failed?.length)articles.append(el('p',`有 ${result.failed.length} 篇未能确认保存，请到「个人设置 → 文章保存」重试。`,'runtime-hint'));
+          else if(result?.failed?.length)articles.append(el('p',`有 ${result.failed.length} 篇未能确认保存，请到个人设置的“文章保存”重试。`,'runtime-hint'));
           else if(result?.delivered)articles.append(el('p',`已写入本机保存文件夹 ${result.delivered} 篇并逐字校验通过。`,'runtime-hint'));
           else articles.append(el('p','没有待补存的文章，全部都已保存到本机。','runtime-hint'));
         }catch(error){onError?.(error);}
@@ -130,7 +133,7 @@ export function initializeConsole({changeView,onCreate}){
     }
     for(const article of batch.articles){const row=el('div',undefined,'runtime-article'),name=el('div');name.append(el('strong',article.title),el('p',article.filename||'Markdown 文章','runtime-hint'));const button=el('button','下载 MD');button.type='button';button.addEventListener('click',()=>download(article).catch(onError));row.append(name,button);articles.append(row);}
   }
-  function reset(){setOwner(false);workspaceEmpty=true;setBatch(null);byId('overview-list').replaceChildren();for(const id of ['overview-total','overview-active','overview-articles'])byId(id).textContent='—';renderArticles(null);personal.select('models');management.select('members');detailTab('materials');changeView('workspace');}
+  function reset(){setOwner(false);workspaceEmpty=true;setBatch(null);byId('overview-list').replaceChildren();for(const id of ['overview-total','overview-active','overview-articles'])byId(id).textContent='0';renderArticles(null);personal.select('models');management.select('members');detailTab('materials');changeView('workspace');}
   setOwner(false);setBatch(null);changeView('workspace');
   return {setOwner,setBatch,setWorkspaceEmpty,detailTab,renderOverview,renderArticles,reset};
 }

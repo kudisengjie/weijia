@@ -769,3 +769,24 @@ html.booting #login-page { visibility: hidden; }
 .workspace-toolbar { border-radius: 12px; box-shadow: 0 6px 18px #365d8e0a; }
 .workspace-toolbar input, .workspace-toolbar select { border-radius: 8px; }
 .console-panel-heading__actions button { min-height: 38px; }
+
+/* ===== 2026-09-18 下午 UI 精修：统一字号、压缩空旷、消除闪烁感 ===== */
+.console-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 240px)); gap: 10px; padding: 0 0 16px; }
+.console-summary > div { padding: 10px 18px; border-radius: 12px; background: #ffffffc9; box-shadow: 0 4px 14px #365d8e0c; align-items: baseline; gap: 12px; }
+.console-summary span { font-size: 13px; font-weight: 500; }
+.console-summary strong { font-size: 20px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.workspace-empty { gap: 8px; padding: 26px 20px; margin: 0 0 14px; }
+.workspace-empty strong { font-size: 15px; }
+.console-empty-state { min-height: 110px; gap: 6px; padding: 14px; }
+.console-empty-state img { width: 56px; height: 56px; }
+
+.geo-character { max-width: 168px; margin: 12px auto 10px; border-radius: 12px; }
+.geo-status-list { padding: 2px 12px; }
+.geo-status-list div { padding: 9px 0; font-size: 12px; }
+.geo-status-list dt { color: #7b91ab; font-size: 12px; }
+.geo-status-list dd { font-weight: 650; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.geo-saas-status span { font-size: 12px; }
+
+.console-panel-heading { margin-bottom: 10px; }
+.console-table-wrap th, .console-table-wrap td { padding: 11px 12px; }
