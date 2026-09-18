@@ -86,6 +86,47 @@ class ImaCacheTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual({"text": "fresh"}, value)
         self.assertEqual(1, calls)
 
+    async def test_read_only_mode_never_fetches_and_reports_stale(self):
+        # 子账号只读缓存：未命中时必须明确报错，绝不直连 IMA 上游。
+        from geo_backend.errors import ApiError
+        from geo_backend.ima import ImaCache
+
+        repository = CacheRepository()
+        cache = ImaCache(repository)
+        calls = 0
+
+        async def forbidden():
+            nonlocal calls
+            calls += 1
+            return {"text": "upstream"}
+
+        with self.assertRaises(ApiError) as raised:
+            await cache.get_or_fetch("media", {"knowledgeBaseId": "kb-1", "mediaId": "m1"}, forbidden, allow_fetch=False)
+        self.assertEqual("IMA_CACHE_STALE", raised.exception.code)
+        self.assertEqual(0, calls)
+        self.assertEqual(0, repository.puts)
+
+    async def test_force_refresh_skips_cached_value_and_refetches(self):
+        # 主账号到期更新：强制跳过缓存重读上游，并写回同代缓存。
+        from geo_backend.ima import ImaCache
+
+        repository = CacheRepository()
+        cache = ImaCache(repository)
+        await cache.get_or_fetch("media", {"knowledgeBaseId": "kb-1", "mediaId": "m1"}, _value)
+        calls = 0
+
+        async def fetch_fresh():
+            nonlocal calls
+            calls += 1
+            return {"text": "refreshed"}
+
+        value = await cache.get_or_fetch(
+            "media", {"knowledgeBaseId": "kb-1", "mediaId": "m1"}, fetch_fresh, force_refresh=True)
+
+        self.assertEqual({"text": "refreshed"}, value)
+        self.assertEqual(1, calls)
+        self.assertEqual(2, repository.puts)
+
 
 async def _value():
     return {"text": "cached"}

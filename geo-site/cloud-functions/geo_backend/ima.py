@@ -40,12 +40,19 @@ class ImaCache:
         kind: str,
         request: dict[str, object],
         fetch,
+        *,
+        allow_fetch: bool = True,
+        force_refresh: bool = False,
     ) -> object:
+        """allow_fetch=False（子账号）只读缓存；force_refresh=True（主账号到期更新）跳过读缓存。"""
         generation = self.generation if self.generation is not None else int(self.repository.get_ima_cache_generation())
         cache_key = self.key(kind, request, generation)
-        cached = self.repository.get_ima_cache(kind, cache_key, generation, self.master_key)
-        if cached is not None:
-            return cached
+        if not force_refresh:
+            cached = self.repository.get_ima_cache(kind, cache_key, generation, self.master_key)
+            if cached is not None:
+                return cached
+        if not allow_fetch:
+            raise ApiError(503, "IMA 知识库内容尚未由主账号更新，请联系主账号运行一次任务完成更新。", "IMA_CACHE_STALE")
         acquire = getattr(self.repository, "acquire_ima_cache_lock", None)
         release = getattr(self.repository, "release_ima_cache_lock", None)
         owner_token = uuid.uuid4().hex
@@ -63,9 +70,10 @@ class ImaCache:
                 raise ApiError(503, "IMA 缓存正在由其他任务更新，请稍后继续。", "IMA_CACHE_BUSY")
         try:
             # Another request may have filled the cache between our miss and lock acquisition.
-            cached = self.repository.get_ima_cache(kind, cache_key, generation, self.master_key)
-            if cached is not None:
-                return cached
+            if not force_refresh:
+                cached = self.repository.get_ima_cache(kind, cache_key, generation, self.master_key)
+                if cached is not None:
+                    return cached
             value = await fetch()
             if value is None:
                 raise ApiError(502, "IMA 返回空内容，未写入缓存。", "IMA_EMPTY")
@@ -111,7 +119,13 @@ async def ima_post(credentials: dict[str, object], path: str, payload: dict[str,
     except ValueError:
         raise ApiError(502, "IMA 返回格式错误。", "IMA_ERROR")
     if result.get("code") != 0 or not isinstance(result.get("data"), dict):
-        raise ApiError(502, f"IMA 凭据、权限或请求异常（代码 {result.get('code', '未知')}），请检查有效期。", "IMA_ERROR")
+        code = result.get("code", "未知")
+        detail = str(result.get("message") or result.get("msg") or "").strip()
+        if code == 220021:
+            # 220021 = IMA 每日"资料获取"配额用完，凭据并无问题；已缓存内容不受影响。
+            detail = detail or "资料获取次数已达上限"
+            raise ApiError(502, f"IMA 每日资料获取配额已用完（{detail}），将于次日恢复；已缓存内容不受影响，子账号可继续使用缓存。", "IMA_ERROR")
+        raise ApiError(502, f"IMA 请求被拒绝（代码 {code}）{('：' + detail) if detail else '，请检查凭据有效期。'}", "IMA_ERROR")
     return result["data"]
 
 

@@ -326,8 +326,9 @@ class LocalDeliveryFlowTests(unittest.TestCase):
         self.conn.execute("UPDATE batches SET delivery_mode = 'local_confirmed_v1' WHERE id = %s", (batch['id'],))
         batch['phase'] = 'generate'
         batch['rules'] = {'generation': ['写完整文章'], 'audit': ['检查事实'], 'memory': ['零雪']}
-        batch['sources'] = [{'title': '已缓存证据', 'text': '零雪内容服务'}]
-        batch['evidenceCache'] = {'GEO优化知识库|' + task['question']: batch['sources'] for task in batch['tasks']}
+        batch['webSources'] = [{'title': '行业联网证据', 'url': 'https://example.com/geo',
+                                'site': 'example.com', 'snippet': '零雪内容服务'}]
+        batch['webCache'] = {task['question']: batch['webSources'] for task in batch['tasks']}
         self.assertTrue(self.repo.save_batch(self.owner, batch['id'], batch, batch['seq']))
         return self.repo.get_batch(self.owner, batch['id'])
 

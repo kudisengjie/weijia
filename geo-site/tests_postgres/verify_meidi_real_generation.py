@@ -72,7 +72,8 @@ def main() -> None:
         # pin legacy finalize-on-persist so the finished artifact lands in the DB.
         fixture.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (result['id'],))
         batch = fixture.repo.get_batch(fixture.owner, result['id'])
-        sources = [{'title': '美迪公司介绍', 'text': text}]
+        web_sources = [{'title': '2026年中国电商代运营行业研究报告', 'url': 'https://example.com/report',
+                        'site': 'example.com', 'snippet': '电商代运营行业保持增长。'}]
         batch.update(
             phase='generate',
             rules={
@@ -80,8 +81,8 @@ def main() -> None:
                 'audit': ['核对文章中的事实均来自公司资料，无编造数据，无夸大宣传。'],
                 'memory': [BRAND],
             },
-            sources=sources,
-            evidenceCache={'品牌库|' + QUESTION: sources},
+            webSources=web_sources,
+            webCache={QUESTION: web_sources},
         )
         assert fixture.repo.save_batch(fixture.owner, result['id'], batch, batch['seq'])
         for step in range(30):

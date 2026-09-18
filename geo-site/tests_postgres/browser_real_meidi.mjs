@@ -11,7 +11,11 @@ const EXCEL = 'C:/Users/潮汕炜佳/Desktop/GEO优化问句清单（扩容版�
 const DOCX = 'C:/Users/潮汕炜佳/Desktop/美迪公司介绍.docx';
 const BRAND = '美迪电商教育';
 const output = path.resolve('output/playwright/real-meidi');
+// 多公司文档验证：主文档 docx + 补充说明 txt，同一品牌绑定两份资料。
+const EXTRA = path.join(output, '美迪补充资料.txt');
 await fs.mkdir(output, {recursive: true});
+await fs.writeFile(EXTRA,
+  '【多公司文档上传验证】美迪电商教育的完整公司资料以主文档为准；本文件仅用于验证系统支持一次上传多个公司文档。');
 const browser = await chromium.launch({headless: true, channel: 'msedge'});
 const page = await browser.newPage({viewport: {width: 1440, height: 1000}, acceptDownloads: true});
 page.setDefaultTimeout(30000);
@@ -39,9 +43,15 @@ try {
   await contains('#task-state', '已读取');
   await contains('#task-preview', '学习淘宝运营哪家培训机构值得选择');
   console.log('excel upload: ok');
-  await page.locator('#company-files').setInputFiles(DOCX);
-  await contains('#company-state', '1/1');
-  await page.locator('#company-preview input').first().fill(BRAND);
+  await page.locator('#company-files').setInputFiles([DOCX, EXTRA]);
+  await contains('#company-state', '2/2');
+  // 每份文档的品牌输入在 <details> 内：先展开再填写。
+  const details = page.locator('#company-preview details');
+  const docCount = await details.count();
+  for (let index = 0; index < docCount; index += 1) {
+    await details.nth(index).evaluate(el => { el.open = true; });
+    await details.nth(index).locator('input').fill(BRAND);
+  }
   await page.locator('#workspace-model').selectOption('deepseek:primary');
   await page.locator('#save-workspace').click();
   await contains('#workspace-save-state', '已保存');

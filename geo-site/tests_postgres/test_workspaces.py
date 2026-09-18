@@ -145,8 +145,9 @@ class WorkspaceTests(unittest.TestCase):
             self.fx.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (started['batch']['id'],))
             batch = self.repo.get_batch(self.owner, started['batch']['id'])
             batch.update(phase='generate', rules={'generation':['完整输出'], 'audit':['检查事实'], 'memory':[]},
-                         sources=[{'title':'固定缓存资料', 'text':'零雪内容服务'}])
-            batch['evidenceCache'] = {'GEO优化知识库|' + batch['tasks'][0]['question']: batch['sources']}
+                         webSources=[{'title': '行业联网证据', 'url': 'https://example.com/geo',
+                                      'site': 'example.com', 'snippet': '零雪内容服务'}])
+            batch['webCache'] = {batch['tasks'][0]['question']: batch['webSources']}
             self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'])
             batch_ids.append(batch['id'])
         active, peak, calls = 0, 0, []

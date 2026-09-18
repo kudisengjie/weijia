@@ -45,10 +45,12 @@ class WorkerPoolTests(unittest.TestCase):
             # Legacy finalize-on-persist coverage; new-mode receipt flow lives in test_local_delivery.
             fx.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (w['batchId'],))
             ids.append(w['batchId'])
-            # Evidence/rules already persisted, as when a user resumes after IMA cache retrieval.
+            # Evidence/rules already persisted, as when a user resumes after the web-search step.
             b = fx.repo.get_batch(fx.owner, w['batchId'])
-            b.update(phase='generate', rules={'generation':['完整生成'], 'audit':['检查事实'], 'memory':['零雪']}, sources=[{'title':'证据','text':'零雪内容服务'}])
-            b['evidenceCache'] = {'GEO优化知识库|' + b['tasks'][0]['question']: b['sources']}
+            b.update(phase='generate', rules={'generation':['完整生成'], 'audit':['检查事实'], 'memory':['零雪']},
+                     webSources=[{'title': '行业联网证据', 'url': 'https://example.com/geo',
+                                  'site': 'example.com', 'snippet': '零雪内容服务'}])
+            b['webCache'] = {b['tasks'][0]['question']: b['webSources']}
             fx.repo.save_batch(fx.owner, b['id'], b, b['seq'])
 
         calls, connections = Counter(), set()

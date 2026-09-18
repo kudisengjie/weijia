@@ -12,6 +12,22 @@ from tests_py.fakes import FakeRepository
 
 
 class ImaTests(unittest.IsolatedAsyncioTestCase):
+    async def test_daily_quota_error_is_reported_accurately(self):
+        # 220021 是每日资料获取配额上限，不是凭据失效——提示必须准确。
+        from geo_backend.errors import ApiError
+        from geo_backend.ima import ima_post
+
+        def handler(request):
+            return httpx.Response(200, request=request,
+                json={"code": 220021, "message": "资料获取次数已达上限，请明天再尝试"})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            with self.assertRaises(ApiError) as raised:
+                await ima_post({"clientId": "c", "apiKey": "k"}, "openapi/wiki/v1/get_media_info",
+                               {"media_id": "m"}, client=client)
+        self.assertIn("配额", str(raised.exception))
+        self.assertIn("次日恢复", str(raised.exception))
+
     async def test_environment_credentials_are_the_default(self):
         from geo_backend.ima import load_ima_credentials
 

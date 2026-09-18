@@ -503,6 +503,18 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         row = self.conn.execute("SELECT generation FROM ima_cache_meta WHERE singleton").fetchone()
         return int(row[0]) if row else 1
 
+    def get_ima_cache_meta(self) -> dict[str, object]:
+        row = self.conn.execute(
+            "SELECT generation, updated_at, updated_by FROM ima_cache_meta WHERE singleton"
+        ).fetchone()
+        if not row:
+            return {"generation": 1, "updatedAt": None, "updatedBy": None}
+        return {"generation": int(row[0]), "updatedAt": row[1], "updatedBy": row[2]}
+
+    def touch_ima_cache_meta(self) -> None:
+        # 主账号运行触发的 IMA 重读完成后刷新时间戳（不换代，子账号继续命中缓存）。
+        self.conn.execute("UPDATE ima_cache_meta SET updated_at = NOW() WHERE singleton")
+
     def clear_ima_cache_generation(self, user_id: str | None = None) -> int:
         row = self.conn.execute(
             """

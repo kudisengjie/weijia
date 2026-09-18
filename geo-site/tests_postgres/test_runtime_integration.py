@@ -16,6 +16,7 @@ from psycopg import sql
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'cloud-functions'))
 from geo_backend.batches import BatchService
 from geo_backend.database import ensure_schema
+from geo_backend.ima import normalize
 from geo_backend.models import SettingsService
 from geo_backend.repository import PostgresRepository
 from geo_backend.security import hash_password
@@ -23,6 +24,15 @@ from geo_backend.security import hash_password
 
 TEST_URL = 'postgresql://geo_test@127.0.0.1:55483/postgres?connect_timeout=5'
 MASTER = 'a' * 64
+
+# 联网搜索证据（问句即检索词）的固定必应结果页 fixture：4 个不同站点，
+# 支撑 skills §5.0 的多独立信源要求。
+WEB_RESULTS = [
+    {'url': 'https://www.gov.cn/report2026.html', 'title': '2026年中国内容产业研究报告', 'snippet': 'AI 搜索流量占比持续上升。', 'site': '中国政府网'},
+    {'url': 'https://www.199it.com/archives/geo', 'title': 'GEO 生成式引擎优化趋势解读', 'snippet': '生成式引擎成为品牌新入口。', 'site': '199IT'},
+    {'url': 'https://www.iheima.com/article/geo', 'title': 'AI 搜索如何改变品牌曝光', 'snippet': '内容可见性向 AI 答案迁移。', 'site': '黑马网'},
+    {'url': 'https://m.sohu.com/geo-news', 'title': 'AI 搜索流量占比持续上升', 'snippet': '多平台数据显示搜索行为迁移。', 'site': '搜狐'},
+]
 
 
 class PostgresRuntimeTests(unittest.TestCase):
@@ -466,7 +476,7 @@ class PostgresRuntimeTests(unittest.TestCase):
         self.assertEqual({}, plain, 'No company, evidence, rule, draft, or article copy may remain in plaintext')
         cipher = self.conn.execute('SELECT state_cipher FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0]
         self.assertGreater(len(cipher), 0)
-        for field in ('companies', 'rules', 'sources', 'evidenceCache', 'draft', 'audit'):
+        for field in ('companies', 'rules', 'webSources', 'webCache', 'draft', 'audit'):
             self.assertEqual(batch[field], self.repo.get_batch(self.owner, batch['id'])[field])
         self.assertEqual(batch['id'], self.repo.list_batches(self.owner)[0]['id'])
         request_hash = self.conn.execute('SELECT request_id_hash FROM batches WHERE id = %s', (batch['id'],)).fetchone()[0]
@@ -552,7 +562,7 @@ class PostgresRuntimeTests(unittest.TestCase):
                 response = await client.get('/batches/' + batch['id'])
                 self.assertEqual(200, response.status_code)
                 self.assertEqual(batch['id'], response.json()['id'])
-                for private_field in ('companies', 'rules', 'sources', 'evidenceCache', 'state_cipher'):
+                for private_field in ('companies', 'rules', 'webSources', 'webCache', 'state_cipher'):
                     self.assertNotIn(private_field, response.json())
         asyncio.run(run())
 
@@ -660,11 +670,19 @@ class PostgresRuntimeTests(unittest.TestCase):
         self.repo.clear_ima_cache_generation(self.owner)
         upstream, model_keys = [], []
         def handler(request):
-            upstream.append(str(request.url))
+            if request.url.host == 'www.sogou.com':
+                # 联网搜索通道：问句即检索词（按批次执行，不计入 IMA 共享缓存统计）。
+                self.assertEqual('零雪是什么？', request.url.params['query'])
+                return httpx.Response(200, text=self.sogou_page(WEB_RESULTS))
+            if request.url.host == 'ima.qq.com':
+                upstream.append(str(request.url))
+            if request.url.host != 'ima.qq.com':
+                if request.method == 'GET':
+                    return httpx.Response(200, text='# 完整资料\n零雪提供内容服务。')
+                self.fail('Unexpected non-IMA POST ' + str(request.url))
             if request.method == 'GET':
                 self.assertNotIn('ima-openapi-apikey', request.headers)
                 return httpx.Response(200, text='# 完整资料\n零雪提供内容服务。')
-            self.assertEqual('ima.qq.com', request.url.host)
             payload = json.loads(request.content)
             path = request.url.path.rsplit('/', 1)[-1]
             if path == 'search_knowledge_base':
@@ -683,12 +701,8 @@ class PostgresRuntimeTests(unittest.TestCase):
                 }
                 self.assertIn(folder, files, 'Unrelated folders must not be fetched')
                 data = {'knowledge_list': files[folder], 'is_end': True}
-            elif path == 'search_knowledge':
-                self.assertEqual({'knowledge_base_id', 'query', 'cursor'}, set(payload))
-                self.assertEqual('KB-Brand', payload['knowledge_base_id'])
-                data = {'info_list': [{'media_id': 'evidence', 'title': '品牌证据.md'}], 'is_end': True}
             elif path == 'get_media_info':
-                self.assertIn(payload['media_id'], {'memory', 'gen', 'audit', 'evidence'})
+                self.assertIn(payload['media_id'], {'memory', 'gen', 'audit'})
                 data = {'media_type': 1, 'url_info': {'url': 'https://test.cos.ap-guangzhou.myqcloud.com/' + payload['media_id'] + '.md'}}
             else:
                 self.fail('Unexpected IMA call ' + path)
@@ -696,7 +710,8 @@ class PostgresRuntimeTests(unittest.TestCase):
         async def model(model, key, messages, **kwargs):
             model_keys.append(key)
             payload = json.loads(messages[-1]['content'])
-            self.assertTrue(payload['knowledgeEvidence'])
+            self.assertTrue(payload['webEvidence'], '联网搜索证据必须随生成请求下发')
+            self.assertIn('webEvidence', messages[0]['content'])
             return '{"passed":true,"issues":[]}' if 'draft' in payload else '# 零雪完整文章\n有依据的完整正文。'
         async def run():
             async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
@@ -715,14 +730,35 @@ class PostgresRuntimeTests(unittest.TestCase):
                     self.assertEqual(1, result['completed'], result)
                     self.assertEqual([], result['failedTasks'])
                     if user == member['id']:
-                        self.assertEqual(before, len(upstream), 'Second user must reuse site-wide IMA data')
+                        self.assertEqual(before, len(upstream), 'Second user must reuse site-wide IMA data (web search is per-batch and excluded here)')
                     self.assertEqual(2, self.repo.credit_balance(self.tenant, user))
                     self.assertEqual(1, self.conn.execute('SELECT COUNT(*) FROM article_artifacts WHERE batch_id = %s', (result['id'],)).fetchone()[0])
         asyncio.run(run())
         self.assertEqual(['test-model-key'] * 2 + ['member-model-key'] * 2, model_keys)
 
-    def ima_rules_handler(self, *, bases, search_response):
+    @staticmethod
+    def sogou_page(results):
+        items = []
+        for item in results:
+            items.append(
+                '<div class="vrwrap"><h3 class="vr-title"><a href="%s">%s</a></h3>'
+                '<div class="fz-mid space-txt">%s</div>'
+                '<a class="citeLinkClass" href="#">%s</a></div>'
+                % (item['url'], item['title'], item.get('snippet', '零雪内容服务'), item.get('site', '')))
+        return '<html><body>%s</body></html>' % ''.join(items)
+
+    def ima_rules_handler(self, *, bases, web_results=None):
+        # 问句证据一律走联网搜索：IMA 端点只允许规则读取；search_knowledge 出现即失败。
         def handler(request):
+            host = request.url.host
+            if host == 'www.sogou.com':
+                self.assertEqual('零雪是什么？', request.url.params['query'])
+                return httpx.Response(200, text=self.sogou_page(WEB_RESULTS if web_results is None else web_results))
+            if host != 'ima.qq.com':
+                # COS 证据/规则原文下载。
+                if request.method == 'GET':
+                    return httpx.Response(200, text='# 完整资料\n零雪提供内容服务。')
+                self.fail('Unexpected non-IMA POST ' + str(request.url))
             if request.method == 'GET':
                 return httpx.Response(200, text='# 完整资料\n零雪提供内容服务。')
             payload = json.loads(request.content)
@@ -739,7 +775,7 @@ class PostgresRuntimeTests(unittest.TestCase):
                 self.assertIn(folder, files, 'Unrelated folders must not be fetched')
                 return httpx.Response(200, json={'code': 0, 'data': {'knowledge_list': files[folder], 'is_end': True}})
             if path == 'search_knowledge':
-                return httpx.Response(200, json={'code': 0, 'data': search_response(payload)})
+                self.fail('问句证据不允许从任何 IMA 知识库检索')
             if path == 'get_media_info':
                 data = {'media_type': 1, 'url_info': {'url': 'https://test.cos.ap-guangzhou.myqcloud.com/' + payload['media_id'] + '.md'}}
                 return httpx.Response(200, json={'code': 0, 'data': data})
@@ -762,51 +798,117 @@ class PostgresRuntimeTests(unittest.TestCase):
                 return result
         return asyncio.run(run())
 
-    def test_brand_kb_outside_whitelist_is_never_scraped_and_generates_directly(self):
+    def test_question_evidence_comes_from_web_search_never_ima(self):
+        # 吕董事长 2026-09-17 指令：问句是选题依据，证据一律联网搜索，
+        # 不从任何知识库（含 GEO优化知识库/品牌知识库）抓取问句知识。
         self.fund()
         body = self.body(1)
         body['rows'][1][1] = '美迪知识库'
-        searched = []
         bases = [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Meidi', 'name': '美迪知识库'}]
-        handler = self.ima_rules_handler(bases=bases, search_response=lambda payload: searched.append(payload['knowledge_base_id']) or self.fail('非白名单知识库不允许发起问句检索'))
+        handler = self.ima_rules_handler(bases=bases)
         async def model(model, key, messages, **kwargs):
             payload = json.loads(messages[-1]['content'])
             if 'draft' not in payload:
-                self.assertEqual([], payload['knowledgeEvidence'], '直生成任务不得携带知识库证据')
-            return '{"passed":true,"issues":[]}' if 'draft' in payload else '# 零雪直生成文章\n仅依据公司文档的完整正文。'
+                self.assertTrue(payload['webEvidence'], '联网搜索证据必须下发')
+                self.assertIn('已联网搜索', messages[0]['content'])
+            return '{"passed":true,"issues":[]}' if 'draft' in payload else '# 零雪联网文章\n依据真实搜索结果的完整正文。'
         result = self.run_batch_to_completion(body, handler, model)
         self.assertEqual('completed', result['status'], result)
         self.assertEqual([], result['failedTasks'], result)
-        self.assertEqual([], searched, '品牌知识库不允许被检索')
         self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
 
-    def test_whitelisted_kb_without_evidence_hits_falls_back_to_direct_generation(self):
+    def test_web_search_zero_results_fails_task_and_refunds(self):
+        # skills §5.0 不允许无证据生成：联网搜索无结果 → 任务明确失败并退积分，
+        # 不降级为无锚点直生成。
         self.fund()
-        bases = [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Geo', 'name': 'GEO优化知识库'}]
-        handler = self.ima_rules_handler(bases=bases, search_response=lambda payload: {'info_list': [], 'is_end': True})
+        bases = [{'id': 'KB-Copilot', 'name': 'copilot'}]
+        handler = self.ima_rules_handler(bases=bases, web_results=[])
         async def model(model, key, messages, **kwargs):
-            payload = json.loads(messages[-1]['content'])
-            if 'draft' not in payload:
-                self.assertEqual([], payload['knowledgeEvidence'], '无命中时直生成不得携带知识库证据')
-            return '{"passed":true,"issues":[]}' if 'draft' in payload else '# 零雪直生成文章\n仅依据公司文档的完整正文。'
+            self.fail('无搜索证据时不得调用模型')
         result = self.run_batch_to_completion(self.body(1), handler, model)
         self.assertEqual('completed', result['status'], result)
-        self.assertEqual([], result['failedTasks'], result)
-        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+        self.assertEqual(0, result['completed'], result)
+        self.assertEqual(1, len(result['failedTasks']), result)
+        self.assertIn('联网搜索', result['failedTasks'][0]['error'])
+        self.assertEqual(10, self.repo.credit_balance(self.tenant, self.owner), '失败任务必须退积分')
+
+    def test_member_reads_cached_ima_only_and_admin_refreshes_after_ttl(self):
+        # 吕董事长 2026-09-17 指令：IMA 内容半月由主账号更新一次；子账号只读缓存，
+        # 永不直连 IMA；缓存过期时子账号被明确拒绝，主账号运行后自动恢复。
+        now = datetime.now(timezone.utc)
+        member = self.repo.create_member(tenant_id=self.tenant, username='ttl-' + uuid.uuid4().hex,
+            password_hash=hash_password('member-password'), role='member', starts_at=now, expires_at=now + timedelta(days=30))
+        SettingsService(self.repo, MASTER).save_model(member['id'], 'qwen', 'primary', '', 'member-model-key', False)
+        self.fund()
+        self.fund(member['id'], 3)
+        self.repo.clear_ima_cache_generation(self.owner)
+        ima_calls = []
+        base_handler = self.ima_rules_handler(bases=[{'id': 'KB-Copilot', 'name': 'copilot'}])
+        def handler(request):
+            if request.url.host == 'ima.qq.com':
+                ima_calls.append(str(request.url))
+            return base_handler(request)
+        async def model(model, key, messages, **kwargs):
+            payload = json.loads(messages[-1]['content'])
+            return '{"passed":true,"issues":[]}' if 'draft' in payload else '# 零雪完整文章\n有依据的完整正文。'
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                # 1) 缓存过期：子账号被拒绝、零 IMA 调用、积分全额退回。
+                self.conn.execute("UPDATE ima_cache_meta SET updated_at = NOW() - INTERVAL '16 days'")
+                context = self.repo.get_tenant_context(member['id'], now)
+                service = BatchService(self.repo, MASTER, {'clientId': 'test-client', 'apiKey': 'test-ima'},
+                    tenant_context=context, client=client, model_complete=model)
+                result = service.create(self.body(1), member['id'], now + timedelta(days=30))
+                self.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (result['id'],))
+                for _ in range(10):
+                    if result['status'] != 'ready':
+                        break
+                    result = await service.advance(result['id'], {'seq': result['seq']}, member['id'])
+                self.assertEqual('failed', result['status'], result)
+                self.assertEqual([], result['failedTasks'], result)
+                self.assertEqual(0, len(ima_calls), '过期的子账号运行不得触达 IMA')
+                self.assertEqual(3, self.repo.credit_balance(self.tenant, member['id']), '整批失败必须全额退积分')
+                member_failed = result
+                # 2) 主账号运行：强制重读 IMA 并刷新缓存时间戳。
+                owner_context = self.repo.get_tenant_context(self.owner, now)
+                owner_service = BatchService(self.repo, MASTER, {'clientId': 'test-client', 'apiKey': 'test-ima'},
+                    tenant_context=owner_context, client=client, model_complete=model)
+                result = owner_service.create(self.body(1), self.owner, now + timedelta(days=30))
+                self.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (result['id'],))
+                for _ in range(30):
+                    if result['status'] != 'ready':
+                        break
+                    result = await owner_service.advance(result['id'], {'seq': result['seq']}, self.owner)
+                self.assertEqual('completed', result['status'], result)
+                owner_calls = len(ima_calls)
+                self.assertGreater(owner_calls, 0, '主账号到期更新必须真实重读 IMA')
+                # 3) 缓存已刷新：子账号重试原失败批次即可恢复，全程零 IMA 调用。
+                member_service = BatchService(self.repo, MASTER, {'clientId': 'test-client', 'apiKey': 'test-ima'},
+                    tenant_context=context, client=client, model_complete=model)
+                result = await member_service.advance(
+                    member_failed['id'], {'seq': member_failed['seq'], 'retry': True}, member['id'])
+                for _ in range(30):
+                    if result['status'] != 'ready':
+                        break
+                    result = await member_service.advance(result['id'], {'seq': result['seq']}, member['id'])
+                self.assertEqual('completed', result['status'], result)
+                self.assertEqual(owner_calls, len(ima_calls), '子账号必须全程使用缓存，不得触达 IMA')
+                self.assertEqual(2, self.repo.credit_balance(self.tenant, member['id']))
+        asyncio.run(run())
 
     def test_cache_contention_does_not_fail_or_refund_task(self):
         from geo_backend.errors import ApiError
         from unittest.mock import patch
         batch = self.prepared_batch(1)
-        batch.update(phase='search', sourceCandidates=[], cursor='')
-        batch['tasks'][0]['kbId'] = 'KB-Brand'
+        batch.update(phase='rules', queue=[{'folder': '', 'role': 'root', 'cursor': ''}],
+                     copilot='KB-Copilot', ruleFiles=[], visited=[], rootFiles=[])
         self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'])
         async def busy(*args, **kwargs):
             raise ApiError(503, 'Cache is being filled by another task', 'IMA_CACHE_BUSY')
         with patch('geo_backend.ima.ImaCache.get_or_fetch', busy):
             result = asyncio.run(self.service().advance(batch['id'], {'seq': 0}, self.owner))
         self.assertEqual('ready', result['status'])
-        self.assertEqual('search', result['phase'])
+        self.assertEqual('rules', result['phase'])
         self.assertEqual([], result['failedTasks'])
         self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
 
@@ -822,8 +924,9 @@ class PostgresRuntimeTests(unittest.TestCase):
             self.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (batch['id'],))
         batch['phase'] = 'generate'
         batch['rules'] = {'generation': ['写完整文章'], 'audit': ['检查事实'], 'memory': ['零雪']}
-        batch['sources'] = [{'title': '已缓存证据', 'text': '零雪内容服务'}]
-        batch['evidenceCache'] = {'GEO优化知识库|' + task['question']: batch['sources'] for task in batch['tasks']}
+        batch['webSources'] = [{'title': '行业联网证据', 'url': 'https://example.com/geo',
+                                'site': 'example.com', 'snippet': '零雪内容服务'}]
+        batch['webCache'] = {normalize(task['question']): batch['webSources'] for task in batch['tasks']}
         self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'])
         return batch
 
