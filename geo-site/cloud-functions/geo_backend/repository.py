@@ -5,6 +5,7 @@ from datetime import datetime
 from threading import Lock
 from typing import Iterator
 import json
+import os
 import re
 
 from .database import connection, database_health, ensure_schema
@@ -1075,11 +1076,12 @@ class PostgresRepository(WorkspaceRepositoryMixin):
             self.conn.execute(
                 """
                 INSERT INTO batches (id, user_id, tenant_id, request_id_hash, state, state_cipher, seq, status, delivery_mode)
-                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s, 'local_confirmed_v1')
+                VALUES (%s, %s, %s, %s, '{}'::jsonb, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s, %s, %s)
                 ON CONFLICT (user_id, request_id_hash) DO NOTHING
                 """,
                 (batch_id, user_id, state.get("tenantId"), request_id_hash,
-                 self._batch_payload(user_id, batch_id, state), self.master_key, state["seq"], state["status"]),
+                 self._batch_payload(user_id, batch_id, state), self.master_key, state["seq"], state["status"],
+                 os.environ.get("GEO_DEFAULT_BATCH_DELIVERY_MODE") or "local_confirmed_v1"),
             )
             return self.get_request_batch(user_id, request_id_hash)
 

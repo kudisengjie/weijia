@@ -27,7 +27,11 @@ def main():
     fixture.setUp()
     workspace_mode = '--workspaces' in sys.argv
     local_delivery_mode = '--local-delivery' in sys.argv
-    batch = None if (workspace_mode or local_delivery_mode) else fixture.prepared_batch(1)
+    # Pause/resume, cancel-refund and awaiting-save lifecycles are mode-specific;
+    # every browser script pins the delivery mode it was written against.
+    os.environ['GEO_DEFAULT_BATCH_DELIVERY_MODE'] = (
+        'local_confirmed_v1' if local_delivery_mode else 'server_legacy')
+    batch = None if (workspace_mode or local_delivery_mode) else fixture.prepared_batch(1, legacy=True)
     if workspace_mode or local_delivery_mode:
         from geo_backend.models import SettingsService
         fixture.fund(amount=10)
@@ -113,11 +117,17 @@ def main():
             command = ['node', str(Path(__file__).with_name(script)), config.geo_account]
             if '--resume' in sys.argv: command.append('--resume')
             if '--layout-only' in sys.argv: command.append('--layout-only')
-            result = subprocess.run(command, check=False, env=os.environ, timeout=150)
+            if os.environ.get('GEO_E2E_EXTERNAL_NODE'):
+                # The caller runs the script against this live server themselves
+                # (some sandboxes stall node trees spawned from python).
+                print(json.dumps({'externalNode': True, 'script': script}), flush=True)
+                result = None
+            else:
+                result = subprocess.run(command, check=False, env=os.environ, timeout=150)
         finally:
             server.should_exit = True
             thread.join(timeout=10)
-        return result.returncode
+        return result.returncode if result is not None else 0
     uvicorn.run(app, host='127.0.0.1', port=8769, log_level='warning')
     return 0
 

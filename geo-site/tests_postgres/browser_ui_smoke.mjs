@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 const modulePath=process.env.GEO_TEST_PLAYWRIGHT_MODULE;
 if(!modulePath)throw new Error('Set GEO_TEST_PLAYWRIGHT_MODULE to the installed Playwright entry file.');
 const {chromium}=await import(pathToFileURL(modulePath).href);
-const owner=process.argv[2];
+const owner=process.argv[2];let afterGrant=null;
 const resume=process.argv.includes('--resume');
 if(!/^owner-[0-9a-f]{32}$/.test(owner||''))throw new Error('Only an isolated fixture owner is allowed');
 const browser=await chromium.launch({headless:true,channel:'msedge'});
@@ -35,10 +35,14 @@ try{
   console.log((await page.locator('#tenant-admin').ariaSnapshot()).slice(0,1600));
   await page.locator('#managed-user').selectOption({label:'qa-member'});
   if(!resume){
-  await textContains('#managed-user-summary','0 积分');
+  // Credits are tenant-scoped: the member shares the owner's pool, so the
+  // baseline is whatever the pool holds after the fixture batch, not zero.
+  await textContains('#managed-user-summary','qa-member');
+  const baseBalance=Number((await page.locator('#managed-user-summary').textContent()).match(/(\d+) 积分/)[1]);
+  const afterGrant=baseBalance+5;
   await page.locator('#credit-form [name=amount]').fill('5');
   await page.getByRole('button',{name:'确认调整该账号积分'}).click();
-  await textContains('#credit-message','余额为 5 积分');
+  await textContains('#credit-message',`余额为 ${afterGrant} 积分`);
   await textContains('#member-ledger','管理员发放');
   await page.locator('[data-admin-tab=subscription]').click();
   await page.getByRole('button',{name:'在有效期基础上增加 30 天'}).click();
@@ -84,7 +88,7 @@ try{
   assert.equal(forbidden,403,'real backend must reject member access to owner records');
   await page.getByRole('button',{name:'查看我的积分流水',exact:true}).click();
   await textContains('#own-ledger','管理员发放');
-  assert.match(await page.locator('[data-credit-balance]').first().textContent(),/5/);
+  assert.match(await page.locator('[data-credit-balance]').first().textContent(),afterGrant===null?/5/:new RegExp(String(afterGrant)));
   await page.setViewportSize({width:390,height:844});
   await page.locator('#account-service').scrollIntoViewIfNeeded();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
@@ -97,6 +101,9 @@ try{
 }catch(error){
   console.log(JSON.stringify({browserErrors:errors,details:await page.evaluate(()=>({
     memberMessage:document.querySelector('#member-message')?.textContent,
+    creditMessage:document.querySelector('#credit-message')?.textContent,
+    managedSummary:document.querySelector('#managed-user-summary')?.textContent,
+    batchProgress:document.querySelector('#batch-progress')?.textContent,
     invalidFields:[...document.querySelectorAll('#member-form input:invalid')].map(input=>({name:input.name,message:input.validationMessage})),
     toast:document.querySelector('#runtime-toast')?.textContent
   }))}));

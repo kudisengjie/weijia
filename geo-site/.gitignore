@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 .local/
 dist/
-output/playwright/
+output/
+tests_postgres/output/
 .env*
 !.env.example

@@ -267,10 +267,18 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     $('managed-user-summary').textContent=`${target.username} · ${target.balance} 积分 · ${target.active?'服务有效':'未生效或已到期'}`;
     const form=$('subscription-form');form.elements.startsAt.value=localDateTime(target.startsAt||Date.now());form.elements.expiresAt.value=localDateTime(target.expiresAt||Date.now()+30*86400000);
   }
-  async function loadMembers(preferred=$('managed-user').value){if(settings?.subscription?.role!=='owner')return;
-    members=(await api('tenant/members')).members;const select=$('managed-user');select.replaceChildren();
+  async function loadMembers(preferred){if(settings?.subscription?.role!=='owner')return;
+    // Explicit preferred (after create/adjust) wins; an implicit refresh keeps
+    // the admin's live selection so a quick credit grant cannot hit the
+    // previously selected (owner) account while the list is rebuilding.
+    const explicit=preferred!==undefined;
+    if(!explicit)preferred=$('managed-user').value;
+    members=(await api('tenant/members')).members;const select=$('managed-user');
+    const liveSelection=$('managed-user').value;select.replaceChildren();
     for(const member of members){const option=node('option',member.username+(member.role==='owner'?'（总账号）':''));option.value=member.id;select.append(option);}
-    if(members.some(m=>m.id===preferred))select.value=preferred;renderManagedMember();await memberLedger();
+    const candidates=explicit?[preferred,liveSelection]:[liveSelection,preferred];
+    const keepId=candidates.map(id=>members.some(m=>m.id===id)?id:null).find(Boolean)||members[0]?.id;
+    if(keepId)select.value=keepId;renderManagedMember();await memberLedger();
   }
   function renderLedger(id,data){const region=$(id);region.replaceChildren();
     if(!data.ledger?.length){region.append(node('p','暂无积分流水。','runtime-hint'));return;}

@@ -7,7 +7,7 @@ const owner=process.argv[2];if(!/^owner-[0-9a-f]{32}$/.test(owner||''))throw new
 const browser=await chromium.launch({headless:true,channel:'msedge'});
 const page=await browser.newPage({viewport:{width:1440,height:950}});page.setDefaultTimeout(12000);
 page.on('dialog',d=>d.accept());const errors=[];page.on('pageerror',e=>errors.push(e.message));
-async function until(fn,arg){await page.waitForFunction(fn,arg);}
+async function until(fn,arg){try{await page.waitForFunction(fn,arg);}catch(error){console.log('UNTIL_TIMEOUT:',JSON.stringify(await page.evaluate(()=>({progress:document.querySelector('#batch-progress')?.textContent?.slice(0,220),toast:document.querySelector('#runtime-toast')?.textContent,balances:[...document.querySelectorAll('[data-credit-balance]')].map(n=>n.textContent)}))));throw error;}}
 async function login(account){await page.goto('http://127.0.0.1:8769/');await page.locator('[name=account]').fill(account);await page.locator('#login-password').fill('test-password');await page.locator('.login-submit').click();await page.locator('.geo-shell').waitFor({state:'visible'});}
 async function saved(){await until(()=>document.querySelector('#workspace-save-state').textContent.includes('已保存'));}
 try{
@@ -35,12 +35,14 @@ try{
   await page.locator('#task-file').setInputFiles({name:'任务.csv',mimeType:'text/csv',buffer:Buffer.from('\uFEFF品牌名,GEO知识库,问句\n零雪,品牌库,问题1')});
   await until(()=>document.querySelector('#task-state').textContent==='已读取');
   await page.locator('#company-files').setInputFiles({name:'隐私.md',mimeType:'text/markdown',buffer:Buffer.from('仅属于总账号的私有资料')});await page.locator('#company-preview input').fill('零雪');await page.locator('#save-workspace').click();await saved();
+  // Balance baseline BEFORE the batch: fixture fund 10 minus 1 reserved by the fixture's own prepared batch.
+  const balanceBeforeRun=await page.locator('[data-credit-balance]').first().textContent();assert.match(balanceBeforeRun,/积分：\d+$/);
   await page.route(`**/api/workspaces/${first}/start`,async route=>{await route.fetch();await route.abort('failed');});
   await page.locator('#run-task').click();await until(()=>document.querySelector('#workspace-save-state').classList.contains('is-error'));
   assert.equal(await page.locator('#workspace-title').isDisabled(),true);assert.equal(await page.locator('#workspace-model').isDisabled(),true);
   await page.unroute(`**/api/workspaces/${first}/start`);await page.locator('#reload-workspace').click();await page.locator('#batch-progress h2').waitFor();
   assert.equal(await page.locator('#workspace-model').isDisabled(),true);
-  await page.getByRole('button',{name:'取消批次并返还未完成积分',exact:true}).click();await until(()=>document.querySelector('#batch-progress').textContent.includes('已取消'));await until(()=>document.querySelector('[data-credit-balance]').textContent==='积分：10');
+  await page.getByRole('button',{name:'取消批次并返还未完成积分',exact:true}).click();await until(()=>document.querySelector('#batch-progress').textContent.includes('已取消'));await until(expected=>document.querySelector('[data-credit-balance]').textContent===expected,balanceBeforeRun);
   await page.locator(`[data-workspace-id="${second}"]`).click();await until(()=>document.querySelector('#workspace-title').value==='另一个草稿');await page.locator('#close-workspace').click();await page.locator('[data-view-panel=overview]').waitFor({state:'visible'});
   await page.locator('#logout-button').click();await page.locator('#login-page').waitFor({state:'visible'});
   assert.equal(await page.locator('[data-workspace-id]').count(),0);assert.equal(await page.locator('#company-preview').textContent(),'');

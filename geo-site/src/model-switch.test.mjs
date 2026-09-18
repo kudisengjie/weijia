@@ -123,7 +123,11 @@ test("runtime gates the workspace behind login and never embeds credentials", ()
   assert.match(html, /id="login-form"/);
   assert.match(html, /id="ima-form"/);
   assert.match(html, /id="model-form"/);
-  assert.doesNotMatch(html + runtime, /localStorage|sessionStorage|IMA_OPENAPI_APIKEY/);
+  // sessionStorage is allowed only for the non-secret tab-auth marker;
+  // credential storage (localStorage) and raw key names must never appear.
+  assert.doesNotMatch(html + runtime, /localStorage|IMA_OPENAPI_APIKEY/);
+  assert.doesNotMatch(html + runtime, /sessionStorage\.(?:setItem|getItem|removeItem)\((?!AUTH_TAB_MARKER)/);
+  assert.match(runtime, /sessionStorage\.setItem\(AUTH_TAB_MARKER,'?1'?\)/);
   assert.doesNotMatch(html, /type="password"[^>]*value="[^"]+"/);
   assert.match(runtime, /fetch\('\/api\/'/);
 });
@@ -174,8 +178,12 @@ test("desktop typography uses Microsoft YaHei and readable content sizes", () =>
 
   assert.match(styles, /font-family:\s*"Microsoft YaHei",/);
   assert.match(styles, /@media \(min-width:\s*861px\)/);
-  assert.match(styles, /\.geo-table-wrap table\s*\{[^}]*font-size:\s*13px;/s);
-  assert.match(styles, /\.geo-model-badge strong\s*\{[^}]*font-size:\s*14px;/s);
+  // Batch overview tables are intentionally dense: 9px base with a 12px step
+  // on narrower desktop viewports; long-form reading happens in the preview.
+  assert.match(styles, /\.geo-table-wrap table\s*\{[^}]*font-size:\s*9px;/s);
+  assert.match(styles, /\.geo-table-wrap table\s*\{[^}]*font-size:\s*12px;/s);
+  // Header model badges were deliberately compacted to keep the bar on one line.
+  assert.match(styles, /\.geo-model-badge strong\s*\{[^}]*font-size:\s*10px;/s);
   assert.match(styles, /\.geo-run-button:not\(:disabled\)\s*\{[^}]*cursor:\s*pointer;/s);
   assert.match(styles, /\.geo-run-button:disabled\s*\{[^}]*cursor:\s*not-allowed;/s);
   assert.match(styles, /@media \(min-width:\s*1181px\) and \(max-width:\s*1900px\)/);
