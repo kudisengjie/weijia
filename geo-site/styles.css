@@ -803,3 +803,7 @@ html.booting #login-page { visibility: hidden; }
 .list-empty--completed { position: relative; overflow: hidden; }
 .list-empty--completed img { position: absolute; width: 150px; height: auto; opacity: .15; filter: grayscale(.25); }
 .list-empty--completed .list-empty-phrase { position: relative; }
+
+/* ===== 2026-09-18 晚二：统计卡片文字居中；已完成空状态去水印、文案区分 ===== */
+.console-summary > div { justify-content: center; }
+.list-empty--completed img { display: none; }

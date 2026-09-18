@@ -343,21 +343,16 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     catch(error){toast(error.message);}
   }
   $('run-task').addEventListener('click',()=>workspaces.start(getUploads));
-  // 空状态文案节点：两页共用同一句话，但外观由各自的容器样式区分。
-  function emptyPhrase(){
-    const phrase=node('span','快开始你的内容创作吧！','list-empty-phrase');
-    return phrase;
-  }
+  // 空状态与 index.html 里的静态占位保持一致：两页文案不同、无装饰图案，打开页面即时显示。
   function historyEmptyShell(){
     const shell=node('div',undefined,'list-empty list-empty--history');
     shell.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4l3 2M21 12a9 9 0 1 1-3-6.7"/></svg>';
-    shell.append(emptyPhrase());
+    shell.append(node('span','快开始你的内容创作吧！','list-empty-phrase'));
     return shell;
   }
   function completedEmptyShell(){
     const shell=node('div',undefined,'list-empty list-empty--completed');
-    const watermark=node('img');watermark.src='assets/lxue-geo-founder.png';watermark.alt='';watermark.decoding='async';watermark.loading='lazy';
-    shell.append(watermark,emptyPhrase());
+    shell.append(node('span','文章生成后会保存在这里','list-empty-phrase'));
     return shell;
   }
   let historyInFlight=null;
