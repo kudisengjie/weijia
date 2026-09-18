@@ -28,7 +28,7 @@
 .login-card > p { color: #687f9c; margin: 0 0 30px; }
 .runtime-field { display: flex; flex-direction: column; gap: 9px; color: #526b8a; font-size: 13px; font-weight: 600; margin: 18px 0; min-width: 0; }
 .runtime-field input, .runtime-field select { display: block; width: 100%; min-width: 0; min-height: 48px; border: 1px solid #cbdcf0; border-radius: 12px; padding: 12px 14px; background: #fff; color: #17304f; font: inherit; font-size: 16px; font-weight: 400; }
-.runtime-field input:focus-visible, .runtime-field select:focus-visible { outline: none; border-color: #6095e5; box-shadow: 0 0 0 3px rgba(95, 148, 229, .16); }
+.runtime-field input:focus-visible, .runtime-field select:focus-visible { outline: none; }
 .runtime-field input::placeholder { color: #8a9caf; font-size: 13px; }
 .password-field { position: relative; display: block; }
 .password-field input { padding-right: 62px; }
@@ -90,8 +90,16 @@ button, a, label { touch-action: manipulation; -webkit-tap-highlight-color: rgba
 
 button:focus-visible,
 a:focus-visible {
-    outline: 3px solid rgba(72, 135, 222, .28);
-    outline-offset: 3px;
+    outline: none;
+}
+
+/* 2026-09-18: 用户要求全局取消选中/聚焦边框（输入框、按钮、选项卡等一律无描边） */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+summary:focus-visible {
+    outline: none;
 }
 
 .skip-link {
@@ -379,7 +387,7 @@ a:focus-visible {
 .geo-model-option:hover > span { border-color: #9fc4ef; color: #2f649e; background: #f8fbff; }
 .geo-model-option input:checked + span { border-color: #6d9fe3; color: #24568b; background: #fff; box-shadow: 0 3px 10px rgba(74, 122, 179, .1); }
 .geo-model-option input:checked + span i { border-color: #5f94e5; background: #5f94e5; }
-.geo-model-option input:focus-visible + span { outline: 3px solid rgba(72, 135, 222, .3); outline-offset: 2px; }
+.geo-model-option input:focus-visible + span { outline: none; }
 .geo-model-option:focus-within { outline: 0; }
 .geo-model-setting__footer { padding-top: 2px; }
 .geo-model-summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px 16px; width: 100%; min-width: 0; padding: 13px 15px; border: 1px solid #cde2fa; border-radius: 12px; background: #f4f9ff; }
@@ -429,7 +437,7 @@ a:focus-visible {
 .service-contact { display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: 24px; margin-top: 20px; }
 .service-contact .wechat-contact { width: 180px; height: auto; margin: 0; }
 .runtime-settings select { color: #23476a; background: #fff; }
-.runtime-panel button:focus-visible { outline: 3px solid #649bec; outline-offset: 3px; }
+.runtime-panel button:focus-visible { outline: none; }
 @media (max-width: 800px) {
     .saas-admin-grid, .service-contact { grid-template-columns: minmax(0, 1fr); }
     .service-contact .wechat-contact { justify-self: center; }
@@ -669,7 +677,7 @@ a:focus-visible {
 .workspace-toolbar button { min-height: 34px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--ice); color: var(--ink); font: inherit; cursor: pointer; white-space: nowrap; }
 .workspace-toolbar > p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; }
 .workspace-toolbar > p.is-error { color: #b34242; }
-.workspace-tabs button:focus-visible, .workspace-toolbar :is(button,input,select):focus-visible { outline: 2px solid #548bcd; outline-offset: 2px; }
+.workspace-tabs button:focus-visible, .workspace-toolbar :is(button,input,select):focus-visible { outline: none; }
 .workspace-tabs button:disabled, .workspace-toolbar :disabled, .console-new-task:disabled { opacity: .6; cursor: not-allowed; }
 @media (max-width: 1280px) { .workspace-toolbar { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } .workspace-toolbar__actions { grid-column: 1 / -1; } }
 @media (max-width: 860px) { .workspace-toolbar { grid-template-columns: minmax(0,1fr); } .workspace-toolbar input,.workspace-toolbar select { font-size: 16px; min-height: 40px; } .workspace-tabs button { flex-basis: 138px; } }
@@ -710,7 +718,7 @@ html.booting #login-page { visibility: hidden; }
 
 .geo-model-picker__trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: 2px; padding: 10px 14px; border: 1px solid #c9dff7; border-radius: 10px; background: #fff; color: var(--ink); text-align: left; cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease; }
 .geo-model-picker__trigger:hover { border-color: #9cc5f0; }
-.geo-model-picker__trigger:focus-visible { outline: 2px solid #548bcd; outline-offset: 2px; }
+.geo-model-picker__trigger:focus-visible { outline: none; }
 .geo-model-picker__current { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .geo-model-picker__current img { width: 30px; height: 30px; object-fit: contain; border: 1px solid #e3eef9; border-radius: 8px; background: #fff; }
 .geo-model-picker__text { min-width: 0; }
