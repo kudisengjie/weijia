@@ -50,6 +50,8 @@ export function initializeConsole({changeView,onCreate}){
   tenant.addEventListener('directorychange',event=>{picker.hidden=!['credits','subscription','ledger'].includes(event.detail);});picker.hidden=true;
 
   const workspace=document.querySelector('[data-view-panel=workspace]'),uploads=workspace.querySelector('.geo-workspace'),progress=byId('batch-progress');
+  const overviewNewTask=byId('overview-new-task');
+  if(overviewNewTask){overviewNewTask.addEventListener('click',()=>{overviewNewTask.disabled=true;Promise.resolve(onCreate?.()).catch(()=>{}).finally(()=>{overviewNewTask.disabled=false;});});}
   const materials=el('div',undefined,'workspace-materials'),materialSummary=el('section',undefined,'runtime-panel');materialSummary.id='workspace-materials-summary';materialSummary.hidden=true;
   let currentBatch=null,workspaceEmpty=true;
   const emptyState=el('div',undefined,'workspace-empty');emptyState.id='workspace-empty';emptyState.hidden=true;
