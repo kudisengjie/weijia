@@ -816,12 +816,10 @@ html.booting #login-page { visibility: hidden; }
     .geo-shell[data-view=workspace] .geo-cabin { margin-top: 27px; }
     .geo-character { width: 72px; height: 72px; margin: 14px 0; }
 }
-/* 批次工作区：上传卡双列并排，其余区块通栏 */
+/* 批次工作区：每个模块独立一排，预览内容不被遮挡（2026-09-18 用户确认，撤回双列方案） */
 @media (min-width: 900px) {
-    .geo-workspace { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
-    .geo-upload-card { margin: 0 !important; display: flex; flex-direction: column; }
-    .geo-upload-card .geo-dropzone { flex: 1; }
-    .geo-workspace > .geo-preflight, .geo-workspace > .runtime-hint, .geo-workspace > .geo-actions { grid-column: 1 / -1; }
+    .geo-workspace { display: flex; flex-direction: column; gap: 14px; }
+    .geo-upload-card { margin: 0 !important; }
     .geo-upload-card + .geo-upload-card { margin-top: 0; }
 }
 /* 创作准备：水平四段状态条 */
