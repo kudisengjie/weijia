@@ -343,6 +343,23 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     catch(error){toast(error.message);}
   }
   $('run-task').addEventListener('click',()=>workspaces.start(getUploads));
+  // 空状态文案节点：两页共用同一句话，但外观由各自的容器样式区分。
+  function emptyPhrase(){
+    const phrase=node('span','快开始你的内容创作吧！','list-empty-phrase');
+    return phrase;
+  }
+  function historyEmptyShell(){
+    const shell=node('div',undefined,'list-empty list-empty--history');
+    shell.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4l3 2M21 12a9 9 0 1 1-3-6.7"/></svg>';
+    shell.append(emptyPhrase());
+    return shell;
+  }
+  function completedEmptyShell(){
+    const shell=node('div',undefined,'list-empty list-empty--completed');
+    const watermark=node('img');watermark.src='assets/lxue-geo-founder.png';watermark.alt='';watermark.decoding='async';watermark.loading='lazy';
+    shell.append(watermark,emptyPhrase());
+    return shell;
+  }
   let historyInFlight=null;
   function history() {
     // 登录恢复与视图切换可能并发触发；共享同一次执行，避免清空后重复追加空状态。
@@ -351,13 +368,13 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     const {batches}=await api('batches');const list=$('history-list'),completed=$('completed-list');list.replaceChildren();completed.replaceChildren();
     await workspaces.load(batches);
     consoleView?.renderOverview([...workspaces.summaries,...batches.filter(b=>!workspaces.forBatch(b.id))],b=>b.workspaceId?workspaces.open(b.workspaceId):openBatch(b));
-    if(!batches.length){list.append(node('p','还没有批次。上传资料并保存模型 API 后即可开始。','runtime-panel'));completed.append(node('p','还没有通过审核的文章。','runtime-panel'));return;}
+    if(!batches.length){list.append(historyEmptyShell());completed.append(completedEmptyShell());return;}
     for(const b of batches){
       const row=node('article',undefined,'runtime-panel runtime-history');row.append(node('h2',b.title),node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${batchStatusLabel(b)}`));
       const button=node('button','打开批次');button.addEventListener('click',()=>openBatch(b));row.append(button);list.append(row);
       if(b.completed){const group=node('article',undefined,'runtime-panel');group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>downloadCurrent(article).catch(error=>toast(error.message)));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);completed.append(group);}
     }
-    if(!completed.childElementCount)completed.append(node('p','还没有通过审核的文章。','runtime-panel'));
+    if(!completed.childElementCount)completed.append(completedEmptyShell());
     })().finally(()=>{historyInFlight=null;});
     return historyInFlight;
   }
