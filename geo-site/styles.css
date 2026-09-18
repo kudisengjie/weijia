@@ -838,3 +838,20 @@ html.booting #login-page { visibility: hidden; }
 
 /* ===== 2026-09-18 深夜三：状态舱积分/有效期卡片文字居中 ===== */
 .geo-saas-status span { display: block; text-align: center; line-height: 1.55; overflow-wrap: anywhere; }
+
+/* ===== 2026-09-18 深夜四：公司文档选择器拉满、验证模块、预检/积分卡垂直居中 ===== */
+@media (min-width: 900px) {
+    .geo-document-picker { width: 100%; }
+    .geo-verify-panel__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.geo-verify-panel { margin-top: 14px; padding: 14px 18px 16px; border: 1px solid #bcd4ee; border-radius: 14px; background: #f5faff; }
+.geo-verify-panel__title { display: flex; align-items: center; gap: 10px; }
+.geo-verify-panel__title > span { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid #7aa8dd; border-radius: 50%; color: #2d5f9e; }
+.geo-verify-panel h2 { margin: 0; font-size: 13px; }
+.geo-verify-panel p { margin: 2px 0 0; color: #6f89a8; font-size: 10px; }
+.geo-verify-panel__grid { display: grid; gap: 10px; margin-top: 12px; }
+.geo-verify-panel__grid div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 64px; padding: 10px 8px; border: 1px solid #cde0f4; border-radius: 9px; background: rgba(255,255,255,.75); text-align: center; }
+.geo-verify-panel__grid span { color: #7292b8; font-size: 11px; }
+.geo-verify-panel__grid strong { color: #2d5f9e; font-size: 12px; }
+.geo-preflight__grid div { justify-content: center; min-height: 64px; }
+.geo-saas-status span { display: grid; place-items: center; align-content: center; }

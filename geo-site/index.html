@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#eef6ff">
     <title>零雪 GEO｜批量文章工作台</title>
     <meta name="description" content="零雪 GEO 批量文章工作台。登录后连接自己的模型 API，使用共享 IMA 知识库生成与审核文章。">
-    <link rel="stylesheet" href="styles.css?v=20260919c">
+    <link rel="stylesheet" href="styles.css?v=20260919d">
     <link rel="preload" as="image" href="assets/lxue-geo-founder.png">
     <script>document.documentElement.classList.add('booting');setTimeout(function(){document.documentElement.classList.remove('booting');},4000);</script>
 </head>
@@ -93,6 +93,13 @@
                         <div class="geo-preflight__title"><span aria-hidden="true">✓</span><div><h2 id="preflight-title">创作准备</h2><p>提交前请在文档下方填写对应品牌，设置中保存自己的模型 API。</p></div></div>
                         <div class="geo-preflight__grid">
                             <div><span>任务表</span><strong id="check-task">等待选择</strong></div><div><span>公司文档</span><strong id="check-company">等待选择</strong></div><div><span>IMA 知识库</span><strong data-ima-status>等待检查</strong></div><div><span>所选模型</span><strong data-selected-model-preflight>请先配置 API</strong></div>
+                        </div>
+                    </section>
+                    <section class="geo-verify-panel" aria-labelledby="verify-title">
+                        <div class="geo-verify-panel__title"><span aria-hidden="true">✓</span><div><h2 id="verify-title">连接验证</h2><p>保存密钥后，首次运行任务时自动验证连接；验证未通过的任务会自动返还积分。</p></div></div>
+                        <div class="geo-verify-panel__grid">
+                            <div><span>当前模型</span><strong data-verify-model>未配置</strong></div>
+                            <div><span>IMA 知识库</span><strong data-verify-ima>等待检查</strong></div>
                         </div>
                     </section>
                     <p class="runtime-hint">任务表需包含：品牌名、GEO知识库、问句；可选篇数、媒体平台、AI平台、备注。开始后，正文会加密保存至工作台，并发送给你所选模型处理。</p>
@@ -230,6 +237,6 @@
         </aside>
     </div>
     <div id="runtime-toast" class="runtime-toast" role="status" hidden></div>
-    <script src="assets/app.js?v=20260919c" defer></script>
+    <script src="assets/app.js?v=20260919d" defer></script>
 </body>
 </html>
