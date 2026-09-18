@@ -470,9 +470,18 @@ async function handleQuestionFiles() {
   const ok = currentQuestionDocs.filter((item) => item.result).length;
   state.textContent = `${ok}/${files.length} 已读取`;
   if (check) check.textContent = ok ? `已读取 ${ok} 份` : "读取失败";
+  const clear = document.getElementById("question-clear");
+  if (clear) clear.disabled = !files.length;
 }
 
 questionInput?.addEventListener("change", handleQuestionFiles);
+
+// 清除所选文件：清空输入与读取结果，恢复初始状态。
+document.getElementById("question-clear")?.addEventListener("click", () => {
+  if (questionInput) questionInput.value = "";
+  currentQuestionDocs = [];
+  handleQuestionFiles();
+});
 
 initializeRuntime({
   renderSelectedModel, changeView, clearUploads:clearFiles,

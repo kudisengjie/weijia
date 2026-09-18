@@ -50,6 +50,12 @@ try {
   console.log('question model text:', modelText);
   if (modelText.includes('跟随默认模型')) failures.push('仍显示「跟随默认模型」');
   if (!modelText.trim()) failures.push('模型栏为空');
+  // ③ 清除所选文件按键（未选文件时禁用）+ 进度条占位（隐藏待用）
+  const clear = page.locator('#question-clear');
+  await clear.waitFor({ state: 'visible' });
+  if (!(await clear.isDisabled())) failures.push('未选文件时清除按钮应为禁用');
+  const progress = page.locator('#question-progress');
+  if (!(await progress.isHidden())) failures.push('进度条初始应为隐藏');
   await page.screenshot({ path: path.join(output, 'question-page.png') });
 } catch (error) {
   failures.push('异常: ' + error.message);

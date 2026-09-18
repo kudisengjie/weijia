@@ -296,15 +296,44 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       list.append(row);
     });
   }
+  // 查询进度条：单请求内按阶段提示（读取文档→模型判行业→联网搜索→生成排序）。
+  let questionProgressTimer=null;
+  function startQuestionProgress(){
+    const panel=$('question-progress');if(!panel)return;
+    panel.hidden=false;
+    const fill=$('question-progress-fill'),text=$('question-progress-text');
+    const stages=['正在读取公司文档…','模型正在判断行业与核心业务…','正在联网搜索行业问句线索…','正在按九大维度生成并排序问句…'];
+    let stage=0;text.textContent=stages[0];fill.style.width='8%';
+    if(questionProgressTimer)clearInterval(questionProgressTimer);
+    questionProgressTimer=setInterval(()=>{
+      stage=Math.min(stage+1,stages.length-1);
+      text.textContent=stages[stage];
+      fill.style.width=Math.min(90,8+stage*24)+'%';
+    },7000);
+  }
+  function stopQuestionProgress(done){
+    if(questionProgressTimer){clearInterval(questionProgressTimer);questionProgressTimer=null;}
+    const panel=$('question-progress');if(!panel)return;
+    if(done){
+      $('question-progress-fill').style.width='100%';
+      $('question-progress-text').textContent='查询完成。';
+      setTimeout(()=>{panel.hidden=true;},1500);
+    }else panel.hidden=true;
+  }
   $('question-run').addEventListener('click',event=>action(event.currentTarget,'question-message',async()=>{
     const docs=getQuestionDocs();
     if(!docs.length)throw new Error('请先上传并成功读取至少 1 份公司文档。');
     const count=Math.floor(Number($('question-count').value));
-    const result=await api('questions/discover',{docs,count});
-    renderQuestions(result);
-    const hint=`已产出 ${result.questions.length} 条问句，预扣 1 积分。`;
-    try{await saveQuestionMarkdown(result);message('question-message',`${hint}问句报告已保存到本机文件夹。`);}
-    catch(error){message('question-message',`${hint}本机保存未完成：${error.message}，可点击“保存到本机”重试。`);}
+    if(!Number.isFinite(count)||count<5||count>50)throw new Error('问句数量需在 5-50 之间。');
+    startQuestionProgress();
+    try{
+      const result=await api('questions/discover',{docs,count});
+      renderQuestions(result);
+      const hint=`已产出 ${result.questions.length} 条问句，预扣 1 积分。`;
+      try{await saveQuestionMarkdown(result);message('question-message',`${hint}问句报告已保存到本机文件夹。`);}
+      catch(error){message('question-message',`${hint}本机保存未完成：${error.message}，可点击“保存到本机”重试。`);}
+      stopQuestionProgress(true);
+    }catch(error){stopQuestionProgress(false);throw error;}
   }));
   $('question-save').addEventListener('click',event=>action(event.currentTarget,'question-message',async()=>{
     if(!lastQuestionResult)throw new Error('还没有可保存的查询结果。');
