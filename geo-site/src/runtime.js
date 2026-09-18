@@ -184,7 +184,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     document.querySelectorAll('[data-ima-status]').forEach(n=>n.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 等待管理员配置');
     document.querySelectorAll('[data-verify-model]').forEach(n=>n.textContent=`${model.label} · ${configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-verify-ima]').forEach(n=>n.textContent=settings.ima.configured?'缓存已就绪':'等待管理员配置');
-    document.querySelectorAll('[data-question-model]').forEach(n=>n.textContent=`${settings.model.label} · 跟随默认模型`);
+    document.querySelectorAll('[data-question-model]').forEach(n=>n.textContent=settings.model.label);
     document.querySelectorAll('[data-ima-badge-status]').forEach(n=>n.textContent=settings.ima.configured?'已配置':'未配置');
     const chip=document.querySelector('.geo-service-chips > span');chip.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 未配置';
     const expiry=settings.ima.expiresAt;
