@@ -835,3 +835,6 @@ html.booting #login-page { visibility: hidden; }
 /* 标题层级拉大，页面更精神 */
 .geo-shell h1 { font-size: 26px; }
 .geo-shell .geo-heading { margin: 0 0 16px; }
+
+/* ===== 2026-09-18 深夜三：状态舱积分/有效期卡片文字居中 ===== */
+.geo-saas-status span { display: block; text-align: center; line-height: 1.55; overflow-wrap: anywhere; }
