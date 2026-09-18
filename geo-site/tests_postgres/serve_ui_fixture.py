@@ -71,7 +71,7 @@ def main():
         async def ima(_credentials, path, payload, **_kwargs):
             kind = path.rsplit('/', 1)[-1]
             if kind == 'search_knowledge_base':
-                return {'info_list': [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Brand', 'name': '品牌库'}], 'is_end': True}
+                return {'info_list': [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Brand', 'name': 'GEO优化知识库'}], 'is_end': True}
             if kind == 'get_knowledge_list':
                 files = {'': [{'folder_id': 'gen', 'name': 'geo-content-generator'}, {'folder_id': 'audit', 'name': 'geo-audit'}, {'media_id': 'memory', 'title': '零雪AI_记忆库完整档案.md'}],
                          'gen': [{'media_id': 'rules', 'title': '生成规则.md'}], 'audit': [{'media_id': 'audit-rules', 'title': '审核规则.md'}]}

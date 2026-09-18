@@ -158,9 +158,14 @@ def next_cursor(data: dict[str, object], current: str = "") -> str | None:
     if data.get("is_end") is True:
         return None
     value = data.get("next_cursor")
-    if not isinstance(value, str) or not value or value == current:
+    if isinstance(value, str) and value and value != current:
+        return value
+    if data.get("is_end") is False:
+        # 接口明确未结束却没有可用游标：继续翻页会重复读取，必须停止。
         raise ApiError(502, "IMA 分页信息异常，已停止以避免重复读取。")
-    return value
+    # 真实接口在无命中等场景会同时省略 is_end 与 next_cursor（data 为空）：
+    # 视为最后一页，而不是让整批失败。
+    return None
 
 
 async def read_media(credentials: dict[str, object], media: dict[str, object], *, client=None) -> dict[str, str]:

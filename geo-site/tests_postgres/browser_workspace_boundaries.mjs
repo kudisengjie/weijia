@@ -32,7 +32,7 @@ try{
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:path.join(output,'workspace-toolbar-mobile.png')});await page.setViewportSize({width:1440,height:950});
   console.log('Edits during an in-flight save survive switching; versions serialize: passed');
   await page.unroute(`**/api/workspaces/${first}/save`);
-  await page.locator('#task-file').setInputFiles({name:'任务.csv',mimeType:'text/csv',buffer:Buffer.from('\uFEFF品牌名,GEO知识库,问句\n零雪,品牌库,问题1')});
+  await page.locator('#task-file').setInputFiles({name:'任务.csv',mimeType:'text/csv',buffer:Buffer.from('\uFEFF品牌名,GEO知识库,问句\n零雪,GEO优化知识库,问题1')});
   await until(()=>document.querySelector('#task-state').textContent==='已读取');
   await page.locator('#company-files').setInputFiles({name:'隐私.md',mimeType:'text/markdown',buffer:Buffer.from('仅属于总账号的私有资料')});await page.locator('#company-preview input').fill('零雪');await page.locator('#save-workspace').click();await saved();
   // Balance baseline BEFORE the batch: fixture fund 10 minus 1 reserved by the fixture's own prepared batch.

@@ -451,7 +451,7 @@ class PostgresRuntimeTests(unittest.TestCase):
     def body(self, count=5):
         return {
             'requestId': str(uuid.uuid4()),
-            'rows': [['品牌名', 'GEO知识库', '问句']] + [['零雪', '品牌库', '零雪是什么？'] for _ in range(count)],
+            'rows': [['品牌名', 'GEO知识库', '问句']] + [['零雪', 'GEO优化知识库', '零雪是什么？'] for _ in range(count)],
             'companies': [{'name': 'company.md', 'brand': '零雪', 'text': '零雪内容服务。'}],
         }
 
@@ -669,7 +669,7 @@ class PostgresRuntimeTests(unittest.TestCase):
             path = request.url.path.rsplit('/', 1)[-1]
             if path == 'search_knowledge_base':
                 self.assertEqual({'query', 'cursor', 'limit'}, set(payload))
-                data = {'info_list': [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Brand', 'name': '品牌库'}], 'is_end': True}
+                data = {'info_list': [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Brand', 'name': 'GEO优化知识库'}], 'is_end': True}
             elif path == 'get_knowledge_list':
                 self.assertEqual('KB-Copilot', payload['knowledge_base_id'])
                 folder = payload.get('folder_id', '')
@@ -721,6 +721,79 @@ class PostgresRuntimeTests(unittest.TestCase):
         asyncio.run(run())
         self.assertEqual(['test-model-key'] * 2 + ['member-model-key'] * 2, model_keys)
 
+    def ima_rules_handler(self, *, bases, search_response):
+        def handler(request):
+            if request.method == 'GET':
+                return httpx.Response(200, text='# 完整资料\n零雪提供内容服务。')
+            payload = json.loads(request.content)
+            path = request.url.path.rsplit('/', 1)[-1]
+            if path == 'search_knowledge_base':
+                return httpx.Response(200, json={'code': 0, 'data': {'info_list': bases, 'is_end': True}})
+            if path == 'get_knowledge_list':
+                folder = payload.get('folder_id', '')
+                files = {'': [{'folder_id': 'folder_gen', 'name': 'geo-content-generator'},
+                              {'folder_id': 'folder_audit', 'name': 'geo-audit'},
+                              {'media_id': 'memory', 'title': '零雪AI_记忆库完整档案.md'}],
+                         'folder_gen': [{'media_id': 'gen', 'title': '生成规则.md'}],
+                         'folder_audit': [{'media_id': 'audit', 'title': '审核规则.md'}]}
+                self.assertIn(folder, files, 'Unrelated folders must not be fetched')
+                return httpx.Response(200, json={'code': 0, 'data': {'knowledge_list': files[folder], 'is_end': True}})
+            if path == 'search_knowledge':
+                return httpx.Response(200, json={'code': 0, 'data': search_response(payload)})
+            if path == 'get_media_info':
+                data = {'media_type': 1, 'url_info': {'url': 'https://test.cos.ap-guangzhou.myqcloud.com/' + payload['media_id'] + '.md'}}
+                return httpx.Response(200, json={'code': 0, 'data': data})
+            self.fail('Unexpected IMA call ' + path)
+        return handler
+
+    def run_batch_to_completion(self, body, handler, model):
+        now = datetime.now(timezone.utc)
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                context = self.repo.get_tenant_context(self.owner, now)
+                service = BatchService(self.repo, MASTER, {'clientId': 'test-client', 'apiKey': 'test-ima'},
+                    tenant_context=context, client=client, model_complete=model)
+                result = service.create(body, self.owner, now + timedelta(days=30))
+                self.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (result['id'],))
+                for _ in range(30):
+                    if result['status'] != 'ready':
+                        break
+                    result = await service.advance(result['id'], {'seq': result['seq']}, self.owner)
+                return result
+        return asyncio.run(run())
+
+    def test_brand_kb_outside_whitelist_is_never_scraped_and_generates_directly(self):
+        self.fund()
+        body = self.body(1)
+        body['rows'][1][1] = '美迪知识库'
+        searched = []
+        bases = [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Meidi', 'name': '美迪知识库'}]
+        handler = self.ima_rules_handler(bases=bases, search_response=lambda payload: searched.append(payload['knowledge_base_id']) or self.fail('非白名单知识库不允许发起问句检索'))
+        async def model(model, key, messages, **kwargs):
+            payload = json.loads(messages[-1]['content'])
+            if 'draft' not in payload:
+                self.assertEqual([], payload['knowledgeEvidence'], '直生成任务不得携带知识库证据')
+            return '{"passed":true,"issues":[]}' if 'draft' in payload else '# 零雪直生成文章\n仅依据公司文档的完整正文。'
+        result = self.run_batch_to_completion(body, handler, model)
+        self.assertEqual('completed', result['status'], result)
+        self.assertEqual([], result['failedTasks'], result)
+        self.assertEqual([], searched, '品牌知识库不允许被检索')
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+
+    def test_whitelisted_kb_without_evidence_hits_falls_back_to_direct_generation(self):
+        self.fund()
+        bases = [{'id': 'KB-Copilot', 'name': 'copilot'}, {'id': 'KB-Geo', 'name': 'GEO优化知识库'}]
+        handler = self.ima_rules_handler(bases=bases, search_response=lambda payload: {'info_list': [], 'is_end': True})
+        async def model(model, key, messages, **kwargs):
+            payload = json.loads(messages[-1]['content'])
+            if 'draft' not in payload:
+                self.assertEqual([], payload['knowledgeEvidence'], '无命中时直生成不得携带知识库证据')
+            return '{"passed":true,"issues":[]}' if 'draft' in payload else '# 零雪直生成文章\n仅依据公司文档的完整正文。'
+        result = self.run_batch_to_completion(self.body(1), handler, model)
+        self.assertEqual('completed', result['status'], result)
+        self.assertEqual([], result['failedTasks'], result)
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
+
     def test_cache_contention_does_not_fail_or_refund_task(self):
         from geo_backend.errors import ApiError
         from unittest.mock import patch
@@ -750,7 +823,7 @@ class PostgresRuntimeTests(unittest.TestCase):
         batch['phase'] = 'generate'
         batch['rules'] = {'generation': ['写完整文章'], 'audit': ['检查事实'], 'memory': ['零雪']}
         batch['sources'] = [{'title': '已缓存证据', 'text': '零雪内容服务'}]
-        batch['evidenceCache'] = {'品牌库|' + task['question']: batch['sources'] for task in batch['tasks']}
+        batch['evidenceCache'] = {'GEO优化知识库|' + task['question']: batch['sources'] for task in batch['tasks']}
         self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'])
         return batch
 
@@ -763,6 +836,18 @@ class PostgresRuntimeTests(unittest.TestCase):
         result = self.service().create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))
         self.assertEqual(4, result['total'])
         self.assertEqual(8, self.repo.credit_balance(self.tenant, self.owner))
+
+    def test_preformatted_sequence_only_rows_are_skipped(self):
+        # 真实模板会预填「任务序号」列：只有序号没有品牌名/知识库/问句的行必须跳过。
+        self.fund()
+        body = self.body(1)
+        body['rows'][0] = ['任务序号', 'GEO知识库', '品牌知识库', '品牌名', '问句', '篇数']
+        body['rows'][1] = ['1', 'GEO优化知识库', '美迪知识库', '零雪', '零雪是什么？', '1']
+        for index in range(2, 8):
+            body['rows'].append([str(index), '', '', '', '', ''])
+        result = self.service().create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))
+        self.assertEqual(1, result['total'], '序号预填行不应被当成任务')
+        self.assertEqual(9, self.repo.credit_balance(self.tenant, self.owner))
 
     def test_middle_failure_finishes_remaining_rows_and_refunds_one(self):
         from geo_backend.errors import ApiError

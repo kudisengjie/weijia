@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -12,6 +13,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict
+from starlette.datastructures import Headers, MutableHeaders
 
 from .auth import AuthService
 from .security import SESSION_TTL
@@ -34,6 +36,85 @@ DEFAULT_JSON_LIMIT = 32 * 1024
 BATCH_JSON_LIMIT = 4 * 1024 * 1024
 LOGIN_JSON_LIMIT = 4 * 1024
 RepositoryFactory = Callable[[], AbstractContextManager]
+
+
+class SecurityHeadersMiddleware:
+    """纯 ASGI 中间件：安全响应头 + 来源/格式/体积校验。
+
+    刻意不用 BaseHTTPMiddleware：它在 Mount 之下会破坏 HTTP keep-alive
+    连接复用（同一连接第二个请求起路由失配返回 404）。路径判断先剥离
+    root_path，兼容挂载在 /api 前缀之下的部署形态。
+    """
+
+    def __init__(self, app, config: Settings):
+        self.app = app
+        self.config = config
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        downstream_receive = receive
+        if scope.get("method", "GET") not in {"GET", "HEAD"}:
+            downstream_receive = await self._check_request(scope, receive, send)
+            if downstream_receive is None:
+                return
+        await self.app(scope, downstream_receive, self._security_headers(send))
+
+    def _security_headers(self, send):
+        async def wrapped(message):
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                headers["Cache-Control"] = "private, no-store"
+                headers["X-Content-Type-Options"] = "nosniff"
+                headers["Referrer-Policy"] = "no-referrer"
+            await send(message)
+        return wrapped
+
+    async def _check_request(self, scope, receive, send):
+        """校验非 GET 请求；通过时返回重放请求体的 receive，被拦截时返回 None。"""
+        headers = Headers(scope=scope)
+        if headers.get("origin") != self.config.app_origin:
+            await self._reject(send, 403, "请求来源不匹配，请从本站重新登录。", "ORIGIN_REJECTED")
+            return None
+        if not headers.get("content-type", "").startswith("application/json"):
+            await self._reject(send, 415, "请求格式不支持。", "UNSUPPORTED_MEDIA")
+            return None
+        path = scope.get("path", "")
+        root = scope.get("root_path") or ""
+        if root and path.startswith(root):
+            path = path[len(root):] or "/"
+        large_payload = path == '/batches' or (path.startswith('/workspaces/') and path.endswith('/save'))
+        limit = BATCH_JSON_LIMIT if large_payload else LOGIN_JSON_LIMIT if path == "/auth/login" else DEFAULT_JSON_LIMIT
+        body = bytearray()
+        while True:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                return None
+            body.extend(message.get("body") or b"")
+            if len(body) > limit:
+                await self._reject(send, 413, "请求内容过大。", "REQUEST_TOO_LARGE")
+                return None
+            if not message.get("more_body", False):
+                break
+        replayed = {"type": "http.request", "body": bytes(body), "more_body": False}
+        replayed_once = {"done": False}
+
+        async def replay_receive():
+            if not replayed_once["done"]:
+                replayed_once["done"] = True
+                return replayed
+            return await receive()
+
+        return replay_receive
+
+    async def _reject(self, send, status: int, error: str, code: str) -> None:
+        payload = json.dumps({"error": error, "code": code}, ensure_ascii=False).encode()
+        await send({"type": "http.response.start", "status": status, "headers": [
+            (b"content-type", b"application/json"),
+            (b"content-length", str(len(payload)).encode()),
+        ]})
+        await send({"type": "http.response.body", "body": payload})
 
 
 class LoginBody(BaseModel):
@@ -155,30 +236,7 @@ def create_app(
             status_code=503,
         )
 
-    @app.middleware("http")
-    async def security_headers(request: Request, call_next):
-        if request.method not in {"GET", "HEAD"}:
-            if request.headers.get("origin") != config.app_origin:
-                response = JSONResponse({"error": "请求来源不匹配，请从本站重新登录。", "code": "ORIGIN_REJECTED"}, status_code=403)
-            elif not request.headers.get("content-type", "").startswith("application/json"):
-                response = JSONResponse({"error": "请求格式不支持。", "code": "UNSUPPORTED_MEDIA"}, status_code=415)
-            else:
-                large_payload = request.url.path == '/batches' or (request.url.path.startswith('/workspaces/') and request.url.path.endswith('/save'))
-                limit = BATCH_JSON_LIMIT if large_payload else LOGIN_JSON_LIMIT if request.url.path == "/auth/login" else DEFAULT_JSON_LIMIT
-                body = await request.body()
-                if len(body) > limit:
-                    response = JSONResponse(
-                        {"error": "请求内容过大。", "code": "REQUEST_TOO_LARGE"},
-                        status_code=413,
-                    )
-                else:
-                    response = await call_next(request)
-        else:
-            response = await call_next(request)
-        response.headers["Cache-Control"] = "private, no-store"
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Referrer-Policy"] = "no-referrer"
-        return response
+    app.add_middleware(SecurityHeadersMiddleware, config=config)
 
     def authentication(request: Request, repository: object):
         return AuthService(config, repository).authenticate(

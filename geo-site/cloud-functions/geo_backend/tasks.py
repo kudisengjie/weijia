@@ -56,6 +56,11 @@ def parse_tasks(rows: object, companies: object) -> tuple[list[dict[str, object]
             index = columns[key]
             return str(row[index] if index >= 0 and index < len(row) and row[index] is not None else "").strip()
 
+        # 模板常预填「任务序号」等辅助列。品牌名/GEO知识库/问句全空的行视为
+        # 预格式化空行，直接跳过；任一填写了再按缺列报错。
+        if not any(cell(key) for key in ("brand", "kb", "question")):
+            continue
+
         brand = text_value(cell("brand"), "品牌名", 120)
         kb = text_value(cell("kb"), "GEO知识库", 120)
         question = text_value(cell("question"), "问句", 1000)

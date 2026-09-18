@@ -146,7 +146,7 @@ class WorkspaceTests(unittest.TestCase):
             batch = self.repo.get_batch(self.owner, started['batch']['id'])
             batch.update(phase='generate', rules={'generation':['完整输出'], 'audit':['检查事实'], 'memory':[]},
                          sources=[{'title':'固定缓存资料', 'text':'零雪内容服务'}])
-            batch['evidenceCache'] = {'品牌库|' + batch['tasks'][0]['question']: batch['sources']}
+            batch['evidenceCache'] = {'GEO优化知识库|' + batch['tasks'][0]['question']: batch['sources']}
             self.repo.save_batch(self.owner, batch['id'], batch, batch['seq'])
             batch_ids.append(batch['id'])
         active, peak, calls = 0, 0, []

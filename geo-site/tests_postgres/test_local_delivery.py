@@ -318,7 +318,7 @@ class LocalDeliveryFlowTests(unittest.TestCase):
     def new_mode_batch(self, rows=1):
         body = {
             'requestId': str(uuid.uuid4()),
-            'rows': [['品牌名', 'GEO知识库', '问句']] + [['零雪', '品牌库', f'零雪问题{i}？'] for i in range(rows)],
+            'rows': [['品牌名', 'GEO知识库', '问句']] + [['零雪', 'GEO优化知识库', f'零雪问题{i}？'] for i in range(rows)],
             'companies': [{'name': 'company.md', 'brand': '零雪', 'text': '零雪内容服务。'}],
         }
         result = self.service().create(body, self.owner, datetime.now(timezone.utc) + timedelta(days=30))
@@ -327,7 +327,7 @@ class LocalDeliveryFlowTests(unittest.TestCase):
         batch['phase'] = 'generate'
         batch['rules'] = {'generation': ['写完整文章'], 'audit': ['检查事实'], 'memory': ['零雪']}
         batch['sources'] = [{'title': '已缓存证据', 'text': '零雪内容服务'}]
-        batch['evidenceCache'] = {'品牌库|' + task['question']: batch['sources'] for task in batch['tasks']}
+        batch['evidenceCache'] = {'GEO优化知识库|' + task['question']: batch['sources'] for task in batch['tasks']}
         self.assertTrue(self.repo.save_batch(self.owner, batch['id'], batch, batch['seq']))
         return self.repo.get_batch(self.owner, batch['id'])
 

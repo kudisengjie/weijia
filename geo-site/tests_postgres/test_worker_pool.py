@@ -48,7 +48,7 @@ class WorkerPoolTests(unittest.TestCase):
             # Evidence/rules already persisted, as when a user resumes after IMA cache retrieval.
             b = fx.repo.get_batch(fx.owner, w['batchId'])
             b.update(phase='generate', rules={'generation':['完整生成'], 'audit':['检查事实'], 'memory':['零雪']}, sources=[{'title':'证据','text':'零雪内容服务'}])
-            b['evidenceCache'] = {'品牌库|' + b['tasks'][0]['question']: b['sources']}
+            b['evidenceCache'] = {'GEO优化知识库|' + b['tasks'][0]['question']: b['sources']}
             fx.repo.save_batch(fx.owner, b['id'], b, b['seq'])
 
         calls, connections = Counter(), set()

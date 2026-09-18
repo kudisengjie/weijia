@@ -35,7 +35,7 @@ async function newWorkspace(label){
   await page.locator('#new-workspace').click();
   await page.locator('#workspace-title').waitFor({state:'visible'});
   await page.locator('#workspace-title').fill(label);
-  await page.locator('#task-file').setInputFiles({name:`任务${seq}.csv`,mimeType:'text/csv',buffer:Buffer.from(`\uFEFF品牌名,GEO知识库,问句\n零雪,品牌库,问题${seq}`)});
+  await page.locator('#task-file').setInputFiles({name:`任务${seq}.csv`,mimeType:'text/csv',buffer:Buffer.from(`\uFEFF品牌名,GEO知识库,问句\n零雪,GEO优化知识库,问题${seq}`)});
   await contains('#task-state','已读取');
   await page.locator('#company-files').setInputFiles({name:`公司${seq}.md`,mimeType:'text/markdown',buffer:Buffer.from('零雪内容服务，工作区资料。')});
   await contains('#company-state','1/1');await page.locator('#company-preview input').fill('零雪');
