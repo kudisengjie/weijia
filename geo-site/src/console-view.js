@@ -50,8 +50,6 @@ export function initializeConsole({changeView,onCreate}){
   tenant.addEventListener('directorychange',event=>{picker.hidden=!['credits','subscription','ledger'].includes(event.detail);});picker.hidden=true;
 
   const workspace=document.querySelector('[data-view-panel=workspace]'),uploads=workspace.querySelector('.geo-workspace'),progress=byId('batch-progress');
-  const overviewNewTask=byId('overview-new-task');
-  if(overviewNewTask){overviewNewTask.addEventListener('click',()=>{overviewNewTask.disabled=true;Promise.resolve(onCreate?.()).catch(()=>{}).finally(()=>{overviewNewTask.disabled=false;});});}
   const materials=el('div',undefined,'workspace-materials'),materialSummary=el('section',undefined,'runtime-panel');materialSummary.id='workspace-materials-summary';materialSummary.hidden=true;
   let currentBatch=null,workspaceEmpty=true;
   const emptyState=el('div',undefined,'workspace-empty');emptyState.id='workspace-empty';emptyState.hidden=true;
@@ -94,9 +92,7 @@ export function initializeConsole({changeView,onCreate}){
     if(!batches.length){
       const empty=el('div',undefined,'console-empty-state');
       const mascot=document.createElement('img');mascot.src='assets/lxue-geo-founder.png';mascot.alt='';mascot.width=72;mascot.height=72;mascot.loading='lazy';mascot.decoding='async';
-      const createButton=el('button','新建任务','console-empty-create');createButton.type='button';createButton.id='overview-create';
-      createButton.addEventListener('click',()=>{createButton.disabled=true;Promise.resolve(onCreate?.()).catch(()=>{}).finally(()=>{createButton.disabled=false;});});
-      empty.append(mascot,el('strong','还没有任务'),el('p','新建一个工作区，上传 Excel 任务表与公司资料，开始生成文章。'),createButton);
+      empty.append(mascot,el('strong','还没有任务'),el('p','请到「批次工作区」上传 Excel 任务表与公司资料，开始生成文章。'));
       region.append(empty);return;
     }
   function statusBadge(batch){
@@ -105,7 +101,7 @@ export function initializeConsole({changeView,onCreate}){
     const badge=el('span',state);badge.className=`status-badge status-badge--${tone}`;return badge;
   }
     const table=el('table'),head=el('thead'),header=el('tr'),body=el('tbody');
-    for(const label of ['任务工作区','模型','状态','文章输出','操作']){const th=el('th',label);th.scope='col';header.append(th);}head.append(header);
+    for(const label of ['资料与任务','模型','运行进度','文章文件','操作']){const th=el('th',label);th.scope='col';header.append(th);}head.append(header);
   function workspaceIcon(){const icon=el('span',undefined,'console-ws-icon');icon.setAttribute('aria-hidden','true');icon.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h8"/></svg>';return icon;}
   for(const batch of batches){const row=el('tr');const titleCell=el('td');titleCell.append(workspaceIcon(),el('span',batch.title));
       const stateCell=el('td');stateCell.append(statusBadge(batch));
@@ -114,12 +110,27 @@ export function initializeConsole({changeView,onCreate}){
     }
     table.append(head,body);region.append(table);
   }
-  function renderArticles(batch,download,onError){
+  function renderArticles(batch,download,onError,saveAll){
     articles.replaceChildren(el('h2','已保存文章文件'));
     if(!batch?.articles?.length){articles.append(el('p','暂未有完整输出的文章。生成并审核通过后，文件会显示在这里。','runtime-hint'));return;}
+    if(typeof saveAll==='function'){
+      const saveAllButton=el('button','保存全部到本机');saveAllButton.type='button';
+      saveAllButton.addEventListener('click',async()=>{
+        saveAllButton.disabled=true;
+        try{
+          const result=await saveAll();
+          if(result?.skipped)articles.append(el('p','保存任务正在进行中，请稍候。','runtime-hint'));
+          else if(result?.failed?.length)articles.append(el('p',`有 ${result.failed.length} 篇未能确认保存，请到「个人设置 → 文章保存」重试。`,'runtime-hint'));
+          else if(result?.delivered)articles.append(el('p',`已写入本机保存文件夹 ${result.delivered} 篇并逐字校验通过。`,'runtime-hint'));
+          else articles.append(el('p','没有待补存的文章，全部都已保存到本机。','runtime-hint'));
+        }catch(error){onError?.(error);}
+        finally{saveAllButton.disabled=false;}
+      });
+      articles.append(saveAllButton);
+    }
     for(const article of batch.articles){const row=el('div',undefined,'runtime-article'),name=el('div');name.append(el('strong',article.title),el('p',article.filename||'Markdown 文章','runtime-hint'));const button=el('button','下载 MD');button.type='button';button.addEventListener('click',()=>download(article).catch(onError));row.append(name,button);articles.append(row);}
   }
-  function reset(){setOwner(false);workspaceEmpty=true;setBatch(null);byId('overview-list').replaceChildren();for(const id of ['overview-total','overview-active','overview-articles'])byId(id).textContent='—';renderArticles(null);personal.select('models');management.select('members');detailTab('materials');changeView('overview');}
-  setOwner(false);setBatch(null);changeView('overview');
+  function reset(){setOwner(false);workspaceEmpty=true;setBatch(null);byId('overview-list').replaceChildren();for(const id of ['overview-total','overview-active','overview-articles'])byId(id).textContent='—';renderArticles(null);personal.select('models');management.select('members');detailTab('materials');changeView('workspace');}
+  setOwner(false);setBatch(null);changeView('workspace');
   return {setOwner,setBatch,setWorkspaceEmpty,detailTab,renderOverview,renderArticles,reset};
 }

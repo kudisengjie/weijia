@@ -35,8 +35,6 @@ export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDra
     save.hidden=close.hidden=!editable;reload.hidden=!selected;
     $('new-workspace').disabled=busy||count()>=5;
     $('new-workspace').querySelector('small').textContent=`名额 ${count()} / 5 · ${count()>=5?'已满':'可新建'}`;
-    const overviewNewTask=$('overview-new-task');
-    if(overviewNewTask)overviewNewTask.disabled=busy||count()>=5;
     for(const button of strip.children)button.disabled=busy;
   }
   function renderTabs(){

@@ -76,6 +76,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       if(!state.directoryName){statusLine.textContent='尚未选择本机保存文件夹。新文章生成前需要先完成目录授权。';return;}
       const authorized=state.permission==='granted';
       statusLine.textContent=`保存文件夹：${state.directoryName} · ${authorized?'已授权':'需要重新授权'}`;
+      messageLine.before(node('p',`保存根路径：${state.directoryName}\\零雪GEO\\<登录账号>\\<工作区>\\<批次>\\文章.md（每次任务自动建好子文件夹）`,'runtime-hint'));
       if(!authorized){
         const authorize=node('button','重新授权','geo-run-button');authorize.type='button';authorize.id='saving-authorize';
         authorize.addEventListener('click',async()=>{
@@ -323,7 +324,11 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     }
     panel.append(controls,node('p','切换工作区不会停止其他任务。状态与文件保存在服务端；当前由页面推进，关闭页面可能暂停后续生成，重新打开后可继续。','runtime-hint'));
     renderModelLock();
-    consoleView?.renderArticles(b,downloadCurrent,error=>toast(error.message));
+    consoleView?.renderArticles(b,downloadCurrent,error=>toast(error.message),async()=>{
+      const result=await delivery.deliverAll();
+      if(!result.skipped&&!result.failed.length&&result.delivered)toast(`已保存 ${result.delivered} 篇文章到本机并确认。`);
+      return result;
+    });
     $('cabin-state').textContent=batchStatusLabel(b);$('status-task').textContent=`${b.completed}/${b.total}`;
     const apiCounter=document.querySelector('.geo-status-list > div:last-child dd');apiCounter.textContent=`${b.requests} 次请求步骤`;
     renderConnections();
@@ -338,7 +343,11 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     catch(error){toast(error.message);}
   }
   $('run-task').addEventListener('click',()=>workspaces.start(getUploads));
-  async function history() {
+  let historyInFlight=null;
+  function history() {
+    // 登录恢复与视图切换可能并发触发；共享同一次执行，避免清空后重复追加空状态。
+    if(historyInFlight)return historyInFlight;
+    historyInFlight=(async()=>{
     const {batches}=await api('batches');const list=$('history-list'),completed=$('completed-list');list.replaceChildren();completed.replaceChildren();
     await workspaces.load(batches);
     consoleView?.renderOverview([...workspaces.summaries,...batches.filter(b=>!workspaces.forBatch(b.id))],b=>b.workspaceId?workspaces.open(b.workspaceId):openBatch(b));
@@ -349,6 +358,8 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       if(b.completed){const group=node('article',undefined,'runtime-panel');group.append(node('h2',`${b.title} · ${b.completed} 篇已通过审核`));const load=node('button','展开文章下载');load.addEventListener('click',async()=>{load.disabled=true;try{const detail=await api('batches/'+b.id);for(const article of detail.articles){const entry=node('div',undefined,'runtime-article');entry.append(node('span',article.title));const d=node('button','下载 MD');d.addEventListener('click',()=>downloadCurrent(article).catch(error=>toast(error.message)));entry.append(d);group.append(entry);}load.remove();}catch(error){load.disabled=false;toast(error.message);}});group.append(load);completed.append(group);}
     }
     if(!completed.childElementCount)completed.append(node('p','还没有通过审核的文章。','runtime-panel'));
+    })().finally(()=>{historyInFlight=null;});
+    return historyInFlight;
   }
   async function openBatch(b){const workspace=workspaces.forBatch(b.id);if(workspace)return workspaces.open(workspace.id);return workspaces.leave(async()=>{renderBatch(await api('batches/'+b.id));changeView('workspace');consoleView?.detailTab('progress');});}
   $('refresh-overview')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await history();}catch(error){toast(error.message);}finally{button.disabled=false;}});
