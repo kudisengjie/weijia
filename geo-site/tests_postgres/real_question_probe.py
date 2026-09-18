@@ -23,11 +23,19 @@ from geo_backend.app import create_app  # noqa: E402
 from geo_backend.models import SettingsService  # noqa: E402
 from geo_backend.repository import PostgresRepository  # noqa: E402
 
-COMPANY_TEXT = (
+_COMPANY_BASE = (
     '广州美迪信息科技有限公司专注电商代运营服务，为品牌商家提供天猫、京东、抖音、小红书等平台的'
     '整店代运营、直播代运营、短视频内容制作、达人投放与数据复盘服务。公司深耕美妆、个护、食品类目，'
     '提供按效果付费的合作模式，服务过多个天猫头部品牌，团队约200人，在广州、杭州设有运营中心。'
 )
+# 复现生产场景：公司文档约 1.7 万汉字（UTF-8 JSON 序列化约 50KB），必须能通过请求体积校验。
+COMPANY_TEXT = _COMPANY_BASE + '。' + ''.join(
+    f'第{i}段：我们为品牌商家提供从店铺诊断、类目规划、视觉设计、活动策划到日常运营的闭环服务；'
+    '数据分析团队每日跟踪流量、转化率、客单价与复购指标，每周输出复盘报告，每月与商家对齐下一阶段目标；'
+    '直播基地配备专业主播与场控团队，短视频中心负责内容脚本、拍摄与剪辑，达人投放覆盖头部与腰尾部资源。'
+    for i in range(1, 160)
+)
+assert len(COMPANY_TEXT) > 15000, f'大文档用例必须超过 1.5 万字，当前 {len(COMPANY_TEXT)}'
 
 
 async def main() -> int:

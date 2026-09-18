@@ -771,10 +771,25 @@ class PostgresRuntimeTests(unittest.TestCase):
             return httpx.Response(200, json={'code': 0, 'data': data})
         async def run():
             async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                credentials = {'clientId': 'test-client', 'apiKey': 'test-ima'}
+                # 第一批：start 开新代 + 刷新目录清单，正文每次最多 1 个 → 未完成。
+                first = await warm_ima_cache(self.repo, credentials, MASTER, client=client, start=True, user_id=self.owner, max_files=1)
+                self.assertFalse(first['done'])
+                self.assertEqual(2, first['copilotFiles'])
+                self.assertEqual(1, first['fetchedThisCall'])
                 generation = self.repo.get_ima_cache_generation()
-                result = await warm_ima_cache(self.repo, {'clientId': 'test-client', 'apiKey': 'test-ima'}, MASTER, client=client)
-                self.assertEqual({'bases': 2, 'copilotFiles': 2, 'geoListed': 2, 'warnings': []}, result)
-                self.assertEqual(generation, self.repo.get_ima_cache_generation(), '就地刷新不得 bump generation')
+                self.assertEqual(generation, first['generation'], 'start 必须开启新代')
+                # 第二批：续跑拉取剩余正文；copilot 目录清单全部命中新代缓存，不再打上游。
+                # GEO优化知识库列表因第一批 done=False 被跳过，第二批首次拉取属合法行为。
+                copilot_lists_before = [c for c in calls if c[0] == 'search_knowledge_base' or (c[0] == 'get_knowledge_list' and c[1] == 'KB-Copilot')]
+                second = await warm_ima_cache(self.repo, credentials, MASTER, client=client, max_files=10)
+                copilot_lists_after = [c for c in calls if c[0] == 'search_knowledge_base' or (c[0] == 'get_knowledge_list' and c[1] == 'KB-Copilot')]
+                self.assertTrue(second['done'])
+                self.assertEqual(2, second['copilotFiles'])
+                self.assertEqual(1, second['fetchedThisCall'], '续跑只下载剩余的 1 个文件')
+                self.assertEqual(2, second['geoListed'])
+                self.assertEqual(copilot_lists_before, copilot_lists_after, '续跑不得重复请求 copilot 目录清单')
+                self.assertEqual(generation, self.repo.get_ima_cache_generation(), '续跑不得再 bump generation')
                 # 预热后同代缓存直接命中：批次运行时不再重复调用 IMA 上游。
                 cache = ImaCache(self.repo, MASTER)
                 async def forbidden():
@@ -790,8 +805,8 @@ class PostgresRuntimeTests(unittest.TestCase):
         now = datetime.now(timezone.utc)
         member = self.repo.create_member(tenant_id=self.tenant, username='m-' + uuid.uuid4().hex,
             password_hash=hash_password('member-password'), role='member', starts_at=now, expires_at=now + timedelta(days=30))
-        async def fake_warm(repository, credentials, master_key, *, client=None):
-            return {'bases': 2, 'copilotFiles': 3, 'geoListed': 5, 'warnings': []}
+        async def fake_warm(repository, credentials, master_key, *, client=None, start=False, user_id=None, max_files=20):
+            return {'done': True, 'bases': 2, 'copilotFiles': 3, 'copilotTotal': 3, 'fetchedThisCall': 3, 'geoListed': 5, 'warnings': [], 'generation': 9}
         async def run():
             async with self.http_client() as client:
                 login = await client.post('/auth/login', json={'account': member['username'], 'password': 'member-password'})
@@ -802,9 +817,10 @@ class PostgresRuntimeTests(unittest.TestCase):
                 status = await client.get('/ima/cache')
                 self.assertEqual({'generation', 'updatedAt', 'stale'}, set(status.json()))
                 with patch('geo_backend.app.warm_ima_cache', fake_warm):
-                    response = await client.post('/ima/cache/refresh', json={})
+                    response = await client.post('/ima/cache/refresh', json={'start': True})
                 self.assertEqual(200, response.status_code, response.text)
                 self.assertEqual(3, response.json()['copilotFiles'])
+                self.assertTrue(response.json()['done'])
         asyncio.run(run())
         self.assertEqual(1, self.conn.execute("SELECT COUNT(*) FROM admin_audit WHERE tenant_id = %s AND action = 'ima.cache.refresh'", (self.tenant,)).fetchone()[0])
 

@@ -46,7 +46,7 @@ export function initializeConsole({changeView,onCreate}){
   management.panes.members.append(members);management.panes.credits.append(el('h2','调整账号积分'),credits);management.panes.subscription.append(subscription);
   management.panes.ledger.append(el('h2','所选账号积分记录'),ledgerButton,ledger);
   shared.querySelector('.ima-admin').open=true;management.panes.ima.append(shared);
-  management.panes.cache.append(el('h2','共享 IMA 缓存'),el('p','缓存由站点统一维护，每 15 天由主账号更新一次。「更新获取 IMA 缓存」会重新拉取 copilot 知识库全部内容与 GEO优化知识库列表写入共享缓存；「清除共享缓存」后，新任务才重新获取所需资料；运行中的任务继续使用已锁定的资料版本。'),cacheControls);
+  management.panes.cache.append(el('h2','共享 IMA 缓存'),el('p','缓存由站点统一维护，每 15 天由主账号更新一次。「更新获取 IMA 缓存」会分批重新拉取 copilot 知识库全部内容与 GEO优化知识库列表写入共享缓存（请保持页面打开直至完成）；「清除共享缓存」后，新任务才重新获取所需资料；运行中的任务继续使用已锁定的资料版本。'),cacheControls);
   tenant.addEventListener('directorychange',event=>{picker.hidden=!['credits','subscription','ledger'].includes(event.detail);});picker.hidden=true;
 
   const workspace=document.querySelector('[data-view-panel=workspace]'),uploads=workspace.querySelector('.geo-workspace'),progress=byId('batch-progress');

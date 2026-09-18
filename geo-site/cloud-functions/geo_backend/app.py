@@ -87,7 +87,7 @@ class SecurityHeadersMiddleware:
         root = scope.get("root_path") or ""
         if root and path.startswith(root):
             path = path[len(root):] or "/"
-        large_payload = path == '/batches' or (path.startswith('/workspaces/') and path.endswith('/save'))
+        large_payload = path == '/batches' or path == '/questions/discover' or (path.startswith('/workspaces/') and path.endswith('/save'))
         limit = BATCH_JSON_LIMIT if large_payload else LOGIN_JSON_LIMIT if path == "/auth/login" else DEFAULT_JSON_LIMIT
         body = bytearray()
         while True:
@@ -180,6 +180,11 @@ class QuestionDiscoverBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     docs: list[QuestionDocBody]
     count: int
+
+
+class ImaCacheRefreshBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    start: bool = False
 
 
 class BatchRunBody(BaseModel):
@@ -421,17 +426,22 @@ def create_app(
             return {"generation": generation, "updatedAt": updated, "stale": stale}
 
     @app.post("/ima/cache/refresh")
-    async def ima_cache_refresh(request: Request):
+    async def ima_cache_refresh(body: ImaCacheRefreshBody, request: Request):
         # 吕老师 2026-09-18 需求：管理中心一键「更新获取 IMA 缓存」。
         # 仅获取两个知识库：copilot（全部内容）+ GEO优化知识库（仅列表）；详见 ima_warm.py。
+        # start=True 开启新一轮（bump generation 并刷新目录清单），随后前端循环续跑
+        # 拉取文件正文（每调用限量，避免单请求撞网关执行时限）。
         with factory() as repository:
             current = authentication(request, repository)
             context = tenant_context(repository, current.user_id, active=True)
             if context:
                 TenantAccessService.require_owner(context)
             credentials = load_ima_credentials(repository, config.geo_master_key, config.ima_client_id, config.ima_api_key)
-            result = await warm_ima_cache(repository, credentials, config.geo_master_key)
-            if context:
+            result = await warm_ima_cache(
+                repository, credentials, config.geo_master_key,
+                start=body.start, user_id=current.user_id,
+            )
+            if context and body.start:
                 repository.record_admin_audit(str(context['tenantId']), current.user_id, 'ima.cache.refresh',
                     details={'copilotFiles': result.get('copilotFiles'), 'geoListed': result.get('geoListed')})
             return result

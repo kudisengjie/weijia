@@ -155,7 +155,11 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     try {response=await fetch('/api/'+path,{method:body===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(125000)});}
     catch {if(!auth.isCurrent(operation))throw Object.assign(new Error('已忽略旧会话响应。'),{code:'STALE_RESPONSE'});throw new Error('连接中断或请求超时，未自动重试。批次可在历史记录中读取进度。');}
     if(!auth.isCurrent(operation))throw Object.assign(new Error('已忽略旧会话响应。'),{code:'STALE_RESPONSE'});
-    let data;try{data=await response.json();}catch{throw new Error('运行接口未部署，请管理员检查 EdgeOne 的 Python Cloud Functions 与 PostgreSQL 配置。');}
+    let data;try{data=await response.json();}catch{
+      // 网关超时/崩溃会返回非 JSON（HTML 错误页），与"接口未部署(404)"区分开，不再误导排查方向。
+      if(response.status===404)throw new Error('运行接口未部署，请管理员检查 EdgeOne 的 Python Cloud Functions 与 PostgreSQL 配置。');
+      throw new Error(`运行接口返回异常（HTTP ${response.status||'无状态'}），请稍后重试；若反复出现请联系管理员检查部署与执行时限。`);
+    }
     if(!auth.isCurrent(operation))throw Object.assign(new Error('已忽略旧会话响应。'),{code:'STALE_RESPONSE'});
     if(!response.ok){if(response.status===401&&path!=='auth/login')showLogin();const e=new Error(data.error||'请求失败。');e.code=data.code;e.status=response.status;throw e;}
     return data;
@@ -255,9 +259,18 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     const result=await api('ima/cache/clear',{});message('ima-cache-message',`新批次将使用第 ${result.generation} 版缓存；运行中批次不受影响。`);
   }));
   $('refresh-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
-    // 只获取两个知识库：copilot 全部内容 + GEO优化知识库列表；服务端强制刷新当前代缓存。
-    const result=await api('ima/cache/refresh',{});
+    // 分批续跑：start 开新代并刷新目录清单，循环拉取文件正文（每次限量），
+    // 避免单请求全量抓取撞网关执行时限。中断后再次点击可继续，不重复下载。
+    if(!confirm('将分批重新拉取 copilot 知识库全部内容与 GEO优化知识库列表写入共享缓存。期间请保持页面打开直至完成；运行中的批次不受影响。')){message('ima-cache-message','已取消。');return;}
+    let result=await api('ima/cache/refresh',{start:true});
+    let rounds=0;
+    while(!result.done&&rounds<100){
+      rounds++;
+      message('ima-cache-message',`正在更新共享缓存：copilot 共 ${result.copilotFiles} 个文件，已处理 ${result.copilotTotal} 个（本次下载 ${result.fetchedThisCall} 个）…`);
+      result=await api('ima/cache/refresh',{});
+    }
     for(const warning of result.warnings||[])toast(warning);
+    if(!result.done){message('ima-cache-message','更新尚未完成，请再次点击“更新获取 IMA 缓存”继续。',true);return;}
     message('ima-cache-message',`缓存更新完成：copilot 已更新 ${result.copilotFiles} 个文件，GEO优化知识库列表 ${result.geoListed} 项。后续任务直接使用新缓存。`);
   }));
   // 问句板块：上传公司文档 → 模型判断行业 → 联网挖掘问句 → 九大维度排序；预扣 1 积分，失败返还。
