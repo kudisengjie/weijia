@@ -158,18 +158,22 @@ class QuestionService:
     async def _analyze(self, docs: list[dict[str, str]], user_id: str) -> dict[str, object]:
         model, key = self._model_key(user_id)
         messages = [
-            {"role": "system", "content": "你是行业分析助手。只返回 JSON，不要输出任何解释。"},
+            {"role": "system", "content": "你是行业分析助手。只返回 JSON，字段名固定为 industry（行业）、business（核心业务）、products（主要产品数组）、audience（目标客户），不要输出任何解释。"},
             {"role": "user", "content": json.dumps({"任务": "阅读公司文档，判断公司所处的领域/行业、核心业务、主要产品或服务、目标客户。", "文档": docs}, ensure_ascii=False)},
         ]
         raw = await self.model_complete(model, key, messages, client=self.client)
         data = _json_block(raw)
-        if not isinstance(data, dict) or not str(data.get("industry") or "").strip():
+        if not isinstance(data, dict):
+            raise ApiError(502, "模型未能判断公司行业，请补充文档后重试。", "QUESTION_ANALYSIS_FAILED")
+        # 真实模型可能返回中文键名（如「行业」「主要产品」），做兼容映射。
+        industry = str(data.get("industry") or data.get("行业") or data.get("领域") or "").strip()
+        if not industry:
             raise ApiError(502, "模型未能判断公司行业，请补充文档后重试。", "QUESTION_ANALYSIS_FAILED")
         return {
-            "industry": str(data.get("industry"))[:80],
-            "business": str(data.get("business") or data.get("coreBusiness") or "")[:200],
-            "products": [str(item)[:60] for item in (data.get("products") or [])[:8] if str(item).strip()],
-            "audience": str(data.get("audience") or data.get("customers") or "")[:120],
+            "industry": industry[:80],
+            "business": str(data.get("business") or data.get("coreBusiness") or data.get("核心业务") or "")[:200],
+            "products": [str(item)[:60] for item in (data.get("products") or data.get("主要产品") or [])[:8] if str(item).strip()],
+            "audience": str(data.get("audience") or data.get("customers") or data.get("目标客户") or "")[:120],
         }
 
     async def _search(self, analysis: dict[str, object]) -> list[dict[str, object]]:
@@ -218,13 +222,14 @@ class QuestionService:
         for item in data[:count]:
             if not isinstance(item, dict):
                 continue
-            question = re.sub(r"\s+", " ", str(item.get("question") or "")).strip()
+            # 兼容真实模型可能返回的中文键名（问句/意图/阶段/评分/理由）。
+            question = re.sub(r"\s+", " ", str(item.get("question") or item.get("问句") or "")).strip()
             if not 6 <= len(question) <= 60:
                 continue
-            intent = str(item.get("intent") or "信息型")
-            stage = str(item.get("stage") or "初步了解")
+            intent = str(item.get("intent") or item.get("意图") or "信息型")
+            stage = str(item.get("stage") or item.get("阶段") or "初步了解")
             try:
-                score = max(0, min(100, int(item.get("score") or 0)))
+                score = max(0, min(100, int(item.get("score") or item.get("评分") or 0)))
             except (TypeError, ValueError):
                 score = 0
             questions.append({
@@ -232,7 +237,7 @@ class QuestionService:
                 "intent": intent if intent in intents else "信息型",
                 "stage": stage if stage in stages else "初步了解",
                 "score": score,
-                "reason": str(item.get("reason") or "")[:40],
+                "reason": str(item.get("reason") or item.get("理由") or "")[:40],
             })
         return questions
 
