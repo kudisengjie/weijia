@@ -186,7 +186,9 @@ async def read_media(credentials: dict[str, object], media: dict[str, object], *
             or parsed.username
             or parsed.password
             or (port not in {None, 443})
-            or not (hostname == "ima.qq.com" or hostname.endswith(".myqcloud.com"))
+            # res-skb.ima.qq.com is the official IMA resource host served by
+            # get_media_info; bare ima.qq.com and myqcloud.com buckets are legacy.
+            or not (hostname == "ima.qq.com" or hostname.endswith(".ima.qq.com") or hostname.endswith(".myqcloud.com"))
         ):
             raise ApiError(422, f"IMA 原文下载域名不支持：{media['title']}。请在 IMA 上传文件版本。")
         headers = (info.get("url_info") or {}).get("headers") or {}
