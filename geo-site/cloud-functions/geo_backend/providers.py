@@ -45,11 +45,14 @@ async def complete(model: dict[str, str], key: str, messages: list[dict[str, str
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
 
     owned = client is None
-    http = client or httpx.AsyncClient(timeout=httpx.Timeout(100.0), follow_redirects=False)
+    # 吕老师 2026-09-19 深度排查：httpx.Timeout(100.0) 单值会让 connect/read 各自等
+    # 100 秒（最坏 200s），叠加落库后超过 EdgeOne 云函数 120s 上限 → 网关 504、
+    # 步骤 claim 悬挂 150 秒。改为 connect 10s + 总读 90s，给提交留 30s 余量。
+    http = client or httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0), follow_redirects=False)
     try:
         response = await http.post(model.get("endpoint") or ENDPOINTS[model["id"]], headers=headers, json=payload)
     except httpx.TransportError:
-        raise ApiError(502, "模型连接中断或超过 100 秒，结果不确定，未自动重试。", "MODEL_TIMEOUT")
+        raise ApiError(502, "模型连接中断或超过 90 秒，结果不确定，未自动重试。", "MODEL_TIMEOUT")
     finally:
         if owned:
             await http.aclose()

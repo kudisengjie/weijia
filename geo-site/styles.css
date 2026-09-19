@@ -52,8 +52,8 @@ button:disabled { cursor: not-allowed !important; opacity: .55; }
 .runtime-article { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid #e0eafa; }
 .runtime-article button { flex-shrink: 0; }.runtime-history { margin-top: 0; }
 /* 进度条显式配色：原生 track 在 Edge 深色模式下是黑色的，必须覆盖（吕老师 2026-09-19 反馈）。 */
-.runtime-panel progress { width: 100%; height: 12px; accent-color: #6095e5; appearance: none; -webkit-appearance: none; background: #e3eefb; border: none; border-radius: 999px; overflow: hidden; }
-.runtime-panel progress::-webkit-progress-bar { background: #e3eefb; border-radius: 999px; }
+.runtime-panel progress { width: 100%; height: 14px; accent-color: #6095e5; appearance: none; -webkit-appearance: none; background: #d3e4f8; border: 1px solid #b5d0ee; border-radius: 999px; overflow: hidden; }
+.runtime-panel progress::-webkit-progress-bar { background: #d3e4f8; border-radius: 999px; }
 .runtime-panel progress::-webkit-progress-value { background: linear-gradient(90deg, #548bcd, #2f65b3); border-radius: 999px; transition: width .5s ease; }
 .runtime-panel progress::-moz-progress-bar { background: linear-gradient(90deg, #548bcd, #2f65b3); border-radius: 999px; }
 .runtime-step-detail { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: #2f65b3; }

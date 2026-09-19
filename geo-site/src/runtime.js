@@ -164,10 +164,15 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     };
     document.addEventListener('click',handler,true);
   }
-  let toastTimer;
+  let toastTimer,toastLastText='',toastLastAt=0;
   function toast(text) {
-    if(!csrf)return;message('runtime-toast',text,true);$('runtime-toast').hidden=false;
-    // 吕老师 2026-09-19：提醒不能一直挂着，8 秒后自动收起；新提醒会重置计时。
+    if(!csrf)return;
+    // 吕老师 2026-09-19：同样的提醒（如连续步骤的同一 504）12 秒内不重复弹，
+    // 避免提示"一直显示"；不同内容仍然立即弹出。8 秒后自动收起。
+    const now=Date.now();
+    if(text===toastLastText&&now-toastLastAt<12000){clearTimeout(toastTimer);toastTimer=setTimeout(()=>{$('runtime-toast').hidden=true;},8000);return;}
+    toastLastText=text;toastLastAt=now;
+    message('runtime-toast',text,true);$('runtime-toast').hidden=false;
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>{$('runtime-toast').hidden=true;},8000);
   }
   async function api(path,body,method) {
@@ -592,13 +597,13 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       if(!driving&&b.status==='ready'){const recover=node('button','处理超时步骤');recover.addEventListener('click',async()=>{if(!confirm('仅处理超过 150 秒无进展的步骤。结果不明的任务会跳过并退款，不重复发送模型请求。'))return;try{receiveBatch(await api(`batches/${b.id}/step`,{seq:b.seq,retry:true}));}catch(error){toast(error.message);}});controls.append(recover);}
       const cancel=node('button','取消批次并返还未完成积分');cancel.addEventListener('click',async()=>{if(!confirm('确认取消？未完整输出的任务积分会返还。已发给模型的请求无法撤回，提供商可能仍计费。'))return;cancel.disabled=true;runners.stop(b.id);try{receiveBatch(await api(`batches/${b.id}/cancel`,{}));await refreshSettings();receiveBatch(await api('batches/'+b.id));await history();}catch(error){toast(error.message);cancel.disabled=false;}});controls.append(cancel);
     }
-    // 已结束且存在失败任务：支持一键补跑（服务端用原任务行重建新批次，不重发结果不明的请求）。
+    // 已结束且存在失败任务：支持一键重新执行（服务端用原任务行重建新批次，不重发结果不明的请求）。
     if(b.status==='completed'&&b.failedTasks?.length){
-      const retry=node('button',`补跑失败任务（${b.failedTasks.length} 条）`);
+      const retry=node('button',`重新执行（${b.failedTasks.length} 条）`);
       retry.addEventListener('click',async()=>{
-        if(!confirm(`确认补跑 ${b.failedTasks.length} 条失败任务？会创建一个新批次并重新预扣积分。`))return;
+        if(!confirm(`确认重新执行 ${b.failedTasks.length} 条失败任务？会创建一个新批次并重新预扣积分。`))return;
         retry.disabled=true;
-        try{const fresh=await api(`batches/${b.id}/retry-failed`,{});historyLoadedAt=0;drive(fresh);}
+        try{const fresh=await api(`batches/${b.id}/retry-failed`,{});historyLoadedAt=0;renderBatch(fresh);drive(fresh);}
         catch(error){toast(error.message);retry.disabled=false;}
       });
       controls.append(retry);
@@ -689,10 +694,14 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
         const terminalBatch=['completed','cancelled','failed'].includes(b.status);
         // 补跑仅对 completed + 有失败任务的批次开放：status=failed 的批次走「手动重试失败步骤」。
         if(b.status==='completed'&&b.failedTasks?.length){
-          const retry=node('button','补跑失败任务');
+          const retry=node('button','重新执行');
           retry.addEventListener('click',async()=>{
             retry.disabled=true;
-            try{const fresh=await api(`batches/${b.id}/retry-failed`,{});toast(`已创建补跑任务（${fresh.total} 条），正在开始。`);drive(fresh);}
+            try{
+              const fresh=await api(`batches/${b.id}/retry-failed`,{});
+              toast(`已创建重新执行任务（${fresh.total} 条）。`);
+              renderBatch(fresh);drive(fresh);changeView('workspace');
+            }
             catch(error){toast(error.message);retry.disabled=false;}
           });
           actions.append(retry);
