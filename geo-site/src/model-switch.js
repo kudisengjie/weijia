@@ -63,7 +63,7 @@ const MODEL_CATALOG = Object.freeze({
   ),
   zhipu: freezeProvider(
     "zhipu",
-    "智谱 GLM",
+    "智谱",
     "assets/model-logos/zhipu.png",
     freezeModel("primary", "GLM-5.3 Flash", "glm-5.3-flash", "智谱 GLM-5.3 Flash"),
     freezeModel("secondary", "GLM-5.3", "glm-5.3", "智谱 GLM-5.3"),

@@ -14,7 +14,7 @@ CATALOG = {
     "doubao": {"provider": "豆包", "primary": ("Seed 2.1 Turbo", "doubao-seed-2-1-turbo-260628"), "secondary": ("Seed 2.1 Pro", "doubao-seed-2-1-pro-260628")},
     "deepseek": {"provider": "DeepSeek", "primary": ("V4.1 Flash", "deepseek-flash"), "secondary": ("V4 Pro", "deepseek-v4-pro")},
     "minimax": {"provider": "MiniMax", "primary": ("M2.7", "MiniMax-M2.7"), "secondary": ("M3", "MiniMax-M3")},
-    "zhipu": {"provider": "智谱 GLM", "primary": ("GLM-5.3 Flash", "glm-5.3-flash"), "secondary": ("GLM-5.3", "glm-5.3")},
+    "zhipu": {"provider": "智谱", "primary": ("GLM-5.3 Flash", "glm-5.3-flash"), "secondary": ("GLM-5.3", "glm-5.3")},
     "kimi": {"provider": "Kimi", "primary": ("K2.7 Code", "kimi-k2.7-code"), "secondary": ("K3", "kimi-k3")},
     "mimo": {"provider": "Xiaomi MiMo", "primary": ("MiMo V2.5", "mimo-v2.5"), "secondary": ("MiMo V2.5 Pro", "mimo-v2.5-pro")},
 }
