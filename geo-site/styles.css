@@ -424,6 +424,9 @@ summary:focus-visible {
 .geo-status-list div:last-child { border-bottom: 0; }
 .geo-status-list dt { color: #7b91ab; }
 .geo-status-list dd { margin: 0; font-weight: 800; text-align: right; }
+/* 当前模型行：堆叠布局让模型名独占整行，超长时省略号截断（悬停 title 看全名），不再折行 */
+.geo-status-list div.is-stacked { flex-direction: column; align-items: flex-start; gap: 4px; }
+.geo-status-list div.is-stacked dd { width: 100%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .geo-service-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: auto; padding-top: 12px; }
 .geo-service-chips span { padding: 8px 4px; border: 1px solid #cce1d9; border-radius: 8px; color: #45816b; background: #eff9f5; font-size: 8px; font-weight: 800; text-align: center; }
 .geo-saas-status { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }

@@ -183,7 +183,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     document.querySelectorAll('[data-selected-model-preflight]').forEach(n=>n.textContent=`${model.label} · ${configured?'已配置':'未配置 API'}`);
     document.querySelectorAll('[data-selected-model-service]').forEach(n=>n.textContent=`${model.provider} · ${configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-selected-model-status]').forEach(n=>n.textContent=configured?'已配置':'未配置');
-    document.querySelectorAll('[data-selected-model-label]').forEach(n=>n.textContent=activeBatch?.model.label||model.label);
+    document.querySelectorAll('[data-selected-model-label]').forEach(n=>{n.textContent=activeBatch?.model.label||model.label;n.title=n.textContent;});
     document.querySelectorAll('[data-selected-model-connection]').forEach(n=>n.textContent=`已保存：${model.label} · ${configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-ima-status]').forEach(n=>n.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 等待管理员配置');
     document.querySelectorAll('[data-verify-model]').forEach(n=>n.textContent=`${settings.model.label} · ${settings.providers[settings.model.id].configured?'已配置':'未配置'}`);

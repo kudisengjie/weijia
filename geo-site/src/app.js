@@ -55,6 +55,7 @@ function renderSelectedModel(
   });
   document.querySelectorAll("[data-selected-model-label]").forEach((node) => {
     node.textContent = selected.label;
+    node.title = selected.label;
   });
   document.querySelectorAll("[data-selected-model-preflight]").forEach((node) => {
     node.textContent = `${selected.label} · 请保存设置`;
