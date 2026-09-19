@@ -338,6 +338,10 @@ summary:focus-visible {
 .geo-preflight__grid div { display: flex; justify-content: space-between; gap: 14px; padding: 10px 11px; border: 1px solid #cce5dc; border-radius: 9px; background: rgba(255,255,255,.72); font-size: 9px; }
 .geo-preflight__grid span { color: #748d83; }
 .geo-preflight__grid strong { color: #38866b; text-align: right; }
+/* 模型名等长文案单元格：标签在上、取值独占整行左对齐，避免右侧挤压换行显得凌乱 */
+.geo-preflight__grid div.is-stacked { flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; }
+.geo-preflight__grid div.is-stacked span { flex: none; }
+.geo-preflight__grid div.is-stacked strong { width: 100%; text-align: left; font-size: 11px; line-height: 1.6; }
 
 .geo-actions { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #d8e7f5; }
 .geo-clear-button, .geo-run-button { min-height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 800; }
@@ -853,6 +857,9 @@ html.booting #login-page { visibility: hidden; }
 .geo-verify-panel__grid div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 64px; padding: 10px 8px; border: 1px solid #cde0f4; border-radius: 9px; background: rgba(255,255,255,.75); text-align: center; }
 .geo-verify-panel__grid span { color: #7292b8; font-size: 11px; }
 .geo-verify-panel__grid strong { color: #2d5f9e; font-size: 12px; }
+/* 连接验证面板：长模型名左对齐独占整行，避免居中换行观感差 */
+.geo-verify-panel__grid div.is-stacked { align-items: flex-start; text-align: left; }
+.geo-verify-panel__grid div.is-stacked strong { line-height: 1.6; overflow-wrap: anywhere; }
 .geo-preflight__grid div { justify-content: center; min-height: 64px; }
 .geo-saas-status span { display: grid; place-items: center; align-content: center; }
 

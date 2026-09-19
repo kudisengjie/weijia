@@ -430,6 +430,29 @@ document.querySelectorAll(".geo-nav-group__toggle").forEach((button) => {
 // 问句板块：公司文档读取（复用公司文档的解析能力），读取结果供问句查询使用。
 const questionInput = document.getElementById("question-files");
 let currentQuestionDocs = [];
+const questionPreview = document.getElementById("question-preview");
+
+// 问句页文档内容预览：与工作区公司文档预览同一套 details 样式，首份默认展开。
+function renderQuestionPreviews() {
+  if (!questionPreview) return;
+  questionPreview.replaceChildren();
+  questionPreview.hidden = currentQuestionDocs.length === 0;
+  currentQuestionDocs.forEach((item, index) => {
+    const details = document.createElement("details");
+    details.open = index === 0;
+    details.className = item.error ? "is-error" : "is-ready";
+    const summary = document.createElement("summary");
+    const name = document.createElement("strong");
+    name.textContent = item.file.name;
+    const status = document.createElement("span");
+    status.textContent = item.error ? "读取失败" : item.result ? `${(item.result.total || 0).toLocaleString("zh-CN")} 字符` : "读取中";
+    summary.append(name, status);
+    const content = document.createElement("pre");
+    content.textContent = item.error || item.result?.text || "读取中…";
+    details.append(summary, content);
+    questionPreview.appendChild(details);
+  });
+}
 
 async function handleQuestionFiles() {
   const list = document.getElementById("question-file-list");
@@ -446,6 +469,7 @@ async function handleQuestionFiles() {
     list.appendChild(empty);
     state.textContent = "0 个文档";
     if (check) check.textContent = "等待选择";
+    renderQuestionPreviews();
     return;
   }
   state.textContent = "读取中";
@@ -466,6 +490,7 @@ async function handleQuestionFiles() {
     row.textContent = item.error
       ? `${item.file.name} · ${item.error}`
       : `${item.file.name} · ${(item.result.total || 0).toLocaleString("zh-CN")} 字符`;
+    renderQuestionPreviews();
   }
   const ok = currentQuestionDocs.filter((item) => item.result).length;
   state.textContent = `${ok}/${files.length} 已读取`;

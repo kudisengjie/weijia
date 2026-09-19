@@ -186,7 +186,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     document.querySelectorAll('[data-selected-model-label]').forEach(n=>n.textContent=activeBatch?.model.label||model.label);
     document.querySelectorAll('[data-selected-model-connection]').forEach(n=>n.textContent=`已保存：${model.label} · ${configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-ima-status]').forEach(n=>n.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 等待管理员配置');
-    document.querySelectorAll('[data-verify-model]').forEach(n=>n.textContent=`${model.label} · ${configured?'已配置':'未配置'}`);
+    document.querySelectorAll('[data-verify-model]').forEach(n=>n.textContent=`${settings.model.label} · ${settings.providers[settings.model.id].configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-verify-ima]').forEach(n=>n.textContent=settings.ima.configured?'缓存已就绪':'等待管理员配置');
     document.querySelectorAll('[data-question-model]').forEach(n=>n.textContent=settings.model.label);
     document.querySelectorAll('[data-ima-badge-status]').forEach(n=>n.textContent=settings.ima.configured?'已配置':'未配置');

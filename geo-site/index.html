@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#eef6ff">
     <title>零雪 GEO｜批量文章工作台</title>
     <meta name="description" content="零雪 GEO 批量文章工作台。登录后连接自己的模型 API，使用共享 IMA 知识库生成与审核文章。">
-    <link rel="stylesheet" href="styles.css?v=20260919i">
+    <link rel="stylesheet" href="styles.css?v=20260919j">
     <link rel="preload" as="image" href="assets/lxue-geo-founder.png">
     <script>document.documentElement.classList.add('booting');setTimeout(function(){document.documentElement.classList.remove('booting');},4000);</script>
 </head>
@@ -43,14 +43,14 @@
                 <li><span class="geo-step__number">4</span><span><strong>文章输出</strong><small>最终保存 MD</small></span></li>
             </ol>
             <nav class="geo-sidebar__nav" aria-label="功能页面">
-                <div class="geo-nav-group" data-nav-group>
-                    <button type="button" class="geo-nav-group__toggle" aria-expanded="true">问句板块<span class="geo-nav-group__chevron" aria-hidden="true">▾</span></button>
+                <div class="geo-nav-group is-collapsed" data-nav-group>
+                    <button type="button" class="geo-nav-group__toggle" aria-expanded="false">问句板块<span class="geo-nav-group__chevron" aria-hidden="true">▾</span></button>
                     <div class="geo-nav-group__items">
-                        <button type="button" data-view="questions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 1 1-5 11.9M11 4a7 7 0 0 1 5 11.9M6 16l-2 5 5-2M13.5 8.5a3 3 0 1 0-2 5.2M11 13.7V16"/></svg>问句查询</button>
+                        <button type="button" data-view="questions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg>问句查询</button>
                     </div>
                 </div>
-                <div class="geo-nav-group" data-nav-group>
-                    <button type="button" class="geo-nav-group__toggle" aria-expanded="true">内容板块<span class="geo-nav-group__chevron" aria-hidden="true">▾</span></button>
+                <div class="geo-nav-group is-collapsed" data-nav-group>
+                    <button type="button" class="geo-nav-group__toggle" aria-expanded="false">内容板块<span class="geo-nav-group__chevron" aria-hidden="true">▾</span></button>
                     <div class="geo-nav-group__items">
                         <button class="is-selected" type="button" data-view="workspace" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h8"/></svg>批次工作区</button>
                         <button type="button" data-view="overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 13h7v6H4z"/></svg>任务总览</button>
@@ -82,12 +82,13 @@
                         <span aria-hidden="true">＋</span><strong>选择公司文档</strong><small>可读取 DOCX、PDF、TXT、MD、RTF、ODT；文件仅在当前页面读取</small>
                     </label>
                     <ul class="geo-file-list" id="question-file-list" aria-live="polite"><li class="geo-file-list__empty">尚未选择公司文档</li></ul>
+                    <div class="geo-preview geo-preview--documents" id="question-preview" aria-live="polite" hidden></div>
                 </section>
                 <section class="geo-preflight" aria-labelledby="question-setting-title">
                     <div class="geo-preflight__title"><span aria-hidden="true">✓</span><div><h2 id="question-setting-title">查询设置</h2><p>模型跟随个人设置的默认模型；以推荐类型问句为主，按搜索量、竞争度、商业价值、搜索意图、关键词精准度、流量可持续性、拓展潜力、平台门槛与决策链路九大维度排序。</p></div></div>
                     <div class="geo-preflight__grid">
                         <div><span>公司文档</span><strong id="question-check-docs">等待选择</strong></div>
-                        <div><span>使用模型</span><strong data-question-model>跟随默认模型</strong></div>
+                        <div class="is-stacked"><span>使用模型</span><strong data-question-model>跟随默认模型</strong></div>
                         <div><span>问句数量（5-50）</span><strong><input id="question-count" class="question-count-input" type="number" min="5" max="50" step="1" value="10" inputmode="numeric"></strong></div>
                         <div><span>消耗积分</span><strong>1 积分 / 次</strong></div>
                     </div>
@@ -140,8 +141,8 @@
                     <section class="geo-verify-panel" aria-labelledby="verify-title">
                         <div class="geo-verify-panel__title"><span aria-hidden="true">✓</span><div><h2 id="verify-title">连接验证</h2><p>保存密钥后，首次运行任务时自动验证连接；验证未通过的任务会自动返还积分。</p></div></div>
                         <div class="geo-verify-panel__grid">
-                            <div><span>当前模型</span><strong data-verify-model>未配置</strong></div>
-                            <div><span>IMA 缓存</span><strong data-verify-ima>等待检查</strong></div>
+                            <div class="is-stacked"><span>当前模型</span><strong data-verify-model>未配置</strong></div>
+                            <div class="is-stacked"><span>IMA 缓存</span><strong data-verify-ima>等待检查</strong></div>
                         </div>
                     </section>
                     <p class="runtime-hint">任务表需包含：品牌名、GEO知识库、问句；可选篇数、媒体平台、AI平台、备注。开始后，正文会加密保存至工作台，并发送给你所选模型处理。</p>
@@ -279,6 +280,6 @@
         </aside>
     </div>
     <div id="runtime-toast" class="runtime-toast" role="status" hidden></div>
-    <script src="assets/app.js?v=20260919i" defer></script>
+    <script src="assets/app.js?v=20260919j" defer></script>
 </body>
 </html>
