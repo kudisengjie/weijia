@@ -75,6 +75,9 @@ async def warm_ima_cache(
         request = {"knowledgeBaseId": kb_id, "mediaId": media["media_id"]}
         cache_key = ImaCache.key("media", request, generation)
         if repository.get_ima_cache("media", cache_key, generation, master_key) is not None:
+            # 已在本代缓存中：跳过下载，但把文件标题补写为可读标签（旧条目兜底）。
+            if hasattr(repository, "backfill_ima_media_label"):
+                repository.backfill_ima_media_label(cache_key, f"文件正文 · {media['title']}")
             return None
         return await cache.get_or_fetch(
             "media",
@@ -101,6 +104,13 @@ async def warm_ima_cache(
                 break
             if len(bases) > MAX_BASES:
                 raise ApiError(422, "知识库数量超过扫描上限，请联系管理员。")
+
+        # 扫描到的知识库全部回写真实名称，缓存工作区即可显示可读名而不是系统 ID。
+        for base_item in bases:
+            base_bid = base_item.get("id") or base_item.get("kb_id")
+            base_bname = normalize(base_item.get("name") or base_item.get("kb_name"))
+            if base_bid and base_bname:
+                repository.upsert_ima_knowledge_base_name(str(base_bid), base_bname)
 
         def find_base(name: str) -> str | None:
             matches = [item for item in bases if normalize(item.get("name") or item.get("kb_name")) == normalize(name)]

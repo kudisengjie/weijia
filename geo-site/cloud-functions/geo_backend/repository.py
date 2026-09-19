@@ -590,10 +590,12 @@ class PostgresRepository(WorkspaceRepositoryMixin):
                 """
                 INSERT INTO ima_knowledge_bases (external_id, name)
                 VALUES (%s, %s)
-                ON CONFLICT (external_id) DO UPDATE SET updated_at = NOW()
+                ON CONFLICT (external_id) DO UPDATE SET
+                    name = COALESCE(NULLIF(EXCLUDED.name, 'unknown'), ima_knowledge_bases.name),
+                    updated_at = NOW()
                 RETURNING id
                 """,
-                (external_id, external_id),
+                (external_id, str(metadata.get("kbName") or external_id)),
             ).fetchone()
             payload = json.dumps(value, ensure_ascii=False)
             if table == "ima_media_cache":
@@ -619,6 +621,24 @@ class PostgresRepository(WorkspaceRepositoryMixin):
                     """,
                     (cache_key, generation, str(kb[0]), request_key, payload, master_key, safe_label),
                 )
+
+    def upsert_ima_knowledge_base_name(self, external_id: str, name: str) -> None:
+        """预热扫描到真实知识库名称后回写，缓存工作区即可显示可读名称。"""
+        self.conn.execute(
+            """
+            INSERT INTO ima_knowledge_bases (external_id, name)
+            VALUES (%s, %s)
+            ON CONFLICT (external_id) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
+            """,
+            (str(external_id), str(name)[:255]),
+        )
+
+    def backfill_ima_media_label(self, cache_key: str, label: str) -> None:
+        """已缓存的文件正文若无可读标签，用预热扫描到的文件标题补写。"""
+        self.conn.execute(
+            "UPDATE ima_media_cache SET label = %s WHERE cache_key = %s AND (label IS NULL OR label = '')",
+            (str(label)[:255], str(cache_key)),
+        )
 
     def ima_cache_inventory(self, generation: int) -> dict[str, object]:
         """缓存工作区数据：按知识库汇总当前代的目录/文件缓存，附可读标签样本（不解密正文）。"""

@@ -294,8 +294,11 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     const summary=node('p',`缓存代数：第 ${data.generation} 版 · 目录清单 ${data.totals.listings} 条 · 文件正文 ${data.totals.files} 份`,'ledger-summary');
     const wrap=node('div');
     for(const base of data.bases){
+      const rawName=base.name||'';
+      const isHashName=!rawName||rawName==='unknown'||/[=+\/]/.test(rawName)||rawName.length>60;
+      const displayName=rawName==='unknown'?'未识别来源（旧缓存条目）':isHashName?`${rawName.slice(0,12)}…（待重新获取后显示知识库名）`:rawName;
       const details=node('details'),summaryEl=node('summary');
-      summaryEl.append(node('span',base.name||'未知知识库'),node('span',`目录 ${base.listings} 条 · 文件 ${base.files} 份`));
+      summaryEl.append(node('span',displayName),node('span',`目录 ${base.listings} 条 · 文件 ${base.files} 份`));
       const body=node('div');
       const listHead=node('h4',`目录清单样本（最近 ${base.listingSamples.length} 条，共 ${base.listings} 条）`);
       const listUl=node('ul');
