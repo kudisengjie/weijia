@@ -70,7 +70,9 @@ def run_once(fixture, provider, slot, keys, master, label):
     SettingsService(fixture.repo, master).save_model(fixture.owner, provider, slot, '', api_key, False)
     real_service = BatchService(
         fixture.repo, master,
-        {'clientId': keys.get('IMA_OPENAPI_CLIENTID', ''), 'apiKey': keys.get('IMA_OPENAPI_APIKEY', '')},
+        # IMA 凭据只需通过 _materialize 的非空校验；本验证注入规则后直接进 generate 阶段，不会真实调用 IMA。
+        {'clientId': keys.get('IMA_OPENAPI_CLIENTID') or 'verify-placeholder',
+         'apiKey': keys.get('IMA_OPENAPI_APIKEY') or 'verify-placeholder'},
         tenant_context=fixture.context, model_complete=real_complete)
     body = {'requestId': str(uuid.uuid4()),
             'rows': [['品牌名', 'GEO知识库', '问句'], [BRAND, '品牌库', QUESTION]],
@@ -100,7 +102,7 @@ def run_once(fixture, provider, slot, keys, master, label):
         row = fixture.conn.execute('SELECT id FROM article_artifacts WHERE batch_id = %s', (result['id'],)).fetchone()
         if row:
             from geo_backend.repository import PostgresRepository
-            article = fixture.repo.get_article_artifact(fixture.tenant, str(row[0]), MASTER, user_id=fixture.owner)
+            article = fixture.repo.get_article_artifact(fixture.tenant, str(row[0]), master, user_id=fixture.owner)
             OUT.mkdir(parents=True, exist_ok=True)
             target = OUT / f"run{label}-{provider}.md"
             Path(target).write_text(article['markdown'], encoding='utf-8')
