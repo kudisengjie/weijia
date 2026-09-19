@@ -102,7 +102,7 @@ class FakeRepository:
     def get_ima_cache(self, kind, key, generation, _master_key=None):
         return copy.deepcopy(self.ima_cache_values.get((kind, key, generation)))
 
-    def put_ima_cache(self, kind, key, generation, value, _metadata, _master_key=None):
+    def put_ima_cache(self, kind, key, generation, value, _metadata, _master_key=None, *, label=None):
         self.ima_cache_values[(kind, key, generation)] = copy.deepcopy(value)
 
     def clear_ima_cache_generation(self, _user_id=None):

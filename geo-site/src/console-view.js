@@ -20,7 +20,7 @@ export function initializeConsole({changeView,onCreate}){
   const shared=byId('ima-title').closest('section'),tenant=byId('tenant-admin');
   const members=byId('member-form'),credits=byId('credit-form'),subscription=byId('subscription-form');
   const picker=el('div',undefined,'console-managed-user');picker.append(byId('managed-user').closest('label'),byId('managed-user-summary'));
-  const ledgerButton=byId('refresh-member-ledger'),ledger=byId('member-ledger'),cacheControls=byId('clear-ima-cache').parentElement;
+  const ledgerButton=byId('refresh-member-ledger'),ledger=byId('member-ledger'),cacheControls=byId('ima-cache-console');
   grid.remove();
   const personal=directory(settings,'settings',[['models','模型与 API'],['saving','文章保存'],['security','登录与安全'],['billing','积分与有效期'],['contact','联系与续费']]);
   personal.panes.models.classList.add('geo-settings-grid');personal.panes.models.append(catalog,credentials);

@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 SCHEMA_SQL = r"""
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -298,6 +298,8 @@ CREATE INDEX IF NOT EXISTS workspaces_user_status_idx ON workspaces(user_id, sta
 
 -- v5: 本地交付模式（local_confirmed_v1）。旧行保持 server_legacy 默认值。
 ALTER TABLE batches ADD COLUMN IF NOT EXISTS delivery_mode VARCHAR(32) NOT NULL DEFAULT 'server_legacy';
+ALTER TABLE ima_search_cache ADD COLUMN IF NOT EXISTS label VARCHAR(255);
+ALTER TABLE ima_media_cache ADD COLUMN IF NOT EXISTS label VARCHAR(255);
 
 -- v5: artifact 交付状态与在线正文清理。正文清理后密文必须为空，不能用空串伪装。
 ALTER TABLE article_artifacts ADD COLUMN IF NOT EXISTS delivery_state VARCHAR(16) NOT NULL DEFAULT 'pending';

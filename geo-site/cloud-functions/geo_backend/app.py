@@ -425,6 +425,19 @@ def create_app(
                 updated = updated.isoformat()
             return {"generation": generation, "updatedAt": updated, "stale": stale}
 
+    @app.get("/ima/cache/inventory")
+    def ima_cache_inventory_view(request: Request):
+        # 缓存工作区：按知识库展示当前代已获取的目录清单与文件正文（仅元数据，不解密正文）。
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            if context:
+                TenantAccessService.require_owner(context)
+            generation = repository.get_ima_cache_generation() if hasattr(repository, "get_ima_cache_generation") else None
+            if not generation:
+                return {"generation": generation, "bases": [], "totals": {"listings": 0, "files": 0}}
+            return {"generation": generation, **repository.ima_cache_inventory(int(generation))}
+
     @app.post("/ima/cache/refresh")
     async def ima_cache_refresh(body: ImaCacheRefreshBody, request: Request):
         # 吕老师 2026-09-18 需求：管理中心一键「更新获取 IMA 缓存」。

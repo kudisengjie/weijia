@@ -19,7 +19,7 @@ class CacheRepository:
     def get_ima_cache(self, kind, key, generation, _master_key=None):
         return self.values.get((kind, key, generation))
 
-    def put_ima_cache(self, kind, key, generation, value, metadata, _master_key=None):
+    def put_ima_cache(self, kind, key, generation, value, metadata, _master_key=None, *, label=None):
         self.values[(kind, key, generation)] = value
         self.puts += 1
 

@@ -43,6 +43,7 @@ class ImaCache:
         *,
         allow_fetch: bool = True,
         force_refresh: bool = False,
+        label: str | None = None,
     ) -> object:
         """allow_fetch=False（子账号）只读缓存；force_refresh=True（主账号到期更新）跳过读缓存。"""
         generation = self.generation if self.generation is not None else int(self.repository.get_ima_cache_generation())
@@ -77,7 +78,7 @@ class ImaCache:
             value = await fetch()
             if value is None:
                 raise ApiError(502, "IMA 返回空内容，未写入缓存。", "IMA_EMPTY")
-            self.repository.put_ima_cache(kind, cache_key, generation, value, request, self.master_key)
+            self.repository.put_ima_cache(kind, cache_key, generation, value, request, self.master_key, label=label)
             return value
         finally:
             if owns_lock:

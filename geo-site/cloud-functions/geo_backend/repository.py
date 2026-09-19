@@ -575,6 +575,8 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         value: object,
         metadata: dict[str, object],
         master_key: str,
+        *,
+        label: str | None = None,
     ) -> None:
         from psycopg.types.json import Jsonb
 
@@ -582,6 +584,7 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         if not table:
             raise ValueError("INVALID_IMA_CACHE_KIND")
         external_id = str(metadata.get("knowledgeBaseId") or metadata.get("knowledge_base_id") or "unknown")
+        safe_label = str(label or "")[:255] or None
         with self.conn.transaction():
             kb = self.conn.execute(
                 """
@@ -596,24 +599,67 @@ class PostgresRepository(WorkspaceRepositoryMixin):
             if table == "ima_media_cache":
                 self.conn.execute(
                     """
-                    INSERT INTO ima_media_cache (cache_key, generation, knowledge_base_id, media_id, payload_cipher)
-                    VALUES (%s, %s, %s, %s, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'))
+                    INSERT INTO ima_media_cache (cache_key, generation, knowledge_base_id, media_id, payload_cipher, label)
+                    VALUES (%s, %s, %s, %s, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s)
                     ON CONFLICT (cache_key) DO UPDATE SET generation = EXCLUDED.generation,
-                        payload_cipher = EXCLUDED.payload_cipher, content_version = EXCLUDED.content_version
+                        payload_cipher = EXCLUDED.payload_cipher, content_version = EXCLUDED.content_version,
+                        label = EXCLUDED.label
                     """,
-                    (cache_key, generation, str(kb[0]), str(metadata.get("mediaId") or metadata.get("media_id") or cache_key), payload, master_key),
+                    (cache_key, generation, str(kb[0]), str(metadata.get("mediaId") or metadata.get("media_id") or cache_key), payload, master_key, safe_label),
                 )
             else:
                 request_key = cache_key
                 self.conn.execute(
                     """
-                    INSERT INTO ima_search_cache (cache_key, generation, knowledge_base_id, request_key, payload_cipher)
-                    VALUES (%s, %s, %s, %s, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'))
+                    INSERT INTO ima_search_cache (cache_key, generation, knowledge_base_id, request_key, payload_cipher, label)
+                    VALUES (%s, %s, %s, %s, pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'), %s)
                     ON CONFLICT (cache_key) DO UPDATE SET generation = EXCLUDED.generation,
-                        payload_cipher = EXCLUDED.payload_cipher, request_key = EXCLUDED.request_key
+                        payload_cipher = EXCLUDED.payload_cipher, request_key = EXCLUDED.request_key,
+                        label = EXCLUDED.label
                     """,
-                    (cache_key, generation, str(kb[0]), request_key, payload, master_key),
+                    (cache_key, generation, str(kb[0]), request_key, payload, master_key, safe_label),
                 )
+
+    def ima_cache_inventory(self, generation: int) -> dict[str, object]:
+        """缓存工作区数据：按知识库汇总当前代的目录/文件缓存，附可读标签样本（不解密正文）。"""
+        rows = self.conn.execute(
+            """
+            SELECT kb.id, kb.name,
+                   (SELECT COUNT(*) FROM ima_search_cache s WHERE s.knowledge_base_id = kb.id AND s.generation = %s),
+                   (SELECT MAX(s.created_at) FROM ima_search_cache s WHERE s.knowledge_base_id = kb.id AND s.generation = %s),
+                   (SELECT COUNT(*) FROM ima_media_cache m WHERE m.knowledge_base_id = kb.id AND m.generation = %s),
+                   (SELECT MAX(m.created_at) FROM ima_media_cache m WHERE m.knowledge_base_id = kb.id AND m.generation = %s)
+            FROM ima_knowledge_bases kb
+            ORDER BY kb.updated_at DESC
+            """,
+            (generation, generation, generation, generation),
+        ).fetchall()
+        bases: list[dict[str, object]] = []
+        total_listings = 0
+        total_files = 0
+        for kb_id, name, listings, last_listing, files, last_file in rows:
+            listings = int(listings or 0)
+            files = int(files or 0)
+            total_listings += listings
+            total_files += files
+            listing_samples = self.conn.execute(
+                "SELECT COALESCE(NULLIF(label, ''), request_key), created_at FROM ima_search_cache WHERE knowledge_base_id = %s AND generation = %s ORDER BY created_at DESC LIMIT 60",
+                (kb_id, generation),
+            ).fetchall()
+            file_samples = self.conn.execute(
+                "SELECT COALESCE(NULLIF(label, ''), media_id), created_at FROM ima_media_cache WHERE knowledge_base_id = %s AND generation = %s ORDER BY created_at DESC LIMIT 60",
+                (kb_id, generation),
+            ).fetchall()
+            bases.append({
+                "name": str(name),
+                "listings": listings,
+                "lastListingAt": last_listing.isoformat() if last_listing else None,
+                "files": files,
+                "lastFileAt": last_file.isoformat() if last_file else None,
+                "listingSamples": [{"label": str(r[0]), "at": r[1].isoformat() if r[1] else None} for r in listing_samples],
+                "fileSamples": [{"label": str(r[0]), "at": r[1].isoformat() if r[1] else None} for r in file_samples],
+            })
+        return {"bases": bases, "totals": {"listings": total_listings, "files": total_files}}
 
     def save_article_artifact(self, **kwargs: object) -> dict[str, object]:
         from .errors import ApiError

@@ -36,6 +36,12 @@ try {
   if (await page.locator('.contact-mascot').count()) failures.push('合掌感谢形象应已移除');
   const imaStatus = await page.locator('#ima-cache-status').textContent();
   console.log('ima cache status:', imaStatus);
+  await page.waitForFunction(() => {
+    const ws = document.querySelector('#ima-cache-workspace');
+    return ws && ws.textContent.includes('缓存代数') || (ws && ws.textContent.includes('还没有资料'));
+  }, undefined, { timeout: 15000 }).catch(() => failures.push('缓存工作区未加载'));
+  const wsText = await page.locator('#ima-cache-workspace').textContent();
+  console.log('cache workspace:', wsText.slice(0, 80));
   await page.screenshot({ path: path.join(output, 'settings-contact.png') });
   // 文章保存页：验证恢复文案接线（未选过文件夹时应显示"尚未选择"而非报错）
   await tab.filter({ hasText: '文章保存' }).click();

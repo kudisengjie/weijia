@@ -204,7 +204,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     renderModelLock();
   }
   function renderModelLock() {const locked=modelIsLocked(settings,activeBatch);document.querySelectorAll('input[name="model-option"], #model-key, #custom-model-id, #model-form button').forEach(input=>{input.disabled=locked;});}
-  async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();if(!ownLedgerLoaded){ownLedgerLoaded=true;loadOwnLedger().catch(()=>{});loadImaCacheStatus().catch(()=>{});}}
+  async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();if(!ownLedgerLoaded){ownLedgerLoaded=true;loadOwnLedger().catch(()=>{});loadImaCacheStatus().catch(()=>{});loadImaCacheInventory().catch(()=>{});}}
   async function enter() {return bootstrapAuthenticatedWorkspace({
     showWorkspace(){ document.documentElement.classList.remove('booting');$('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
     refreshSettings,
@@ -257,7 +257,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   });});
   $('clear-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
     if(!confirm('确认清除全站共享缓存？新批次会重新获取所需资料，正在运行的批次保留其资料版本。')){message('ima-cache-message','已取消。');return;}
-    const result=await api('ima/cache/clear',{});message('ima-cache-message',`新批次将使用第 ${result.generation} 版缓存；运行中批次不受影响。`);loadImaCacheStatus().catch(()=>{});
+    const result=await api('ima/cache/clear',{});message('ima-cache-message',`新批次将使用第 ${result.generation} 版缓存；运行中批次不受影响。`);loadImaCacheStatus().catch(()=>{});loadImaCacheInventory().catch(()=>{});
   }));
   $('refresh-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
     // 分批续跑：start 开新代并刷新目录清单，循环拉取文件正文（每次限量），
@@ -278,14 +278,39 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       message('ima-cache-message',`正在更新共享缓存（第 ${rounds} 批）…请保持页面打开。`);
       result=await api('ima/cache/refresh',{});
       showProgress(result.copilotTotal||0,result.copilotFiles||0,(result.copilotTotal||0)>=(result.copilotFiles||0)?'geo':'copilot');
+      loadImaCacheInventory().catch(()=>{});
     }
     for(const warning of result.warnings||[])toast(warning);
     if(!result.done){message('ima-cache-message','更新尚未完成，请再次点击“更新获取 IMA 缓存”继续。',true);return;}
     fill.style.width='100%';progressText.textContent='全部完成。';
     setTimeout(()=>{progress.hidden=true;},6000);
     message('ima-cache-message',`缓存更新完成：copilot 已更新 ${result.copilotFiles} 个文件，GEO优化知识库列表 ${result.geoListed} 项。后续任务直接使用新缓存。`);
-    loadImaCacheStatus().catch(()=>{});
+    loadImaCacheStatus().catch(()=>{});loadImaCacheInventory().catch(()=>{});
   }));
+  function renderImaInventory(data){
+    const ws=$('ima-cache-workspace');if(!ws)return;
+    if(!data.bases?.length){ws.replaceChildren(node('p','当前缓存还没有资料：点击上方「更新获取 IMA 缓存」开始抓取；任务运行也会按需自动获取并写入这里。','runtime-hint'));return;}
+    const fmt=iso=>iso?new Date(iso).toLocaleString('zh-CN'):'—';
+    const summary=node('p',`缓存代数：第 ${data.generation} 版 · 目录清单 ${data.totals.listings} 条 · 文件正文 ${data.totals.files} 份`,'ledger-summary');
+    const wrap=node('div');
+    for(const base of data.bases){
+      const details=node('details'),summaryEl=node('summary');
+      summaryEl.append(node('span',base.name||'未知知识库'),node('span',`目录 ${base.listings} 条 · 文件 ${base.files} 份`));
+      const body=node('div');
+      const listHead=node('h4',`目录清单样本（最近 ${base.listingSamples.length} 条，共 ${base.listings} 条）`);
+      const listUl=node('ul');
+      for(const item of base.listingSamples){const li=node('li');li.append(node('span',item.label),node('small',fmt(item.at)));listUl.append(li);}
+      const fileHead=node('h4',`文件正文样本（最近 ${base.fileSamples.length} 份，共 ${base.files} 份）`);
+      const fileUl=node('ul');
+      for(const item of base.fileSamples){const li=node('li');li.append(node('span',item.label),node('small',fmt(item.at)));fileUl.append(li);}
+      if(!base.listingSamples.length)listUl.append(node('li','本代暂无目录清单',undefined));
+      if(!base.fileSamples.length)fileUl.append(node('li','本代暂无文件正文',undefined));
+      body.append(listHead,listUl,fileHead,fileUl);
+      details.append(summaryEl,body);wrap.append(details);
+    }
+    ws.replaceChildren(summary,wrap);
+  }
+  async function loadImaCacheInventory(){renderImaInventory(await api('ima/cache/inventory'));}
   async function loadImaCacheStatus(){
     try{
       const s=await api('ima/cache');

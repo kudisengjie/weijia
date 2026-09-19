@@ -60,13 +60,14 @@ async def warm_ima_cache(
     # 不再重复打上游。文件正文永远不带 force：新代缺失才真正下载（天然续跑）。
     list_force = bool(start)
 
-    async def fetch_list(kind: str, payload: dict[str, object], path: str) -> dict[str, object]:
+    async def fetch_list(kind: str, payload: dict[str, object], path: str, label: str | None = None) -> dict[str, object]:
         return await cache.get_or_fetch(
             kind,
             {**payload, "endpoint": path},
             lambda: ima_post(credentials, path, payload, client=http),
             allow_fetch=True,
             force_refresh=list_force,
+            label=label,
         )
 
     async def ensure_media(kb_id: str, media: dict[str, object]) -> dict[str, str] | None:
@@ -81,6 +82,7 @@ async def warm_ima_cache(
             lambda: read_media(credentials, {**media, "kbId": kb_id}, client=http),
             allow_fetch=True,
             force_refresh=False,
+            label=f"文件正文 · {media['title']}",
         )
 
     try:
@@ -89,7 +91,8 @@ async def warm_ima_cache(
         cursor = ""
         while True:
             data = await fetch_list(
-                "search", {"query": "", "cursor": cursor, "limit": 20}, "openapi/wiki/v1/search_knowledge_base"
+                "search", {"query": "", "cursor": cursor, "limit": 20}, "openapi/wiki/v1/search_knowledge_base",
+                label=f"知识库列表扫描（第 {len(bases) // 20 + 1} 页）",
             )
             bases.extend(data.get("info_list", []))
             result["bases"] = len(bases)
@@ -118,6 +121,7 @@ async def warm_ima_cache(
         # 第二段：copilot 目录递归 + 文件正文（每调用最多 max_files 个，未完成 done=False）。
         queue: list[dict[str, str]] = [{"folder": "", "cursor": ""}]
         visited: list[str] = []
+        folder_names: dict[str, str] = {}
         total = 0
 
         done = True
@@ -127,13 +131,15 @@ async def warm_ima_cache(
             payload: dict[str, object] = {"knowledge_base_id": copilot_id, "cursor": job["cursor"], "limit": 50}
             if job["folder"]:
                 payload["folder_id"] = job["folder"]
-            data = await fetch_list("rules", payload, "openapi/wiki/v1/get_knowledge_list")
+            folder_label = "copilot 目录清单 · 根目录" if not job["folder"] else f"copilot 目录清单 · {folder_names.get(job['folder'], job['folder'])}"
+            data = await fetch_list("rules", payload, "openapi/wiki/v1/get_knowledge_list", label=folder_label)
             for raw in data.get("knowledge_list", []):
                 item = _media(raw)
                 if item["media_type"] == 99:
                     if item["media_id"] in visited:
                         continue
                     visited.append(item["media_id"])
+                    folder_names[str(item["media_id"])] = str(item["title"])
                     queue.append({"folder": item["media_id"], "cursor": ""})
                 else:
                     total += 1
@@ -169,6 +175,7 @@ async def warm_ima_cache(
                     "rules",
                     {"knowledge_base_id": geo_id, "cursor": cursor, "limit": 50},
                     "openapi/wiki/v1/get_knowledge_list",
+                    label=f"{GEO_KB_NAME} · 文件清单",
                 )
                 listed += len(data.get("knowledge_list", []))
                 result["geoListed"] = listed
