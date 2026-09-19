@@ -257,7 +257,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   });});
   $('clear-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
     if(!confirm('确认清除全站共享缓存？新批次会重新获取所需资料，正在运行的批次保留其资料版本。')){message('ima-cache-message','已取消。');return;}
-    const result=await api('ima/cache/clear',{});message('ima-cache-message',`新批次将使用第 ${result.generation} 版缓存；运行中批次不受影响。`);loadImaCacheStatus().catch(()=>{});loadImaCacheInventory().catch(()=>{});
+    const result=await api('ima/cache/clear',{});message('ima-cache-message','已清除共享缓存，新批次将重新获取所需资料；运行中批次不受影响。');loadImaCacheStatus().catch(()=>{});loadImaCacheInventory().catch(()=>{});
   }));
   $('refresh-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
     // 分批续跑：start 开新代并刷新目录清单，循环拉取文件正文（每次限量），
@@ -289,26 +289,30 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   }));
   function renderImaInventory(data){
     const ws=$('ima-cache-workspace');if(!ws)return;
-    if(!data.bases?.length){ws.replaceChildren(node('p','当前缓存还没有资料：点击上方「更新获取 IMA 缓存」开始抓取；任务运行也会按需自动获取并写入这里。','runtime-hint'));return;}
+    const bases=(data.bases||[]).filter(base=>base.listings>0||base.files>0);
+    if(!bases.length){ws.replaceChildren(node('p','当前缓存还没有资料：点击上方「更新获取 IMA 缓存」开始抓取；任务运行也会按需自动获取并写入这里。','runtime-hint'));return;}
     const fmt=iso=>iso?new Date(iso).toLocaleString('zh-CN'):'—';
-    const summary=node('p',`缓存代数：第 ${data.generation} 版 · 目录清单 ${data.totals.listings} 条 · 文件正文 ${data.totals.files} 份`,'ledger-summary');
+    const summary=node('p',`已缓存资料：目录清单 ${data.totals.listings} 条 · 文件正文 ${data.totals.files} 份（只显示文件名，不含正文内容）`,'ledger-summary');
     const wrap=node('div');
-    for(const base of data.bases){
+    for(const base of bases){
       const rawName=base.name||'';
       const isHashName=!rawName||rawName==='unknown'||/[=+\/]/.test(rawName)||rawName.length>60;
-      const displayName=rawName==='unknown'?'未识别来源（旧缓存条目）':isHashName?`${rawName.slice(0,12)}…（待重新获取后显示知识库名）`:rawName;
+      const displayName=isHashName?`${rawName.slice(0,12)}…（待重新获取后显示知识库名）`:rawName;
       const details=node('details'),summaryEl=node('summary');
-      summaryEl.append(node('span',displayName),node('span',`目录 ${base.listings} 条 · 文件 ${base.files} 份`));
+      summaryEl.append(node('span',displayName),node('span',`文件 ${base.files} 份`));
       const body=node('div');
-      const listHead=node('h4',`目录清单样本（最近 ${base.listingSamples.length} 条，共 ${base.listings} 条）`);
+      for(const folder of base.folders||[]){
+        const fd=node('details'),fSummary=node('summary');
+        fSummary.append(node('span',`📁 ${folder.name}`),node('span',`${folder.files.length} 个文件`));
+        const fBody=node('div');
+        const fUl=node('ul');
+        for(const item of folder.files){const li=node('li');li.append(node('span',`📄 ${item.title}`),node('small',fmt(item.at)));fUl.append(li);}
+        fBody.append(fUl);fd.append(fSummary,fBody);body.append(fd);
+      }
+      const listHead=node('h4',`清单记录（最近 ${base.listingSamples.length} 条）`);
       const listUl=node('ul');
       for(const item of base.listingSamples){const li=node('li');li.append(node('span',item.label),node('small',fmt(item.at)));listUl.append(li);}
-      const fileHead=node('h4',`文件正文样本（最近 ${base.fileSamples.length} 份，共 ${base.files} 份）`);
-      const fileUl=node('ul');
-      for(const item of base.fileSamples){const li=node('li');li.append(node('span',item.label),node('small',fmt(item.at)));fileUl.append(li);}
-      if(!base.listingSamples.length)listUl.append(node('li','本代暂无目录清单',undefined));
-      if(!base.fileSamples.length)fileUl.append(node('li','本代暂无文件正文',undefined));
-      body.append(listHead,listUl,fileHead,fileUl);
+      body.append(listHead,listUl);
       details.append(summaryEl,body);wrap.append(details);
     }
     ws.replaceChildren(summary,wrap);
@@ -318,8 +322,8 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     try{
       const s=await api('ima/cache');
       const nodeStatus=$('ima-cache-status');
-      if(!s.updatedAt){nodeStatus.textContent=`当前缓存状态：共享缓存为空（第 ${s.generation??1} 版），新任务会现场获取所需资料。`;return;}
-      nodeStatus.textContent=`当前缓存状态：第 ${s.generation} 版 · 最近更新 ${new Date(s.updatedAt).toLocaleString('zh-CN')}${s.stale?' · 已超过 15 天，建议重新获取':' · 有效'}。任务运行直接复用缓存，不重复抓取。`;
+      if(!s.updatedAt){nodeStatus.textContent='当前缓存状态：共享缓存为空，新任务会现场获取所需资料。';return;}
+      nodeStatus.textContent=`当前缓存状态：最近更新 ${new Date(s.updatedAt).toLocaleString('zh-CN')}${s.stale?' · 已超过 15 天，建议重新获取':' · 有效'}。任务运行直接复用缓存，不重复抓取。`;
     }catch(error){const nodeStatus=$('ima-cache-status');if(nodeStatus)nodeStatus.textContent='当前缓存状态：仅管理员可查看。';}
   }
   // 问句板块：上传公司文档 → 模型判断行业 → 联网挖掘问句 → 九大维度排序；预扣 1 积分，失败返还。

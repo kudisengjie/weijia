@@ -585,17 +585,18 @@ class PostgresRepository(WorkspaceRepositoryMixin):
             raise ValueError("INVALID_IMA_CACHE_KIND")
         external_id = str(metadata.get("knowledgeBaseId") or metadata.get("knowledge_base_id") or "unknown")
         safe_label = str(label or "")[:255] or None
+        kb_name = str(metadata.get("kbName") or "").strip() or None
         with self.conn.transaction():
             kb = self.conn.execute(
                 """
                 INSERT INTO ima_knowledge_bases (external_id, name)
                 VALUES (%s, %s)
                 ON CONFLICT (external_id) DO UPDATE SET
-                    name = COALESCE(NULLIF(EXCLUDED.name, 'unknown'), ima_knowledge_bases.name),
+                    name = COALESCE(%s, ima_knowledge_bases.name),
                     updated_at = NOW()
                 RETURNING id
                 """,
-                (external_id, str(metadata.get("kbName") or external_id)),
+                (external_id, kb_name or external_id, kb_name),
             ).fetchone()
             payload = json.dumps(value, ensure_ascii=False)
             if table == "ima_media_cache":
@@ -660,24 +661,41 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         for kb_id, name, listings, last_listing, files, last_file in rows:
             listings = int(listings or 0)
             files = int(files or 0)
+            kb_name = str(name or "")
+            # 未抓取的知识库（当前代无任何缓存条目）与无法识别的旧来源不展示。
+            if (listings == 0 and files == 0) or kb_name == "unknown":
+                continue
             total_listings += listings
             total_files += files
             listing_samples = self.conn.execute(
                 "SELECT COALESCE(NULLIF(label, ''), request_key), created_at FROM ima_search_cache WHERE knowledge_base_id = %s AND generation = %s ORDER BY created_at DESC LIMIT 60",
                 (kb_id, generation),
             ).fetchall()
-            file_samples = self.conn.execute(
-                "SELECT COALESCE(NULLIF(label, ''), media_id), created_at FROM ima_media_cache WHERE knowledge_base_id = %s AND generation = %s ORDER BY created_at DESC LIMIT 60",
+            file_rows = self.conn.execute(
+                "SELECT COALESCE(NULLIF(label, ''), media_id), created_at FROM ima_media_cache WHERE knowledge_base_id = %s AND generation = %s ORDER BY created_at DESC LIMIT 200",
                 (kb_id, generation),
             ).fetchall()
+            folders: dict[str, list[dict[str, object]]] = {}
+            for raw_label, created_at in file_rows:
+                text = str(raw_label)
+                if text.startswith("文件正文 · "):
+                    rest = text[len("文件正文 · "):]
+                    if "/" in rest:
+                        folder, title = rest.rsplit("/", 1)
+                    else:
+                        folder, title = "根目录", rest
+                else:
+                    folder, title = "待补全（重新获取后显示文件名）", text
+                folder = folder or "根目录"
+                folders.setdefault(folder, []).append({"title": title, "at": created_at.isoformat() if created_at else None})
             bases.append({
-                "name": str(name),
+                "name": kb_name,
                 "listings": listings,
                 "lastListingAt": last_listing.isoformat() if last_listing else None,
                 "files": files,
                 "lastFileAt": last_file.isoformat() if last_file else None,
                 "listingSamples": [{"label": str(r[0]), "at": r[1].isoformat() if r[1] else None} for r in listing_samples],
-                "fileSamples": [{"label": str(r[0]), "at": r[1].isoformat() if r[1] else None} for r in file_samples],
+                "folders": [{"name": folder, "files": items} for folder, items in folders.items()],
             })
         return {"bases": bases, "totals": {"listings": total_listings, "files": total_files}}
 

@@ -79,13 +79,15 @@ async def warm_ima_cache(
             if hasattr(repository, "backfill_ima_media_label"):
                 repository.backfill_ima_media_label(cache_key, f"文件正文 · {media['title']}")
             return None
+        path = media.get("_path") or ""
+        title = str(media["title"])
         return await cache.get_or_fetch(
             "media",
             request,
             lambda: read_media(credentials, {**media, "kbId": kb_id}, client=http),
             allow_fetch=True,
             force_refresh=False,
-            label=f"文件正文 · {media['title']}",
+            label=f"文件正文 · {path}/{title}" if path else f"文件正文 · {title}",
         )
 
     try:
@@ -129,7 +131,7 @@ async def warm_ima_cache(
         geo_id = find_base(GEO_KB_NAME)
 
         # 第二段：copilot 目录递归 + 文件正文（每调用最多 max_files 个，未完成 done=False）。
-        queue: list[dict[str, str]] = [{"folder": "", "cursor": ""}]
+        queue: list[dict[str, str]] = [{"folder": "", "cursor": "", "path": ""}]
         visited: list[str] = []
         folder_names: dict[str, str] = {}
         total = 0
@@ -150,10 +152,12 @@ async def warm_ima_cache(
                         continue
                     visited.append(item["media_id"])
                     folder_names[str(item["media_id"])] = str(item["title"])
-                    queue.append({"folder": item["media_id"], "cursor": ""})
+                    child_path = f"{job['path']}/{item['title']}" if job["path"] else str(item["title"])
+                    queue.append({"folder": item["media_id"], "cursor": "", "path": child_path})
                 else:
                     total += 1
                     result["copilotTotal"] = total
+                    item = {**item, "_path": job["path"]}
                     walk.append((copilot_id, item))
             if total > MAX_COPILOT_FILES or len(visited) > MAX_FOLDERS:
                 raise ApiError(413, "copilot 知识库内容超过上限，请整理后再更新获取。")
