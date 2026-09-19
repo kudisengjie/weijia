@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import httpx
 
+from . import ima_manifest as manifest
 from .errors import ApiError
 from .ima import ImaCache, ima_post, next_cursor, normalize, read_media
 
@@ -180,22 +181,77 @@ async def warm_ima_cache(
         result["copilotFiles"] = len(walk)
         result["done"] = done
 
-        # 第三段：GEO优化知识库——仅获取列表（知识库列仅作展示）。
+        # 第三段：GEO优化核心知识库——按《清单》（ima_manifest.py）递归展开目录，
+        # 获取「必读/条件读取」文件正文（整夹/文件级不读取的跳过，节省抓取额度），
+        # 并把清单索引写入缓存，供生成链路零上游注入标准包。
         if done and geo_id is not None:
             listed = 0
-            cursor = ""
-            while True:
+            geo_queue: list[dict[str, str]] = [{"folder": "", "cursor": "", "path": ""}]
+            geo_visited: list[str] = []
+            inventory: list[dict[str, object]] = []
+            skipped = 0
+            while geo_queue:
+                job = geo_queue[0]
+                payload = {"knowledge_base_id": geo_id, "cursor": job["cursor"], "limit": 50}
+                if job["folder"]:
+                    payload["folder_id"] = job["folder"]
                 data = await fetch_list(
                     "rules",
-                    {"knowledge_base_id": geo_id, "cursor": cursor, "limit": 50},
+                    payload,
                     "openapi/wiki/v1/get_knowledge_list",
-                    label=f"{GEO_KB_NAME} · 文件清单",
+                    label=f"{GEO_KB_NAME} · 文件清单 · {job['path'] or '根目录'}",
                 )
-                listed += len(data.get("knowledge_list", []))
+                for raw in data.get("knowledge_list", []):
+                    item = _media(raw)
+                    if item["media_type"] == 99:
+                        go_on, why = manifest.folder_action(str(item["title"]))
+                        if not go_on or item["media_id"] in geo_visited:
+                            continue
+                        geo_visited.append(item["media_id"])
+                        child_path = f"{job['path']}/{item['title']}" if job["path"] else str(item["title"])
+                        geo_queue.append({"folder": item["media_id"], "cursor": "", "path": child_path})
+                        continue
+                    listed += 1
+                    include, why = manifest.file_action(str(item["title"]))
+                    inventory.append({
+                        "mediaId": item["media_id"], "title": item["title"],
+                        "path": job["path"], "include": include, "reason": why,
+                    })
+                    if not include:
+                        skipped += 1
                 result["geoListed"] = listed
-                cursor = next_cursor(data, cursor)
-                if cursor is None:
+                cursor = next_cursor(data, job["cursor"])
+                if cursor is not None:
+                    job["cursor"] = cursor
+                    continue
+                geo_queue.pop(0)
+
+            # 清单索引：生成链路据此零上游选文件、读正文（键与 ImaCache.key 一致）。
+            index_request = manifest.index_request(str(geo_id))
+            index_key = ImaCache.key("search", index_request, generation)
+            repository.put_ima_cache(
+                "search", index_key, generation,
+                {"kbId": str(geo_id), "generation": generation, "files": inventory},
+                index_request, master_key, label=f"{GEO_KB_NAME} · 标准包清单索引",
+            )
+
+            required = [item for item in inventory if item["include"]]
+            fetched_total = 0
+            for item in required:
+                if fetched_total >= max_files:
+                    done = False
                     break
+                value = await ensure_media(str(geo_id), {
+                    "media_id": str(item["mediaId"]), "title": str(item["title"]),
+                    "_path": str(item["path"]),
+                })
+                if value is not None:
+                    fetched_total += 1
+            result["geoFiles"] = len(required)
+            result["geoSkipped"] = skipped
+            result["fetchedThisCall"] = int(result.get("fetchedThisCall", 0)) + fetched_total
+            if fetched_total:
+                result["warnings"].append(f"{GEO_KB_NAME} 本次抓取 {fetched_total}/{len(required)} 份（已缓存跳过不计）")
         return result
     finally:
         if owned_client:

@@ -761,10 +761,16 @@ class PostgresRuntimeTests(unittest.TestCase):
                     data = {'knowledge_list': files[folder], 'is_end': True}
                 else:
                     self.assertEqual('KB-Geo', payload['knowledge_base_id'])
-                    self.assertEqual('', folder, 'GEO优化知识库只获取列表，不进入文件夹')
-                    data = {'knowledge_list': [{'media_id': 'geo-doc', 'title': 'GEO优化指南.md'}, {'folder_id': 'folder_geo', 'name': '资料夹'}], 'is_end': True}
+                    # 2026-09-19 吕老师清单：GEO优化知识库按清单递归抓取正文（必读），
+                    # 跳过清单排除文件（如 豆包_抖音指南）。
+                    files = {'': [{'media_id': 'geo-doc', 'title': 'GEO优化指南.md'}, {'folder_id': 'folder_geo', 'name': '资料夹'}],
+                             'folder_geo': [{'media_id': 'geo-inner', 'title': 'GEO_违规标准_V3.24.md'},
+                                            {'media_id': 'geo-skip', 'title': '豆包_抖音指南_V1.3.md'}]}
+                    self.assertIn(folder, files)
+                    data = {'knowledge_list': files[folder], 'is_end': True}
             elif path == 'get_media_info':
-                self.assertIn(payload['media_id'], {'memory', 'gen'}, 'GEO优化知识库的文件不读取正文')
+                self.assertIn(payload['media_id'], {'memory', 'gen', 'geo-doc', 'geo-inner'})
+                self.assertNotIn(payload['media_id'], {'geo-skip'}, '清单排除文件不得读取正文')
                 data = {'media_type': 1, 'url_info': {'url': 'https://test.cos.ap-guangzhou.myqcloud.com/' + payload['media_id'] + '.md'}}
             else:
                 self.fail('Unexpected IMA call ' + path)
@@ -786,16 +792,28 @@ class PostgresRuntimeTests(unittest.TestCase):
                 copilot_lists_after = [c for c in calls if c[0] == 'search_knowledge_base' or (c[0] == 'get_knowledge_list' and c[1] == 'KB-Copilot')]
                 self.assertTrue(second['done'])
                 self.assertEqual(2, second['copilotFiles'])
-                self.assertEqual(1, second['fetchedThisCall'], '续跑只下载剩余的 1 个文件')
-                self.assertEqual(2, second['geoListed'])
+                self.assertEqual(3, second['geoListed'])
                 self.assertEqual(copilot_lists_before, copilot_lists_after, '续跑不得重复请求 copilot 目录清单')
                 self.assertEqual(generation, self.repo.get_ima_cache_generation(), '续跑不得再 bump generation')
+                # GEO优化知识库：按清单抓取（3 个文件列出，2 份必读，1 份清单排除）。
+                self.assertEqual(3, second['geoListed'])
+                self.assertEqual(2, second['geoFiles'])
+                self.assertEqual(1, second['geoSkipped'])
+                self.assertEqual(3, second['fetchedThisCall'], '续跑只下载剩余的 1 个 copilot 文件 + 2 份 GEO 必读文件')
+                from geo_backend import ima_manifest as manifest
+                index_key = ImaCache.key('search', manifest.index_request('KB-Geo'), generation)
+                index = self.repo.get_ima_cache('search', index_key, generation, MASTER)
+                self.assertIsNotNone(index, '清单索引必须写入缓存供生成链路零上游读取')
+                self.assertEqual(['geo-doc', 'geo-inner'], [f['mediaId'] for f in index['files'] if f['include']])
+                self.assertEqual(['geo-skip'], [f['mediaId'] for f in index['files'] if not f['include']])
                 # 预热后同代缓存直接命中：批次运行时不再重复调用 IMA 上游。
                 cache = ImaCache(self.repo, MASTER)
                 async def forbidden():
                     self.fail('预热后的缓存必须直接命中，不允许再访问上游')
                 memory = await cache.get_or_fetch('media', {'knowledgeBaseId': 'KB-Copilot', 'mediaId': 'memory'}, forbidden)
                 self.assertIn('完整资料', memory['text'])
+                geo_doc = await cache.get_or_fetch('media', {'knowledgeBaseId': 'KB-Geo', 'mediaId': 'geo-doc'}, forbidden)
+                self.assertIn('完整资料', geo_doc['text'])
                 await cache.get_or_fetch('search', {'query': '', 'cursor': '', 'limit': 20, 'endpoint': 'openapi/wiki/v1/search_knowledge_base'}, forbidden)
                 await cache.get_or_fetch('rules', {'knowledge_base_id': 'KB-Geo', 'cursor': '', 'limit': 50, 'endpoint': 'openapi/wiki/v1/get_knowledge_list'}, forbidden)
         asyncio.run(run())

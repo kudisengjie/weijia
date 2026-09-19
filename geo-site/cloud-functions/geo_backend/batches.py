@@ -7,6 +7,7 @@ import re
 from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 
+from . import ima_manifest as manifest
 from .errors import ApiError
 from .artifacts import ArtifactService
 from .credits import CreditService
@@ -60,10 +61,20 @@ def _phase_detail(batch: dict[str, object]) -> str:
         return f"规则原文已读取 {max(rule_total - remaining, 0)}/{rule_total} 份"
     if phase == "websearch":
         return f"第 {at}/{total} 条 · 联网搜索证据中"
+    if phase in {"generate", "audit"}:
+        extra = ""
+        chars = int(batch.get("standardsChars", 0) or 0)
+        if chars:
+            extra = f" · 标准包已注入 {chars} 字"
+        miss = batch.get("standardsMissing") or []
+        if miss:
+            extra += f" · 标准包缺 {len(miss)} 份"
+    else:
+        extra = ""
     if phase == "generate":
-        return f"第 {at}/{total} 条 · 按规范生成中"
+        return f"第 {at}/{total} 条 · 按规范生成中{extra}"
     if phase == "audit":
-        return f"第 {at}/{total} 条 · 审核中"
+        return f"第 {at}/{total} 条 · 审核中{extra}"
     if phase == "repair":
         return f"第 {at}/{total} 条 · 修订第 {batch.get('repairCount', 0)} 次"
     return ""
@@ -630,8 +641,61 @@ class BatchService:
         if size > 300000:
             raise ApiError(413, "当前完整规则与资料超过 30 万字符，请拆分资料。未自动截断或丢弃来源。")
 
+    # 标准包注入上限（字符）：超限整份跳过低优先文件，绝不截断单份文件内容。
+    STANDARDS_CHAR_CAP = 150000
+
+    async def _standards_pack(self, batch: dict[str, object], stage: str, task: dict[str, object]) -> str:
+        """按《吕老师清单》（ima_manifest.py）从 IMA 缓存只读装配标准包。
+
+        铁律：本方法绝不发起任何 IMA 上游请求——文件正文一律来自预热缓存，
+        缓存缺失的文件整份记录到 batch['standardsMissing'] 后跳过，由主账号
+        「更新获取」预热补齐；绝不截断单份文件、绝不静默降级为部分内容。
+        """
+        if stage not in {"generate", "audit", "repair"}:
+            return ""
+        bases = batch.get("bases") or []
+        geo_id = ""
+        for item in bases:
+            name = normalize(item.get("name") or item.get("kb_name"))
+            if name == normalize(manifest.GEO_KB_NAME):
+                geo_id = str(item.get("id") or item.get("kb_id") or "")
+                break
+        if not geo_id:
+            batch.setdefault("standardsMissing", []).append(f"知识库「{manifest.GEO_KB_NAME}」不在批次扫描结果中")
+            return ""
+        generation = int(batch.get("imaCacheGeneration") or self.repository.get_ima_cache_generation())
+        index = self.repository.get_ima_cache(
+            "search", ImaCache.key("search", manifest.index_request(geo_id), generation), generation, self.master_key)
+        if not isinstance(index, dict) or not isinstance(index.get("files"), list):
+            batch.setdefault("standardsMissing", []).append("标准包清单索引缺失：请主账号在共享缓存运行一次「更新获取」")
+            return ""
+        ai_platform = str(task.get("ai") or "")
+        media_platform = str(task.get("media") or "")
+        # 修订阶段沿用审核的同一把尺子（长图 3.2：审核端按谁的 L2 细则核对）。
+        wanted = manifest.selection_for("audit" if stage in {"audit", "repair"} else "generation", ai_platform, media_platform)
+        parts: list[str] = []
+        used = 0
+        missing = batch.setdefault("standardsMissing", [])
+        for token in wanted:
+            entry = next((f for f in index["files"] if f.get("include") and token in str(f.get("title") or "")), None)
+            if entry is None:
+                continue  # 该条件文件与当前任务平台无关，正常跳过。
+            key = ImaCache.key("media", {"knowledgeBaseId": geo_id, "mediaId": str(entry["mediaId"])}, generation)
+            value = self.repository.get_ima_cache("media", key, generation, self.master_key)
+            if not isinstance(value, dict) or not str(value.get("text") or "").strip():
+                missing.append(f"{entry.get('title')}（正文未预热）")
+                continue
+            section = f"\n\n====《{value['title']}》====\n" + str(value["text"])
+            if used + len(section) > self.STANDARDS_CHAR_CAP:
+                missing.append(f"{entry.get('title')}（超出标准包容量上限，本轮未注入）")
+                continue
+            parts.append(section)
+            used += len(section)
+        batch["standardsChars"] = used
+        return "".join(parts)
+
     @staticmethod
-    def _prompt(batch: dict[str, object], stage: str) -> list[dict[str, str]]:
+    def _prompt(batch: dict[str, object], stage: str, standards_text: str = "") -> list[dict[str, str]]:
         task = batch["tasks"][batch["taskIndex"]]
         notes = str(task.get("notes") or "").strip()
         source = {
@@ -698,7 +762,8 @@ class BatchService:
                 "role": "system",
                 "content": contract + "\n\n" + action
                 + "\n\n=== 生成规范（所有阶段共同遵循） ===\n" + generation_text
-                + "\n\n=== 本阶段规范 ===\n" + stage_text,
+                + "\n\n=== 本阶段规范 ===\n" + stage_text
+                + (("\n\n=== 标准包（吕老师清单必读文件原文，细节以标准包为准） ===" + standards_text) if standards_text else ""),
             },
             {"role": "user", "content": json.dumps(user, ensure_ascii=False)},
         ]
@@ -834,11 +899,12 @@ class BatchService:
             raise ApiError(409, "批次来自旧版本流程，请取消后重新创建任务。", "LEGACY_BATCH_PHASE")
         self._validate_context(batch)
         execution_model, execution_key = self._execution_model(batch, user_id)
+        standards_text = await self._standards_pack(batch, batch["phase"], batch["tasks"][batch["taskIndex"]])
         batch["requests"] += 1
         result = await self.model_complete(
             execution_model,
             execution_key,
-            self._prompt(batch, batch["phase"]),
+            self._prompt(batch, batch["phase"], standards_text),
             client=self.client,
         )
         if batch["phase"] in {"generate", "repair"}:
@@ -847,8 +913,10 @@ class BatchService:
             return
         batch["audit"] = audit_result(result)
         if not batch["audit"]["passed"]:
-            if batch["repairCount"] >= 1:
-                raise ApiError(422, "修订后仍未通过审核：" + "；".join(batch["audit"]["issues"]))
+            # 吕老师 2026-09-19 指令：标准要求「循环至通过」，修订上限 1 次 → 3 次。
+            # 修订提示词已携带具体 issues，模型有明确改法；3 次仍不过才整批失败。
+            if batch["repairCount"] >= 3:
+                raise ApiError(422, "修订 3 次后仍未通过审核：" + "；".join(batch["audit"]["issues"]))
             batch["repairCount"] += 1
             batch["phase"] = "repair"
             return
