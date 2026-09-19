@@ -130,6 +130,15 @@ class WorkspaceService:
             workspace = self._get(workspace_id, user_id)
             if workspace['status'] == 'archived':
                 return self.get(workspace_id, user_id)
-            self._editable(workspace, version)
-            self.repository.update_workspace(user_id, self.tenant_id, workspace_id, version, status='archived')
+            if workspace['status'] == 'started':
+                # 吕老师 2026-09-19 要求：已结束或已失败的任务允许删除记录；运行中仍不可删。
+                batch = self.batches.get(workspace['batchId'], user_id) if workspace['batchId'] else None
+                if batch and batch['status'] not in ('completed', 'cancelled', 'failed'):
+                    raise ApiError(409, '任务还在进行中，不能删除。请先取消或等待完成。', 'WORKSPACE_LOCKED')
+            else:
+                self._editable(workspace, version)
+            # 吕老师 2026-09-19：删除记录允许从 started 状态跨状态归档，并解除批次绑定
+            # （约束要求 started ⇔ batch_id 非空；前端历史列表过滤 archived 工作区的批次）。
+            self.repository.update_workspace(user_id, self.tenant_id, workspace_id, workspace['version'],
+                                             status='archived', from_status=None, clear_batch=True)
             return self.get(workspace_id, user_id)

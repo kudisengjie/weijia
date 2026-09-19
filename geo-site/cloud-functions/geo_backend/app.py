@@ -482,10 +482,39 @@ def create_app(
             context = tenant_context(repository, current.user_id, active=True)
             tenant_id = str(context['tenantId']) if context else current.user_id
             service = QuestionService(repository, config.geo_master_key, model_complete=model_complete)
-            return await service.discover(
+            result = await service.discover(
                 [doc.model_dump() for doc in body.docs], body.count, current.user_id, tenant_id,
                 notes=body.notes,
             )
+            # 吕老师 2026-09-19：查询成功自动归档到问句存储，查询页给出提醒后即可离开。
+            report = None
+            try:
+                report = service.store_report(current.user_id, context['tenantId'] if context else None, result, notes=body.notes)
+            except Exception:
+                pass
+            result['report'] = report
+            return result
+
+    @app.get("/questions/reports")
+    def questions_reports_list(request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            service = QuestionService(repository, config.geo_master_key, model_complete=model_complete)
+            return service.list_reports(current.user_id)
+
+    @app.get("/questions/reports/{report_id}")
+    def questions_report_detail(report_id: str, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            service = QuestionService(repository, config.geo_master_key, model_complete=model_complete)
+            return service.get_report(current.user_id, report_id)
+
+    @app.delete("/questions/reports/{report_id}")
+    def questions_report_delete(report_id: str, request: Request):
+        with factory() as repository:
+            current = authentication(request, repository)
+            service = QuestionService(repository, config.geo_master_key, model_complete=model_complete)
+            return service.delete_report(current.user_id, report_id)
 
     @app.get("/credits")
     def credits_view(request: Request):
@@ -639,6 +668,15 @@ def create_app(
         with factory() as repository:
             current = authentication(request, repository)
             return batch_service(repository, tenant_context(repository, current.user_id)).get(batch_id, current.user_id)
+
+    @app.post("/batches/{batch_id}/retry-failed")
+    def batches_retry_failed(batch_id: str, request: Request):
+        # 吕老师 2026-09-19：失败的任务不能被忽略——按原任务行新建补跑批次。
+        with factory() as repository:
+            current = authentication(request, repository)
+            context = tenant_context(repository, current.user_id, active=True)
+            expires_at = context["expiresAt"] if context and context.get("expiresAt") else current.expires_at
+            return batch_service(repository, context).retry_failed(batch_id, current.user_id, expires_at)
 
     @app.post("/batches/{batch_id}/step")
     async def batches_step(batch_id: str, body: BatchStepBody, request: Request):

@@ -101,7 +101,7 @@ export function initializeConsole({changeView,onCreate}){
     region.replaceChildren();
     if(!batches.length){
       const empty=el('div',undefined,'console-empty-state');
-      empty.append(overviewMascot,el('strong','还没有任务'),el('p','请到“批次工作区”上传 Excel 任务表与公司资料，开始生成文章。'));
+      empty.append(overviewMascot,el('strong','还没有任务'),el('p','请到「内容创作」上传 Excel 任务表与公司资料，开始生成文章。'));
       region.append(empty);return;
     }
   function statusBadge(batch){

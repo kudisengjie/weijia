@@ -45,6 +45,9 @@ try {
   await page.screenshot({ path: path.join(output, 'settings-contact.png') });
   // 文章保存页：验证恢复文案接线（未选过文件夹时应显示"尚未选择"而非报错）
   await tab.filter({ hasText: '文章保存' }).click();
+  // saving-status 由 localOutput.restore() 异步填充：等待文案出现，避免读到空串误报。
+  await page.waitForFunction(() => (document.querySelector('#saving-status')?.textContent || '').includes('文件夹'),
+    undefined, { timeout: 15000 }).catch(() => {});
   const savingText = await page.locator('#saving-status').textContent();
   console.log('saving status:', savingText);
   if (!savingText.includes('文件夹')) failures.push(`文章保存状态异常：${savingText}`);

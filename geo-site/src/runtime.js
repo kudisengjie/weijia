@@ -150,10 +150,13 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     consoleView?.reset();
   }
   function toast(text) {if(!csrf)return;message('runtime-toast',text,true);$('runtime-toast').hidden=false;}
-  async function api(path,body) {
+  async function api(path,body,method) {
+    // 旧语义保持：未传 method 时 body 缺省 = GET，否则 POST；显式传 'DELETE' 走删除请求。
+    const isGet=method?method==='GET':body===undefined;
+    const verb=isGet?'GET':(method||'POST');
     const operation=auth.epoch;
     let response;
-    try {response=await fetch('/api/'+path,{method:body===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(125000)});}
+    try {response=await fetch('/api/'+path,{method:verb,credentials:'same-origin',cache:'no-store',headers:isGet?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},...(isGet?{}:{body:JSON.stringify(body??{})}),signal:AbortSignal.timeout(125000)});}
     catch {if(!auth.isCurrent(operation))throw Object.assign(new Error('已忽略旧会话响应。'),{code:'STALE_RESPONSE'});throw new Error('连接中断或请求超时，未自动重试。批次可在历史记录中读取进度。');}
     if(!auth.isCurrent(operation))throw Object.assign(new Error('已忽略旧会话响应。'),{code:'STALE_RESPONSE'});
     let data;try{data=await response.json();}catch{
@@ -178,13 +181,15 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   }
   function renderConnections() {
     if(!settings)return;
-    const model=activeBatch?.model||workspaces.model||settings.model,configured=settings.providers[model.id].configured;
+    // 已结束的批次不再锁定模型显示：右侧卡与各处状态回到当前默认模型（吕老师 2026-09-19）。
+    const endedBatch=activeBatch&&['completed','cancelled'].includes(activeBatch.status)?null:activeBatch;
+    const model=endedBatch?.model||workspaces.model||settings.model,configured=settings.providers[model.id].configured;
     document.querySelectorAll('[data-selected-model-provider]').forEach(n=>n.textContent=model.provider);
     document.querySelectorAll('[data-selected-model-name]').forEach(n=>n.textContent=model.model);
     document.querySelectorAll('[data-selected-model-preflight]').forEach(n=>n.textContent=`${model.label} · ${configured?'已配置':'未配置 API'}`);
     document.querySelectorAll('[data-selected-model-service]').forEach(n=>n.textContent=`${model.provider} · ${configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-selected-model-status]').forEach(n=>n.textContent=configured?'已配置':'未配置');
-    document.querySelectorAll('[data-selected-model-label]').forEach(n=>{n.textContent=activeBatch?.model.label||model.label;n.title=n.textContent;});
+    document.querySelectorAll('[data-selected-model-label]').forEach(n=>{n.textContent=model.label;n.title=n.textContent;});
     document.querySelectorAll('[data-selected-model-connection]').forEach(n=>n.textContent=`已保存：${model.label} · ${configured?'已配置':'未配置'}`);
     document.querySelectorAll('[data-ima-status]').forEach(n=>n.textContent=settings.ima.configured?'IMA · 已配置':'IMA · 等待管理员配置');
     document.querySelectorAll('[data-verify-model]').forEach(n=>n.textContent=`${settings.model.label} · ${settings.providers[settings.model.id].configured?'已配置':'未配置'}`);
@@ -204,7 +209,9 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     renderModelLock();
   }
   function renderModelLock() {const locked=modelIsLocked(settings,activeBatch);document.querySelectorAll('input[name="model-option"], #model-key, #custom-model-id, #model-form button').forEach(input=>{input.disabled=locked;});}
-  async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();if(!ownLedgerLoaded){ownLedgerLoaded=true;loadOwnLedger().catch(()=>{});loadImaCacheStatus().catch(()=>{});loadImaCacheInventory().catch(()=>{});}}
+  async function refreshSettings() {settingsLoadedAt=Date.now();settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();if(!ownLedgerLoaded){ownLedgerLoaded=true;loadOwnLedger().catch(()=>{});loadImaCacheStatus().catch(()=>{});loadImaCacheInventory().catch(()=>{});}}
+  // 设置页反复切换不再每次全量拉取：5 秒内的重复点击直接复用本地状态，消除切页卡顿。
+  let settingsLoadedAt=0;
   async function enter() {return bootstrapAuthenticatedWorkspace({
     showWorkspace(){ document.documentElement.classList.remove('booting');$('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
     refreshSettings,
@@ -332,22 +339,8 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     const now=new Date(),pad=n=>String(n).padStart(2,'0');
     const stamp=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
     const name=`问句查询-${result.analysis.industry}-${stamp}.md`;
-    await localOutput.saveFile([],name,result.markdown);
-  }
-  function renderQuestions(result){
-    lastQuestionResult=result;
-    const panel=$('question-results');if(!panel)return;
-    panel.hidden=false;
-    const analysis=$('question-analysis');
-    const products=result.analysis.products?.length?` · 主要产品：${result.analysis.products.join('、')}`:'';
-    analysis.textContent=`行业判断：${result.analysis.industry} · 核心业务：${result.analysis.business||'—'}${products} · 目标客户：${result.analysis.audience||'—'}`;
-    const list=$('question-list');list.replaceChildren();
-    result.questions.forEach((item,index)=>{
-      const row=node('li',undefined,'question-item');
-      row.append(node('strong',`${index+1}. ${item.question}`));
-      row.append(node('span',`${item.intent} · ${item.stage} · 评分 ${item.score}${item.reason?` · ${item.reason}`:''}`,'question-item__meta'));
-      list.append(row);
-    });
+    // saveFile 按字节写盘并读回校验：必须传 UTF-8 字节，传字符串会导致大小校验 1688 × undefined。
+    await localOutput.saveFile([],name,new TextEncoder().encode(result.markdown));
   }
   // 查询进度条：单请求内按阶段提示（读取文档→模型判行业→联网搜索→生成排序）。
   let questionProgressTimer=null;
@@ -382,18 +375,90 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     startQuestionProgress();
     try{
       const result=await api('questions/discover',notes?{docs,count,notes}:{docs,count});
-      renderQuestions(result);
-      const hint=`已产出 ${result.questions.length} 条问句，预扣 1 积分。`;
-      try{await saveQuestionMarkdown(result);message('question-message',`${hint}问句报告已保存到本机文件夹。`);}
-      catch(error){message('question-message',`${hint}本机保存未完成：${error.message}，可点击“保存到本机”重试。`);}
+      // 服务端已自动归档；查询页不再长期占用（吕老师 2026-09-19）。
+      lastQuestionResult=null;
+      $('question-results').hidden=true;
+      $('question-list')?.replaceChildren();
+      $('question-analysis').textContent='';
+      $('question-done').hidden=false;
+      message('question-message',`已产出 ${result.questions.length} 条问句，预扣 1 积分，已自动存入「问句存储」。`);
       stopQuestionProgress(true);
     }catch(error){stopQuestionProgress(false);throw error;}
   }));
-  $('question-save').addEventListener('click',event=>action(event.currentTarget,'question-message',async()=>{
-    if(!lastQuestionResult)throw new Error('还没有可保存的查询结果。');
+  $('question-save')?.addEventListener('click',event=>action(event.currentTarget,'question-message',async()=>{
+    if(!lastQuestionResult)throw new Error('查询结果已归档到「问句存储」，请到问句存储页面保存。');
     await saveQuestionMarkdown(lastQuestionResult);
     message('question-message','问句报告已保存到本机文件夹并逐字校验。');
   }));
+  // 问句存储：自动归档的问句记录，可展开查看、保存到本机、删除。
+  let questionReportsLoadedAt=0;
+  async function saveQuestionReport(report){
+    const payload=report.payload||{};
+    const analysis=payload.analysis||{};
+    const now=new Date(),pad=n=>String(n).padStart(2,'0');
+    const stamp=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const name=`问句查询-${analysis.industry||'行业'}-${stamp}.md`;
+    // markdown 与查询时一致；若历史记录缺 markdown，用问句清单兜底重建。
+    const markdown=payload.markdown||`# ${report.title}\n\n`+(payload.questions||[]).map((item,i)=>`${i+1}. ${item.question}（${item.intent||''} · ${item.stage||''} · 评分 ${item.score??''}）`).join('\n');
+    await localOutput.saveFile([],name,new TextEncoder().encode(markdown));
+  }
+  function renderReportDetail(detail){
+    const payload=detail.payload||{},body=node('div',undefined,'question-store-body');
+    const analysis=payload.analysis||{};
+    const products=analysis.products?.length?` · 主要产品：${analysis.products.join('、')}`:'';
+    body.append(node('p',`行业判断：${analysis.industry||'—'} · 核心业务：${analysis.business||'—'}${products} · 目标客户：${analysis.audience||'—'}`,'question-analysis'));
+    if(payload.notes)body.append(node('p',`用户要求：${payload.notes}`,'runtime-hint'));
+    const ol=node('ol','question-list');
+    (payload.questions||[]).forEach((item,index)=>ol.append(node('li',`${index+1}. ${item.question}`,'question-item')));
+    body.append(ol);
+    return body;
+  }
+  async function loadQuestionReports({force=false,silent=false}={}){
+    const list=$('question-store-list');if(!list)return;
+    if(!force&&questionReportsLoadedAt&&Date.now()-questionReportsLoadedAt<5000)return;
+    if(!silent)list.replaceChildren(node('p','正在读取问句记录…','console-empty'));
+    try{
+      const {reports}=await api('questions/reports');
+      questionReportsLoadedAt=Date.now();
+      swapList(list,fragment=>{
+        if(!reports.length){fragment.append(node('p','还没有问句记录。到「问句查询」发起第一次查询，结果会自动存到这里。','console-empty'));return;}
+        for(const report of reports){
+          const item=node('details',undefined,'question-store-item');
+          item.dataset.renderKey=`report:${report.id}`;
+          const summary=node('summary');
+          summary.append(node('strong',report.title),node('small',`${report.questionCount} 条问句 · ${new Date(report.createdAt).toLocaleString('zh-CN')}`,'question-store-meta'));
+          item.append(summary);
+          const actions=node('div',undefined,'question-store-actions');
+          const view=node('button','展开查看');
+          view.addEventListener('click',async()=>{
+            if(item.querySelector('.question-store-body'))return;
+            view.disabled=true;
+            try{item.append(renderReportDetail(await api(`questions/reports/${report.id}`)));view.remove();}
+            catch(error){toast(error.message);view.disabled=false;}
+          });
+          const save=node('button','保存到本机');
+          save.addEventListener('click',async()=>{
+            save.disabled=true;
+            try{await saveQuestionReport(await api(`questions/reports/${report.id}`));toast('问句报告已保存到本机文件夹并逐字校验。');}
+            catch(error){toast(error.message);}
+            finally{save.disabled=false;}
+          });
+          const del=node('button','删除记录');
+          del.addEventListener('click',async()=>{
+            if(!confirm(`确认删除记录「${report.title}」？删除后不可恢复。`))return;
+            del.disabled=true;
+            try{await api(`questions/reports/${report.id}`,{},'DELETE');questionReportsLoadedAt=0;await loadQuestionReports({force:true,silent:true});}
+            catch(error){toast(error.message);del.disabled=false;}
+          });
+          actions.append(view,save,del);
+          item.append(actions);
+          fragment.append(item);
+        }
+      });
+    }catch(error){list.replaceChildren(node('p',error.message,'console-empty'));if(!silent)throw error;}
+  }
+  $('question-goto-store').addEventListener('click',()=>{changeView('question-store');loadQuestionReports({force:true}).catch(error=>toast(error.message));});
+  document.querySelectorAll('[data-view="question-store"]').forEach(button=>button.addEventListener('click',()=>loadQuestionReports().catch(e=>toast(e.message))));
   function defaultMemberDates(){const form=$('member-form');form.elements.startsAt.value=localDateTime(Date.now());form.elements.expiresAt.value=localDateTime(Date.now()+30*86400000);}
   defaultMemberDates();
   $('member-form').addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget;action(event.submitter,'member-message',async()=>{
@@ -479,6 +544,19 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       if(!driving&&b.status==='ready'){const recover=node('button','处理超时步骤');recover.addEventListener('click',async()=>{if(!confirm('仅处理超过 150 秒无进展的步骤。结果不明的任务会跳过并退款，不重复发送模型请求。'))return;try{receiveBatch(await api(`batches/${b.id}/step`,{seq:b.seq,retry:true}));}catch(error){toast(error.message);}});controls.append(recover);}
       const cancel=node('button','取消批次并返还未完成积分');cancel.addEventListener('click',async()=>{if(!confirm('确认取消？未完整输出的任务积分会返还。已发给模型的请求无法撤回，提供商可能仍计费。'))return;cancel.disabled=true;runners.stop(b.id);try{receiveBatch(await api(`batches/${b.id}/cancel`,{}));await refreshSettings();receiveBatch(await api('batches/'+b.id));await history();}catch(error){toast(error.message);cancel.disabled=false;}});controls.append(cancel);
     }
+    // 已结束且存在失败任务：支持一键补跑（服务端用原任务行重建新批次，不重发结果不明的请求）。
+    if(b.status==='completed'&&b.failedTasks?.length){
+      const retry=node('button',`补跑失败任务（${b.failedTasks.length} 条）`);
+      retry.addEventListener('click',async()=>{
+        if(!confirm(`确认补跑 ${b.failedTasks.length} 条失败任务？会创建一个新批次并重新预扣积分。`))return;
+        retry.disabled=true;
+        try{const fresh=await api(`batches/${b.id}/retry-failed`,{});historyLoadedAt=0;drive(fresh);}
+        catch(error){toast(error.message);retry.disabled=false;}
+      });
+      controls.append(retry);
+    }
+    // 已结束的批次给一条明确回新建任务的路径（吕老师 2026-09-19：不能被困在批次详情里）。
+    if(terminal){const fresh=node('button','新建任务');fresh.addEventListener('click',()=>workspaces.create().catch(error=>toast(error.message)));controls.append(fresh);}
     panel.append(controls,node('p','切换工作区不会停止其他任务。状态与文件保存在服务端；当前由页面推进，关闭页面可能暂停后续生成，重新打开后可继续。','runtime-hint'));
     renderModelLock();
     consoleView?.renderArticles(b,downloadCurrent,error=>toast(error.message),async()=>{
@@ -535,19 +613,52 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     historyLoadedAt=Date.now();
     const list=$('history-list'),completed=$('completed-list');
     await workspaces.load(batches);
+    // 已删除记录（archived 工作区）不再出现在历史/文章/总览（吕老师 2026-09-19）。
+    const visible=batches.filter(b=>{const ws=workspaces.forBatch(b.id);return !(ws&&ws.status==='archived');});
     // 数据就绪后一次性原子替换，加载期间保留旧内容/静态占位，不再先清空再等待。
     swapList(list,fragment=>{
-      if(!batches.length){fragment.append(historyEmptyShell());return;}
-      for(const b of batches){
+      if(!visible.length){fragment.append(historyEmptyShell());return;}
+      for(const b of visible){
         const row=node('article',undefined,'runtime-panel runtime-history');
         row.dataset.renderKey=`batch:${b.id}:${b.status}:${b.completed}`;
-        row.append(node('h2',b.title),node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${batchStatusLabel(b)}`));
-        const button=node('button','打开批次');button.addEventListener('click',()=>openBatch(b));row.append(button);
+        row.append(node('h2',b.title));
+        // 紧凑单行：状态信息与「打开批次」并排，按钮放在文字后面（吕老师 2026-09-19）。
+        const meta=node('div',undefined,'runtime-history__row');
+        meta.append(node('p',`${b.model.label} · ${b.completed}/${b.total} 篇 · ${batchStatusLabel(b)}`));
+        const actions=node('div',undefined,'runtime-history__actions');
+        const button=node('button','打开批次');button.addEventListener('click',()=>openBatch(b));actions.append(button);
+        const terminalBatch=['completed','cancelled','failed'].includes(b.status);
+        // 补跑仅对 completed + 有失败任务的批次开放：status=failed 的批次走「手动重试失败步骤」。
+        if(b.status==='completed'&&b.failedTasks?.length){
+          const retry=node('button','补跑失败任务');
+          retry.addEventListener('click',async()=>{
+            retry.disabled=true;
+            try{const fresh=await api(`batches/${b.id}/retry-failed`,{});toast(`已创建补跑任务（${fresh.total} 条），正在开始。`);drive(fresh);}
+            catch(error){toast(error.message);retry.disabled=false;}
+          });
+          actions.append(retry);
+        }
+        if(terminalBatch){
+          const remove=node('button','删除记录');
+          remove.addEventListener('click',async()=>{
+            if(!confirm(`确认删除记录「${b.title}」？删除后不可恢复。`))return;
+            remove.disabled=true;
+            try{
+              const workspace=workspaces.forBatch(b.id);
+              if(!workspace)throw new Error('该记录没有对应工作区，暂不支持在历史列表删除。');
+              await api(`workspaces/${workspace.id}/archive`,{version:workspace.version});
+              historyLoadedAt=0;await history({force:true});
+            }catch(error){toast(error.message);remove.disabled=false;}
+          });
+          actions.append(remove);
+        }
+        meta.append(actions);
+        row.append(meta);
         fragment.append(row);
       }
     });
     swapList(completed,fragment=>{
-      for(const b of batches){
+      for(const b of visible){
         if(!b.completed)continue;
         const group=node('article',undefined,'runtime-panel');
         group.dataset.renderKey=`done:${b.id}:${b.completed}`;
@@ -557,14 +668,17 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       }
       if(!fragment.childElementCount)fragment.append(completedEmptyShell());
     });
-    consoleView?.renderOverview([...workspaces.summaries,...batches.filter(b=>!workspaces.forBatch(b.id))],b=>b.workspaceId?workspaces.open(b.workspaceId):openBatch(b));
+    consoleView?.renderOverview([...workspaces.summaries,...visible.filter(b=>!workspaces.forBatch(b.id))],b=>b.workspaceId?workspaces.open(b.workspaceId):openBatch(b));
     })().catch(error=>{historyLoadedAt=0;throw error;}).finally(()=>{historyInFlight=null;});
     return historyInFlight;
   }
   async function openBatch(b){const workspace=workspaces.forBatch(b.id);if(workspace)return workspaces.open(workspace.id);return workspaces.leave(async()=>{renderBatch(await api('batches/'+b.id));changeView('workspace');consoleView?.detailTab('progress');});}
   $('refresh-overview')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await history({force:true});}catch(error){toast(error.message);}finally{button.disabled=false;}});
   document.querySelectorAll('[data-view="overview"],[data-view="history"],[data-view="completed"]').forEach(button=>button.addEventListener('click',()=>history().catch(e=>toast(e.message))));
-  document.querySelectorAll('[data-view="settings"],[data-view="admin"]').forEach(button=>button.addEventListener('click',()=>refreshSettings().then(()=>loadMembers()).catch(e=>toast(e.message))));
+  document.querySelectorAll('[data-view="settings"],[data-view="admin"]').forEach(button=>button.addEventListener('click',()=>{
+    if(settingsLoadedAt&&Date.now()-settingsLoadedAt<5000)return;
+    refreshSettings().then(()=>loadMembers()).catch(e=>toast(e.message));
+  }));
   let tabAuthenticated=false;try{tabAuthenticated=sessionStorage.getItem(AUTH_TAB_MARKER)==='1';}catch{}
   if(shouldRestoreSession({navigationType:performance.getEntriesByType('navigation')[0]?.type,tabAuthenticated,hash:location.hash})){
     const operation=auth.begin();

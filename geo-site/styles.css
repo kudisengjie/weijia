@@ -925,3 +925,27 @@ html.booting #login-page { visibility: hidden; }
 .question-progress__bar { width: min(420px, 100%); height: 8px; border-radius: 999px; background: #e3eefb; overflow: hidden; }
 .question-progress__bar span { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #548bcd, #2f65b3); transition: width .6s ease; }
 .question-progress p { margin: 0; }
+
+/* ===== 吕老师 2026-09-19：历史批次紧凑化 + 按钮并排；问句存储列表 ===== */
+/* 历史批次：不再是整块大面板，压低内边距与字号；状态文字与按钮同行并排。 */
+.runtime-list .runtime-history { padding: 10px 14px; border-width: 1px; border-radius: 8px; }
+.runtime-list .runtime-history h2 { margin: 0 0 2px; font-size: 14px; line-height: 1.4; }
+.runtime-list .runtime-history .runtime-history__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: nowrap; }
+.runtime-list .runtime-history .runtime-history__row p { margin: 0; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runtime-list .runtime-history .runtime-history__actions { display: flex; gap: 6px; flex-shrink: 0; }
+.runtime-list .runtime-history button { padding: 5px 12px; font-size: 12px; border-radius: 6px; white-space: nowrap; }
+@media (max-width: 640px) { .runtime-list .runtime-history .runtime-history__row { flex-wrap: wrap; } }
+
+/* 工作区条带（每个新建任务）只在内容创作页展示，其他页面不再出现。 */
+.geo-shell:not([data-view="workspace"]) .workspace-tabs { display: none; }
+
+/* 问句存储：记录条目紧凑排列，展开查看/保存/删除并排。 */
+.question-store-list { display: grid; gap: 10px; }
+.question-store-item { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: #fff; }
+.question-store-item > summary { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; cursor: pointer; list-style: revert; }
+.question-store-item > summary strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.question-store-item .question-store-meta { flex-shrink: 0; color: var(--muted); font-size: 12px; }
+.question-store-body { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.question-store-body .question-item { margin: 0; padding: 3px 0; font-size: 13px; }
+.question-store-actions { display: flex; gap: 6px; margin-top: 8px; }
+.question-store-actions button { padding: 5px 12px; font-size: 12px; border-radius: 6px; }

@@ -487,6 +487,45 @@ class PostgresRepository(WorkspaceRepositoryMixin):
                     {'amount': signed, 'note': metadata.get('note', ''), 'idempotencyKey': idempotency_key})
             return {"applied": True, "amount": signed, "balance": balance + signed}
 
+    # ---------- 问句存储（v7）：问句查询报告自动归档，可查看/保存/删除 ----------
+
+    def insert_question_report(self, user_id, tenant_id, report_id, title, question_count, payload):
+        self.conn.execute(
+            """INSERT INTO question_reports (id, user_id, tenant_id, title, question_count, payload_cipher)
+               VALUES (%s, %s, %s::uuid, %s, %s, pgp_sym_encrypt(%s::TEXT, %s, 'cipher-algo=aes256'))""",
+            (report_id, user_id, tenant_id, title, int(question_count), json.dumps(payload, ensure_ascii=False), self.master_key),
+        )
+
+    def list_question_reports(self, user_id, limit=100):
+        rows = self.conn.execute(
+            """SELECT id, title, question_count, created_at FROM question_reports
+               WHERE user_id = %s ORDER BY created_at DESC, id DESC LIMIT %s""",
+            (user_id, min(limit, 200)),
+        ).fetchall()
+        return [
+            {"id": row[0], "title": row[1], "questionCount": int(row[2]), "createdAt": row[3]}
+            for row in rows
+        ]
+
+    def get_question_report(self, user_id, report_id):
+        row = self.conn.execute(
+            """SELECT id, title, question_count, created_at, pgp_sym_decrypt(payload_cipher, %s)::TEXT
+               FROM question_reports WHERE id = %s AND user_id = %s""",
+            (self.master_key, report_id, user_id),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "id": row[0], "title": row[1], "questionCount": int(row[2]), "createdAt": row[3],
+            "payload": json.loads(row[4]),
+        }
+
+    def delete_question_report(self, user_id, report_id):
+        cur = self.conn.execute(
+            "DELETE FROM question_reports WHERE id = %s AND user_id = %s", (report_id, user_id))
+        if cur.rowcount == 0:
+            raise ValueError('QUESTION_REPORT_NOT_FOUND')
+
     def list_credit_ledger(self, tenant_id, user_id=None, limit=100):
         rows = self.conn.execute(
             """SELECT id, user_id, batch_id, task_id, kind, amount, created_at FROM credit_ledger

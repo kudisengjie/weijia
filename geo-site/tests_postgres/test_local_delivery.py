@@ -101,7 +101,7 @@ class LocalDeliveryTests(unittest.TestCase):
 
     def test_v5_migration_backfills_and_repeats_safely(self):
         version = self.conn.execute('SELECT MAX(version) FROM schema_migrations').fetchone()[0]
-        self.assertEqual(6, version)
+        self.assertEqual(7, version)
         mode = self.conn.execute(
             "SELECT column_name FROM information_schema.columns"
             " WHERE table_name = 'batches' AND column_name = 'delivery_mode'").fetchone()

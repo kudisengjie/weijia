@@ -50,7 +50,7 @@ class WorkspaceRepositoryMixin:
             ORDER BY (w.status = 'draft' OR b.status NOT IN ('completed', 'cancelled')) DESC, w.updated_at DESC LIMIT 500
         """, (user_id, tenant_id)).fetchall()]
 
-    def update_workspace(self, user_id, tenant_id, workspace_id, version, *, draft=None, status=None, batch_id=None):
+    def update_workspace(self, user_id, tenant_id, workspace_id, version, *, draft=None, status=None, batch_id=None, from_status='draft', clear_batch=False):
         if draft is not None:
             result = self.conn.execute("""
                 UPDATE workspaces SET state_cipher = pgp_sym_encrypt(%s, %s, 'cipher-algo=aes256'),
@@ -59,9 +59,17 @@ class WorkspaceRepositoryMixin:
             """, (self._workspace_payload(user_id, tenant_id, workspace_id, draft), self.master_key,
                   workspace_id, user_id, tenant_id, version))
         else:
-            result = self.conn.execute("""
-                UPDATE workspaces SET status = %s, batch_id = %s, version = version + 1, updated_at = NOW()
-                WHERE id = %s AND user_id = %s AND tenant_id = %s AND version = %s AND status = 'draft'
-            """, (status, batch_id, workspace_id, user_id, tenant_id, version))
+            # from_status='draft' 保持旧语义；archive 等需要跨状态更新的调用传 None。
+            # batch_id 仅在显式传入时更新；clear_batch=True 用于归档时解除批次绑定
+            # （workspaces_check 要求 status='started' ⇔ batch_id 非空）。
+            state_clause = " AND status = 'draft'" if from_status == 'draft' else ''
+            batch_clause = ', batch_id = NULL' if clear_batch else (', batch_id = %s' if batch_id is not None else '')
+            params = [status] + ([batch_id] if batch_id is not None and not clear_batch else []) + [workspace_id, user_id, tenant_id, version]
+            result = self.conn.execute(f"""
+                UPDATE workspaces SET status = %s{batch_clause}, version = version + 1, updated_at = NOW()
+                WHERE id = %s AND user_id = %s AND tenant_id = %s AND version = %s{state_clause}
+            """, params)
+        if result.rowcount != 1:
+            raise ApiError(409, '工作区已被另一页面更新，请重新读取后操作。', 'WORKSPACE_VERSION_CONFLICT')
         if result.rowcount != 1:
             raise ApiError(409, '工作区已被另一页面更新，请重新读取后操作。', 'WORKSPACE_VERSION_CONFLICT')

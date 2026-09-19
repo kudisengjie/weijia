@@ -517,7 +517,7 @@ class PostgresRuntimeTests(unittest.TestCase):
             restored = self.repo.get_batch(self.owner, batch['id'])
             self.assertEqual(batch, restored)
             self.assertEqual(balance, self.repo.credit_balance(self.tenant, self.owner))
-            self.assertEqual(6, self.repo.health()['schemaVersion'])
+            self.assertEqual(7, self.repo.health()["schemaVersion"])
 
     def test_batch_encryption_rejects_cross_account_and_swapped_ciphertext(self):
         from geo_backend.errors import ApiError
@@ -555,7 +555,7 @@ class PostgresRuntimeTests(unittest.TestCase):
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=create_app(config)),
                     base_url='http://localhost', headers={'origin': 'http://localhost'}) as client:
                 health = await client.get('/health')
-                self.assertEqual(6, health.json()['schemaVersion'])
+                self.assertEqual(7, health.json()["schemaVersion"])
                 self.assertTrue(health.json()['ready'])
                 login = await client.post('/auth/login', json={'account': config.geo_account, 'password': 'test-password'})
                 self.assertEqual(200, login.status_code)

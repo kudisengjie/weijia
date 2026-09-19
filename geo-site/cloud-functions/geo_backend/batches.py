@@ -202,6 +202,12 @@ class BatchService:
         tasks, companies = parse_tasks(body.get("rows"), body.get("companies"))
         private = SettingsService(self.repository, self.master_key).private(user_id)
         model = workspace_model or private["model"]
+        return self._materialize(tasks=tasks, companies=companies, model=model, private=private,
+                                 user_id=user_id, expires_at=expires_at, request_id=request_id,
+                                 workspace_id=workspace_id)
+
+    def _materialize(self, *, tasks, companies, model, private, user_id, expires_at, request_id, workspace_id=None):
+        """从任务/公司资料/模型物化一个新批次（_create 与 retry_failed 共用）。"""
         if not private["keys"].get(model["id"]):
             raise ApiError(422, "请先保存所选模型的 API Key。")
         ima = self._ima()
@@ -257,6 +263,38 @@ class BatchService:
                 master_key=self.master_key,
             )
         return _summary(stored)
+
+    def retry_failed(self, batch_id: str, user_id: str, expires_at: datetime) -> dict[str, object]:
+        """吕老师 2026-09-19 要求：失败的任务不能被忽略——按原任务行新建补跑批次。"""
+        if not re.fullmatch(r"[0-9a-f]{32}", str(batch_id)):
+            raise ApiError(404, "批次不存在。")
+        with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
+            if hasattr(self.repository, 'lock_user'):
+                self.repository.lock_user(user_id)
+            source = self.repository.get_batch(user_id, batch_id)
+            if not source:
+                raise ApiError(404, "批次不存在或不属于当前账号。")
+            if source['status'] != 'completed' or not source.get('failedTasks'):
+                raise ApiError(409, "只有已结束且存在未完成任务的批次才能重试。", "RETRY_NOT_ALLOWED")
+            failed_ids = {str(item.get('taskId')) for item in source['failedTasks']}
+            tasks = [dict(task) for task in source['tasks'] if str(task.get('billingTaskId')) in failed_ids]
+            if not tasks:
+                raise ApiError(409, "未完成任务的原始数据已缺失，请新建任务。", "RETRY_NO_TASKS")
+            request_id = f"retry-{batch_id}"
+            if hasattr(self.repository, 'get_request_batch'):
+                existing = self.repository.get_request_batch(user_id, _digest(request_id))
+                if existing:
+                    return _summary(existing)
+            self._require_active(user_id)
+            if hasattr(self.repository, 'count_open_workspaces'):
+                from .workspaces import WORKSPACE_LIMIT
+                if self.repository.count_open_workspaces(user_id) >= WORKSPACE_LIMIT:
+                    raise ApiError(409, '同时进行的任务最多五个，请等待任务完成或取消后再启动。', 'WORKSPACE_LIMIT_REACHED')
+            private = SettingsService(self.repository, self.master_key).private(user_id)
+            return self._materialize(
+                tasks=tasks, companies=source.get('companies') or [], model=source['model'],
+                private=private, user_id=user_id, expires_at=expires_at, request_id=request_id,
+            )
 
     def get(self, batch_id: str, user_id: str) -> dict[str, object]:
         if not re.fullmatch(r"[0-9a-f]{32}", str(batch_id)):

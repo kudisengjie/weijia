@@ -8,10 +8,10 @@ sys.path.insert(0, str(FUNCTIONS_DIR))
 
 
 class SchemaTests(unittest.TestCase):
-    def test_schema_v6_contains_saas_runtime_tables(self):
+    def test_schema_v7_contains_saas_runtime_tables(self):
         from geo_backend.schema import SCHEMA_SQL, SCHEMA_VERSION
 
-        self.assertEqual(6, SCHEMA_VERSION)
+        self.assertEqual(7, SCHEMA_VERSION)
         for table in (
             "tenants",
             "tenant_members",
@@ -29,6 +29,7 @@ class SchemaTests(unittest.TestCase):
             "article_artifacts",
             "jobs",
             "workspaces",
+            "question_reports",
         ):
             self.assertIn(f"CREATE TABLE IF NOT EXISTS {table}", SCHEMA_SQL)
 
@@ -77,6 +78,14 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("delivery_mode VARCHAR(32) NOT NULL DEFAULT 'server_legacy'", SCHEMA_SQL)
         self.assertIn("'waiting_local'", SCHEMA_SQL)
         self.assertIn("article_artifacts_pending_idx", SCHEMA_SQL)
+
+    def test_schema_v7_question_reports_are_encrypted(self):
+        from geo_backend.schema import SCHEMA_SQL
+
+        # 问句存储：内容必须走 pgp 加密存储，不允许明文落库。
+        self.assertIn("CREATE TABLE IF NOT EXISTS question_reports", SCHEMA_SQL)
+        self.assertIn("payload_cipher BYTEA NOT NULL", SCHEMA_SQL)
+        self.assertNotIn("payload TEXT", SCHEMA_SQL)
 
 
 if __name__ == "__main__":

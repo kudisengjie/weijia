@@ -243,6 +243,33 @@ class QuestionService:
             })
         return questions
 
+    # ---------- 问句存储（吕老师 2026-09-19：查询结果自动归档，查询页不再长期占用） ----------
+
+    def store_report(self, user_id: str, tenant_id: str | None, result: dict[str, object], notes: str = "") -> dict[str, object]:
+        report_id = uuid.uuid4().hex
+        analysis = result.get("analysis") or {}
+        title = f"问句查询-{analysis.get('industry') or '行业'}-{datetime.now().strftime('%Y-%m-%d %H:%M')}"[:200]
+        questions = result.get("questions") or []
+        payload = {"analysis": analysis, "questions": questions, "markdown": result.get("markdown") or "", "notes": notes}
+        self.repository.insert_question_report(user_id, tenant_id, report_id, title, len(questions), payload)
+        return {"id": report_id, "title": title, "questionCount": len(questions)}
+
+    def list_reports(self, user_id: str) -> dict[str, object]:
+        return {"reports": self.repository.list_question_reports(user_id)}
+
+    def get_report(self, user_id: str, report_id: str) -> dict[str, object]:
+        report = self.repository.get_question_report(user_id, report_id)
+        if not report:
+            raise ApiError(404, "问句记录不存在。", "QUESTION_REPORT_NOT_FOUND")
+        return report
+
+    def delete_report(self, user_id: str, report_id: str) -> dict[str, object]:
+        try:
+            self.repository.delete_question_report(user_id, report_id)
+        except ValueError:
+            raise ApiError(404, "问句记录不存在。", "QUESTION_REPORT_NOT_FOUND")
+        return {"deleted": True}
+
     @staticmethod
     def _markdown(analysis: dict[str, object], questions: list[dict[str, object]]) -> str:
         products = "、".join(str(item) for item in analysis.get("products") or []) or "—"

@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 SCHEMA_SQL = r"""
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -334,4 +334,16 @@ CREATE TABLE IF NOT EXISTS article_delivery_receipts (
 ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_status_check;
 ALTER TABLE jobs ADD CONSTRAINT jobs_status_check
     CHECK (status IN ('queued', 'running', 'waiting_local', 'completed', 'failed', 'cancelled'));
+
+-- v7: 问句存储。生成的问句查询报告自动归档，问句查询页不再长期占用结果。
+CREATE TABLE IF NOT EXISTS question_reports (
+    id CHAR(32) PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    question_count INTEGER NOT NULL CHECK (question_count >= 0),
+    payload_cipher BYTEA NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS question_reports_user_idx ON question_reports (user_id, created_at DESC);
 """

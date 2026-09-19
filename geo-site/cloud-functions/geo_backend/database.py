@@ -46,6 +46,7 @@ def ensure_schema(conn: object, master_key: str) -> int:
         if not conn.execute('SELECT 1 FROM schema_migrations WHERE version = 6').fetchone():
             # v5 → v6：IMA 缓存条目补可读标签列（label 由上方 SCHEMA_SQL 的增量 ALTER 添加）。
             conn.execute('INSERT INTO schema_migrations (version) VALUES (6)')
+        conn.execute('INSERT INTO schema_migrations (version) VALUES (7) ON CONFLICT (version) DO NOTHING')
     return SCHEMA_VERSION
 
 

@@ -109,6 +109,52 @@ try {
   await page.waitForFunction(() => (document.querySelector('#own-ledger')?.textContent || '').trim().length > 0, undefined, { timeout: 15000 })
     .catch(() => failures.push('积分流水未自动加载'));
   await page.screenshot({ path: path.join(output, 'question-page.png') });
+
+  // ⑥ 吕老师 2026-09-19：导航改名 + 工作区条带只在内容创作页显示 + 问句存储页 + 历史紧凑行
+  for (const [view, name] of [['workspace', '内容创作'], ['completed', '文章存储'], ['question-store', '问句存储'], ['history', '历史批次']]) {
+    const label = (await page.locator(`[data-view="${view}"]`).textContent()) || '';
+    if (!label.includes(name)) failures.push(`导航「${view}」应显示「${name}」，实际「${label.trim()}」`);
+  }
+  // 工作区条带（新建任务 tab）在其他页面必须隐藏
+  const stripHidden = await page.locator('.workspace-tabs').evaluate(el => getComputedStyle(el).display === 'none');
+  if (!stripHidden) failures.push('问句查询页仍显示工作区条带，应只在内容创作页显示');
+  // 问句存储页可进入并显示空状态提示
+  await page.locator('[data-view="question-store"]').click();
+  await page.locator('#question-store-list').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => (document.querySelector('#question-store-list')?.textContent || '').length > 0, undefined, { timeout: 15000 })
+    .catch(() => failures.push('问句存储列表未加载'));
+  const storeText = (await page.locator('#question-store-list').textContent()) || '';
+  if (!storeText.includes('问句')) failures.push(`问句存储空状态文案异常：${storeText.slice(0, 60)}`);
+  await page.screenshot({ path: path.join(output, 'question-store.png') });
+  // 历史批次在内容板块分组内：先展开分组再进入
+  await page.locator('.geo-nav-group').nth(1).locator('.geo-nav-group__toggle').click();
+  await page.locator('[data-view="history"]').click();
+  const historyEmpty = await page.locator('#history-list .list-empty').count();
+  if (!historyEmpty) {
+    const row = page.locator('#history-list .runtime-history').first();
+    await row.waitFor({ state: 'visible' });
+    const sameRow = await row.evaluate(el => {
+      const meta = el.querySelector('.runtime-history__row');
+      const text = meta?.querySelector('p');
+      const button = meta?.querySelector('button');
+      if (!meta || !text || !button) return false;
+      return Math.abs(text.getBoundingClientRect().y - button.getBoundingClientRect().y) < 8;
+    });
+    if (!sameRow) failures.push('历史批次行内「打开批次」未与状态文字并排');
+    const stripStillHidden = await page.locator('.workspace-tabs').evaluate(el => getComputedStyle(el).display === 'none');
+    if (!stripStillHidden) failures.push('历史批次页仍显示工作区条带');
+  }
+  await page.screenshot({ path: path.join(output, 'history-compact.png') });
+  // 内容创作页条带恢复显示（若存在可见工作区）
+  await page.locator('[data-view="workspace"]').click();
+  await page.locator('[data-view-panel="workspace"]').waitFor({ state: 'visible' });
+  const stripOnWorkspace = await page.locator('.workspace-tabs').evaluate(el => {
+    if (el.hidden) return true; // 无工作区时允许 hidden
+    return getComputedStyle(el).display !== 'none';
+  });
+  if (!stripOnWorkspace) failures.push('内容创作页工作区条带应可见');
+  await page.screenshot({ path: path.join(output, 'workspace-tabs-scope.png') });
+
 } catch (error) {
   failures.push('异常: ' + error.message);
 } finally {
