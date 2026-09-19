@@ -38,6 +38,18 @@ function fail(code, message) {
   return error;
 }
 
+// 吕老师 2026-09-19：每次登录都提示授权失效——浏览器会在"最佳 effort"存储下回收
+// 句柄权限。登录后申请持久存储（persisted storage），可显著降低被回收的概率；
+// 剩余的会话级授权由页面首次点击时的自动请求补齐（见 runtime.js armAutoAuthorize）。
+export async function requestPersistentStorage() {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.storage?.persist && !await navigator.storage.persisted()) {
+      return await navigator.storage.persist();
+    }
+  } catch { /* 不支持时静默降级 */ }
+  return false;
+}
+
 // 默认本机存储：IndexedDB，键按服务端确认的 accountScope 隔离。
 function defaultStorage() {
   if (typeof indexedDB === 'undefined') {
@@ -193,7 +205,8 @@ export function createLocalOutput({storage, picker} = {}) {
       requireScope();
       if (!handle) throw fail(ERRORS.PERMISSION_REQUIRED, '请先在“文章保存”中选择本地文件夹。');
       if ((await permissionOf(handle)) !== 'granted') {
-        throw fail(ERRORS.PERMISSION_REQUIRED, '本机文件夹授权已失效，请重新授权后再保存。');
+        // 吕老师 2026-09-19：明确指引到哪里重新授权，而不是只说"已失效"。
+        throw fail(ERRORS.PERMISSION_REQUIRED, '本机文件夹授权已失效：请到「个人设置 → 文章保存」点击「重新授权」，然后回到本页重试保存。');
       }
       const expectedHash = await sha256Hex(contents);
       const directory = await resolveDirectory(segments);

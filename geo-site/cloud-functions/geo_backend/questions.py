@@ -248,7 +248,9 @@ class QuestionService:
     def store_report(self, user_id: str, tenant_id: str | None, result: dict[str, object], notes: str = "") -> dict[str, object]:
         report_id = uuid.uuid4().hex
         analysis = result.get("analysis") or {}
-        title = f"问句查询-{analysis.get('industry') or '行业'}-{datetime.now().strftime('%Y-%m-%d %H:%M')}"[:200]
+        # 吕老师 2026-09-19：标题不再内嵌时间（datetime.now() 是 UTC，会与前端展示的
+        # 本地 createdAt 相差 8 小时造成"两个时间对不上"）；时间统一由 createdAt 展示。
+        title = f"问句查询-{analysis.get('industry') or '行业'}"[:200]
         questions = result.get("questions") or []
         payload = {"analysis": analysis, "questions": questions, "markdown": result.get("markdown") or "", "notes": notes}
         self.repository.insert_question_report(user_id, tenant_id, report_id, title, len(questions), payload)

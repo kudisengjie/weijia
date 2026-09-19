@@ -2,10 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const flow = await import('./auth-flow.js').catch(() => ({}));
-test('fresh navigation never restores a session, including a copied tab marker', () => {
+test('same-tab reload and return visits restore the session; fresh tabs and logouts do not', () => {
   assert.equal(typeof flow.shouldRestoreSession, 'function');
-  assert.equal(flow.shouldRestoreSession({navigationType:'navigate',tabAuthenticated:true}), false);
-  assert.equal(flow.shouldRestoreSession({navigationType:'back_forward',tabAuthenticated:true}), false);
+  // 吕老师 2026-09-19：同标签页从官网返回（back_forward/重新进入）也要尝试静默恢复，
+  // 否则运行中的任务会被强制登出中断。全新标签页（无 marker）仍然不恢复。
+  assert.equal(flow.shouldRestoreSession({navigationType:'navigate',tabAuthenticated:true}), true);
+  assert.equal(flow.shouldRestoreSession({navigationType:'back_forward',tabAuthenticated:true}), true);
+  assert.equal(flow.shouldRestoreSession({navigationType:'navigate',tabAuthenticated:false}), false);
+  assert.equal(flow.shouldRestoreSession({navigationType:'back_forward',tabAuthenticated:false}), false);
   assert.equal(flow.shouldRestoreSession({navigationType:'reload',tabAuthenticated:false}), false);
   assert.equal(flow.shouldRestoreSession({navigationType:'reload',tabAuthenticated:true,hash:'#login'}), false);
   assert.equal(flow.shouldRestoreSession({navigationType:'reload',tabAuthenticated:true}), true);

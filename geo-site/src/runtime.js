@@ -3,7 +3,7 @@ import { AUTH_TAB_MARKER, accountScopeFrom, createAuthFlow, shouldRestoreSession
 import {createBatchRunners} from './batch-runners.js';
 import {initializeWorkspaces} from './workspace-ui.js';
 import {initializeConsole} from './console-view.js';
-import {createLocalOutput} from './local-output.js';
+import {createLocalOutput, requestPersistentStorage} from './local-output.js';
 import {createArticleDelivery} from './article-delivery.js';
 
 export function modelIsLocked(settings,batch) {
@@ -149,7 +149,27 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     const submit=document.querySelector('.login-submit');actions.delete(submit);submit.disabled=false;
     consoleView?.reset();
   }
-  function toast(text) {if(!csrf)return;message('runtime-toast',text,true);$('runtime-toast').hidden=false;}
+  // 吕老师 2026-09-19：登录后用户首次点击页面时，若保存文件夹授权未生效，
+  // 静默向浏览器申请重新授权（requestPermission 必须在用户手势内触发）。
+  function armAutoAuthorize(){
+    const handler=async()=>{
+      document.removeEventListener('click',handler,true);
+      try{
+        const state=await localOutput.state();
+        if(state.supported&&state.scope&&state.directoryName&&state.permission!=='granted'){
+          const result=await localOutput.requestAccess();
+          if(result==='granted')renderSaving();
+        }
+      }catch{ /* 静默失败：设置页仍可手动重新授权 */ }
+    };
+    document.addEventListener('click',handler,true);
+  }
+  let toastTimer;
+  function toast(text) {
+    if(!csrf)return;message('runtime-toast',text,true);$('runtime-toast').hidden=false;
+    // 吕老师 2026-09-19：提醒不能一直挂着，8 秒后自动收起；新提醒会重置计时。
+    clearTimeout(toastTimer);toastTimer=setTimeout(()=>{$('runtime-toast').hidden=true;},8000);
+  }
   async function api(path,body,method) {
     // 旧语义保持：未传 method 时 body 缺省 = GET，否则 POST；显式传 'DELETE' 走删除请求。
     const isGet=method?method==='GET':body===undefined;
@@ -226,6 +246,10 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     delivery.setScope(accountScopeFrom(data));
     delivery.sync().catch(()=>{});
     renderSaving();
+    // 吕老师 2026-09-19：每次登录文件夹授权都失效——申请持久存储 + 首次点击时自动
+    // 请求目录授权（requestPermission 必须在用户手势内，选一次点击即自动恢复）。
+    requestPersistentStorage().catch(()=>{});
+    armAutoAuthorize();
     expiryTimer=setTimeout(()=>{showLogin();message('login-message','登录已到期，请重新输入密码。');},Math.min(data.expiresAt-Date.now(),2147483647));
     if(location.hash==='#login')window.history.replaceState(null,'',location.pathname+location.search);
     await enter();
@@ -377,6 +401,11 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       const result=await api('questions/discover',notes?{docs,count,notes}:{docs,count});
       // 服务端已自动归档；查询页不再长期占用（吕老师 2026-09-19）。
       lastQuestionResult=null;
+      // 本地立即持有这条记录：进入问句存储时无需等待接口，直接展示。
+      pendingLocalReport={id:result.report?.id||`local-${Date.now()}`,title:result.report?.title||`问句查询-${result.analysis.industry||'行业'}`,
+        questionCount:result.questions.length,createdAt:new Date().toISOString(),
+        payload:{analysis:result.analysis,questions:result.questions,markdown:result.markdown,notes}};
+      questionReportsCache=null;questionReportsLoadedAt=0;
       $('question-results').hidden=true;
       $('question-list')?.replaceChildren();
       $('question-analysis').textContent='';
@@ -391,7 +420,9 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     message('question-message','问句报告已保存到本机文件夹并逐字校验。');
   }));
   // 问句存储：自动归档的问句记录，可展开查看、保存到本机、删除。
-  let questionReportsLoadedAt=0;
+  // 吕老师 2026-09-19：刚查询完成就进入存储页时，先用本地数据立即渲染这条记录
+  // （接口冷启动可能要几秒，不能让用户误以为没生成好），后台再以服务端数据刷新。
+  let questionReportsLoadedAt=0,questionReportsCache=null,pendingLocalReport=null;
   async function saveQuestionReport(report){
     const payload=report.payload||{};
     const analysis=payload.analysis||{};
@@ -403,59 +434,76 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     await localOutput.saveFile([],name,new TextEncoder().encode(markdown));
   }
   function renderReportDetail(detail){
+    // 吕老师 2026-09-19：只展示问句与注解/评分，不再出现行业分析大段文字。
     const payload=detail.payload||{},body=node('div',undefined,'question-store-body');
-    const analysis=payload.analysis||{};
-    const products=analysis.products?.length?` · 主要产品：${analysis.products.join('、')}`:'';
-    body.append(node('p',`行业判断：${analysis.industry||'—'} · 核心业务：${analysis.business||'—'}${products} · 目标客户：${analysis.audience||'—'}`,'question-analysis'));
-    if(payload.notes)body.append(node('p',`用户要求：${payload.notes}`,'runtime-hint'));
     const ol=node('ol','question-list');
-    (payload.questions||[]).forEach((item,index)=>ol.append(node('li',`${index+1}. ${item.question}`,'question-item')));
+    (payload.questions||[]).forEach((item,index)=>{
+      const li=node('li',undefined,'question-item');
+      li.append(node('strong',`${index+1}. ${item.question}`));
+      li.append(node('span',`${item.intent||'—'} · ${item.stage||'—'} · 评分 ${item.score??'—'}${item.reason?` · ${item.reason}`:''}`,'question-item__meta'));
+      ol.append(li);
+    });
     body.append(ol);
     return body;
   }
+  function buildReportItem(report){
+    const item=node('details',undefined,'question-store-item');
+    item.dataset.renderKey=`report:${report.id}`;
+    const summary=node('summary');
+    summary.append(node('strong',report.title),node('small',`${report.questionCount} 条问句 · ${new Date(report.createdAt).toLocaleString('zh-CN')}`,'question-store-meta'));
+    item.append(summary);
+    const actions=node('div',undefined,'question-store-actions');
+    const view=node('button','展开查看');
+    view.addEventListener('click',async()=>{
+      if(item.querySelector('.question-store-body'))return;
+      view.disabled=true;
+      try{item.append(renderReportDetail(await api(`questions/reports/${report.id}`)));view.remove();}
+      catch(error){toast(error.message);view.disabled=false;}
+    });
+    const save=node('button','保存到本机');
+    save.addEventListener('click',async()=>{
+      save.disabled=true;
+      try{await saveQuestionReport(await api(`questions/reports/${report.id}`));toast('问句报告已保存到本机文件夹并逐字校验。');}
+      catch(error){toast(error.message);}
+      finally{save.disabled=false;}
+    });
+    const del=node('button','删除记录');
+    del.addEventListener('click',async()=>{
+      if(!confirm(`确认删除记录「${report.title}」？删除后不可恢复。`))return;
+      del.disabled=true;
+      try{await api(`questions/reports/${report.id}`,{},'DELETE');questionReportsLoadedAt=0;questionReportsCache=null;await loadQuestionReports({force:true,silent:true});}
+      catch(error){toast(error.message);del.disabled=false;}
+    });
+    actions.append(view,save,del);
+    item.append(actions);
+    return item;
+  }
+  function renderQuestionReports(list,reports){
+    swapList(list,fragment=>{
+      if(!reports.length){fragment.append(node('p','还没有问句记录。到「问句查询」发起第一次查询，结果会自动存到这里。','console-empty'));return;}
+      for(const report of reports)fragment.append(buildReportItem(report));
+    });
+  }
   async function loadQuestionReports({force=false,silent=false}={}){
     const list=$('question-store-list');if(!list)return;
-    if(!force&&questionReportsLoadedAt&&Date.now()-questionReportsLoadedAt<5000)return;
-    if(!silent)list.replaceChildren(node('p','正在读取问句记录…','console-empty'));
+    // 缓存命中：立即渲染（含刚查询完的本地记录），消除"正在读取…"久等的错觉。
+    if(!force&&questionReportsCache&&Date.now()-questionReportsLoadedAt<15000){renderQuestionReports(list,questionReportsCache);return;}
+    if(pendingLocalReport){
+      // 有刚生成的记录：先展示它，不让用户等接口冷启动。
+      renderQuestionReports(list,[pendingLocalReport,...(questionReportsCache||[])]);
+    }else if(!silent)list.replaceChildren(node('p','正在读取问句记录…','console-empty'));
     try{
       const {reports}=await api('questions/reports');
       questionReportsLoadedAt=Date.now();
-      swapList(list,fragment=>{
-        if(!reports.length){fragment.append(node('p','还没有问句记录。到「问句查询」发起第一次查询，结果会自动存到这里。','console-empty'));return;}
-        for(const report of reports){
-          const item=node('details',undefined,'question-store-item');
-          item.dataset.renderKey=`report:${report.id}`;
-          const summary=node('summary');
-          summary.append(node('strong',report.title),node('small',`${report.questionCount} 条问句 · ${new Date(report.createdAt).toLocaleString('zh-CN')}`,'question-store-meta'));
-          item.append(summary);
-          const actions=node('div',undefined,'question-store-actions');
-          const view=node('button','展开查看');
-          view.addEventListener('click',async()=>{
-            if(item.querySelector('.question-store-body'))return;
-            view.disabled=true;
-            try{item.append(renderReportDetail(await api(`questions/reports/${report.id}`)));view.remove();}
-            catch(error){toast(error.message);view.disabled=false;}
-          });
-          const save=node('button','保存到本机');
-          save.addEventListener('click',async()=>{
-            save.disabled=true;
-            try{await saveQuestionReport(await api(`questions/reports/${report.id}`));toast('问句报告已保存到本机文件夹并逐字校验。');}
-            catch(error){toast(error.message);}
-            finally{save.disabled=false;}
-          });
-          const del=node('button','删除记录');
-          del.addEventListener('click',async()=>{
-            if(!confirm(`确认删除记录「${report.title}」？删除后不可恢复。`))return;
-            del.disabled=true;
-            try{await api(`questions/reports/${report.id}`,{},'DELETE');questionReportsLoadedAt=0;await loadQuestionReports({force:true,silent:true});}
-            catch(error){toast(error.message);del.disabled=false;}
-          });
-          actions.append(view,save,del);
-          item.append(actions);
-          fragment.append(item);
-        }
-      });
-    }catch(error){list.replaceChildren(node('p',error.message,'console-empty'));if(!silent)throw error;}
+      if(pendingLocalReport&&!reports.some(r=>r.id===pendingLocalReport.id)){
+        reports.unshift({...pendingLocalReport}); // 归档仍在写入：本地记录兜底展示
+      }
+      pendingLocalReport=null;questionReportsCache=reports;
+      renderQuestionReports(list,reports);
+    }catch(error){
+      if(!pendingLocalReport)list.replaceChildren(node('p',error.message,'console-empty'));
+      if(!silent)throw error;
+    }
   }
   $('question-goto-store').addEventListener('click',()=>{changeView('question-store');loadQuestionReports({force:true}).catch(error=>toast(error.message));});
   document.querySelectorAll('[data-view="question-store"]').forEach(button=>button.addEventListener('click',()=>loadQuestionReports().catch(e=>toast(e.message))));
@@ -556,7 +604,18 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       controls.append(retry);
     }
     // 已结束的批次给一条明确回新建任务的路径（吕老师 2026-09-19：不能被困在批次详情里）。
-    if(terminal){const fresh=node('button','新建任务');fresh.addEventListener('click',()=>workspaces.create().catch(error=>toast(error.message)));controls.append(fresh);}
+    if(terminal){
+      const fresh=node('button','新建任务');fresh.addEventListener('click',()=>workspaces.create().catch(error=>toast(error.message)));controls.append(fresh);
+      // 批次详情同样提供「删除记录」，与历史列表一致。
+      const remove=node('button','删除记录');
+      remove.addEventListener('click',async()=>{
+        if(!confirm(`确认删除记录「${b.title}」？删除后不可恢复。`))return;
+        remove.disabled=true;
+        try{await deleteBatchRecord(b);workspaces.leave(()=>{changeView('overview');}).catch(()=>{});}
+        catch(error){toast(error.message);remove.disabled=false;}
+      });
+      controls.append(remove);
+    }
     panel.append(controls,node('p','切换工作区不会停止其他任务。状态与文件保存在服务端；当前由页面推进，关闭页面可能暂停后续生成，重新打开后可继续。','runtime-hint'));
     renderModelLock();
     consoleView?.renderArticles(b,downloadCurrent,error=>toast(error.message),async()=>{
@@ -643,12 +702,8 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
           remove.addEventListener('click',async()=>{
             if(!confirm(`确认删除记录「${b.title}」？删除后不可恢复。`))return;
             remove.disabled=true;
-            try{
-              const workspace=workspaces.forBatch(b.id);
-              if(!workspace)throw new Error('该记录没有对应工作区，暂不支持在历史列表删除。');
-              await api(`workspaces/${workspace.id}/archive`,{version:workspace.version});
-              historyLoadedAt=0;await history({force:true});
-            }catch(error){toast(error.message);remove.disabled=false;}
+            try{await deleteBatchRecord(b);}
+            catch(error){toast(error.message);remove.disabled=false;}
           });
           actions.append(remove);
         }
@@ -669,8 +724,26 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       if(!fragment.childElementCount)fragment.append(completedEmptyShell());
     });
     consoleView?.renderOverview([...workspaces.summaries,...visible.filter(b=>!workspaces.forBatch(b.id))],b=>b.workspaceId?workspaces.open(b.workspaceId):openBatch(b));
+    autoResume(visible);
     })().catch(error=>{historyLoadedAt=0;throw error;}).finally(()=>{historyInFlight=null;});
     return historyInFlight;
+  }
+  // 吕老师 2026-09-19：返回工作台/重新登录后自动继续未完成的批次——
+  // 服务端 step claim 防重复执行，与手动点"继续运行"等价；failed 批次绝不自动重试。
+  function autoResume(batches){
+    for(const b of batches){
+      if(b.status==='ready'&&!b.pauseRequested&&!runners.has(b.id)){
+        try{drive(b);}catch{ /* 超过五个并发等场景：保持手动继续 */ }
+      }
+    }
+  }
+  // 吕老师 2026-09-19：删除已结束批次的记录（历史行与批次详情共用）。
+  async function deleteBatchRecord(b){
+    const workspace=workspaces.forBatch(b.id);
+    if(!workspace)throw new Error('该记录没有对应工作区，暂不支持删除。');
+    await api(`workspaces/${workspace.id}/archive`,{version:workspace.version});
+    historyLoadedAt=0;
+    await history({force:true});
   }
   async function openBatch(b){const workspace=workspaces.forBatch(b.id);if(workspace)return workspaces.open(workspace.id);return workspaces.leave(async()=>{renderBatch(await api('batches/'+b.id));changeView('workspace');consoleView?.detailTab('progress');});}
   $('refresh-overview')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await history({force:true});}catch(error){toast(error.message);}finally{button.disabled=false;}});
@@ -686,5 +759,14 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       if(error.code==='STALE_RESPONSE')return;showLogin();message('login-message',error.code==='LOGIN_REQUIRED'?'请输入账号和密码。':error.message,error.code!=='LOGIN_REQUIRED');
     });
   }else{showLogin();message('login-message','请输入账号和密码，点击登录后进入工作台。');}
-  window.addEventListener('pageshow',event=>{if(event.persisted){showLogin();message('login-message','请重新输入密码后进入工作台。');}});
+  window.addEventListener('pageshow',event=>{
+    if(!event.persisted)return;
+    // 吕老师 2026-09-19：从官网返回（bfcache 恢复）不再直接强制登出——先静默验证
+    // 会话，仍有效则保持原状态（运行中的任务继续），失效才回到登录页。
+    api('auth/session').catch(()=>{showLogin();message('login-message','请重新输入密码后进入工作台。');});
+  });
+  // 运行中有任务时，关闭/刷新页面前给出确认，防止误触导致批次暂停。
+  window.addEventListener('beforeunload',event=>{
+    if(runners.size){event.preventDefault();event.returnValue='';}
+  });
 }
