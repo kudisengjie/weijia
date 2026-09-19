@@ -112,7 +112,9 @@ export function initializeConsole({changeView,onCreate}){
     const table=el('table'),head=el('thead'),header=el('tr'),body=el('tbody');
     for(const label of ['资料与任务','模型','运行进度','文章文件','操作']){const th=el('th',label);th.scope='col';header.append(th);}head.append(header);
   function workspaceIcon(){const icon=el('span',undefined,'console-ws-icon');icon.setAttribute('aria-hidden','true');icon.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h8"/></svg>';return icon;}
-  for(const batch of batches){const row=el('tr');const titleCell=el('td');titleCell.append(workspaceIcon(),el('span',batch.title));
+  for(const batch of batches){const row=el('tr');const titleCell=el('td');
+      // 吕老师 2026-09-19：图标在前、文字在后，同行并排且垂直水平居中，不再换行。
+      const titleWrap=el('div',undefined,'console-task-title');titleWrap.append(workspaceIcon(),el('span',batch.title));titleCell.append(titleWrap);
       const stateCell=el('td');stateCell.append(statusBadge(batch));
       row.append(titleCell,el('td',batch.model.label),stateCell,el('td',`${batch.completed} / ${batch.total}`));
       const action=el('td'),button=el('button','打开工作区','console-link-button');button.type='button';button.addEventListener('click',()=>open(batch));action.append(button);row.append(action);body.append(row);

@@ -296,6 +296,21 @@ class BatchService:
                 private=private, user_id=user_id, expires_at=expires_at, request_id=request_id,
             )
 
+    def delete(self, batch_id: str, user_id: str) -> dict[str, object]:
+        """吕老师 2026-09-19：所有已结束的记录都可以删除（含没有工作区的旧批次）。"""
+        if not re.fullmatch(r"[0-9a-f]{32}", str(batch_id)):
+            raise ApiError(404, "批次不存在。")
+        with self.repository.transaction() if hasattr(self.repository, 'transaction') else nullcontext():
+            if hasattr(self.repository, 'lock_user'):
+                self.repository.lock_user(user_id)
+            source = self.repository.get_batch(user_id, batch_id)
+            if not source:
+                raise ApiError(404, "批次不存在或不属于当前账号。")
+            if source['status'] not in ('completed', 'cancelled', 'failed'):
+                raise ApiError(409, "任务还在进行中，不能删除。请先取消或等待完成。", "BATCH_LOCKED")
+            self.repository.delete_batch(user_id, batch_id)
+        return {"deleted": True}
+
     def get(self, batch_id: str, user_id: str) -> dict[str, object]:
         if not re.fullmatch(r"[0-9a-f]{32}", str(batch_id)):
             raise ApiError(404, "批次不存在。")

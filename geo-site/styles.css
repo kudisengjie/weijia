@@ -949,3 +949,7 @@ html.booting #login-page { visibility: hidden; }
 .question-store-body .question-item { margin: 0; padding: 3px 0; font-size: 13px; }
 .question-store-actions { display: flex; gap: 6px; margin-top: 8px; }
 .question-store-actions button { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+
+/* 吕老师 2026-09-19：任务总览行——图标在前文字在后，同行并排、垂直水平居中。 */
+.console-task-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.console-task-title > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

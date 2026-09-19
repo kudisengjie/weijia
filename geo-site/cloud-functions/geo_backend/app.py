@@ -678,6 +678,13 @@ def create_app(
             expires_at = context["expiresAt"] if context and context.get("expiresAt") else current.expires_at
             return batch_service(repository, context).retry_failed(batch_id, current.user_id, expires_at)
 
+    @app.delete("/batches/{batch_id}")
+    def batches_delete(batch_id: str, request: Request):
+        # 吕老师 2026-09-19：所有已结束的记录都可以删除（含没有工作区的旧批次）。
+        with factory() as repository:
+            current = authentication(request, repository)
+            return batch_service(repository, tenant_context(repository, current.user_id)).delete(batch_id, current.user_id)
+
     @app.post("/batches/{batch_id}/step")
     async def batches_step(batch_id: str, body: BatchStepBody, request: Request):
         with factory() as repository:

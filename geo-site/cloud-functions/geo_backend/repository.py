@@ -526,6 +526,17 @@ class PostgresRepository(WorkspaceRepositoryMixin):
         if cur.rowcount == 0:
             raise ValueError('QUESTION_REPORT_NOT_FOUND')
 
+    def delete_batch(self, user_id, batch_id):
+        """吕老师 2026-09-19：彻底删除批次记录（关联行由 FK 级联清理）。
+        workspaces.batch_id 无级联且约束要求 started⇔batch_id 非空：先归档解绑。"""
+        self.conn.execute(
+            "UPDATE workspaces SET status = 'archived', batch_id = NULL, version = version + 1, updated_at = NOW() "
+            "WHERE batch_id = %s AND status = 'started'", (batch_id,))
+        cur = self.conn.execute(
+            "DELETE FROM batches WHERE id = %s AND user_id = %s", (batch_id, user_id))
+        if cur.rowcount == 0:
+            raise ValueError('BATCH_NOT_FOUND')
+
     def list_credit_ledger(self, tenant_id, user_id=None, limit=100):
         rows = self.conn.execute(
             """SELECT id, user_id, batch_id, task_id, kind, amount, created_at FROM credit_ledger

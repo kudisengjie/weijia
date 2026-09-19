@@ -746,11 +746,9 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       }
     }
   }
-  // 吕老师 2026-09-19：删除已结束批次的记录（历史行与批次详情共用）。
+  // 吕老师 2026-09-19：所有已结束的记录都可以删除（含没有工作区的旧批次/重新执行批次）。
   async function deleteBatchRecord(b){
-    const workspace=workspaces.forBatch(b.id);
-    if(!workspace)throw new Error('该记录没有对应工作区，暂不支持删除。');
-    await api(`workspaces/${workspace.id}/archive`,{version:workspace.version});
+    await api('batches/'+b.id,{},'DELETE');
     historyLoadedAt=0;
     await history({force:true});
   }
