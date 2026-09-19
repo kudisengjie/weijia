@@ -104,16 +104,17 @@ class QuestionService:
     # ---------- 主流程 ----------
 
     async def discover(
-        self, docs: list[dict[str, object]], count: int, user_id: str, tenant_id: str
+        self, docs: list[dict[str, object]], count: int, user_id: str, tenant_id: str, *, notes: str = ""
     ) -> dict[str, object]:
         if not isinstance(count, int) or isinstance(count, bool) or not MIN_QUESTIONS <= count <= MAX_QUESTIONS:
             raise ApiError(400, f"问句数量需在 {MIN_QUESTIONS}-{MAX_QUESTIONS} 之间。", "INVALID_QUESTION_COUNT")
         cleaned = self._clean_docs(docs)
+        user_notes = re.sub(r"\s+", " ", str(notes or "")).strip()[:2000]
         charge_key = self._charge(tenant_id, user_id)
         try:
             analysis = await self._analyze(cleaned, user_id)
             evidence = await self._search(analysis)
-            questions = await self._generate(analysis, evidence, count, user_id)
+            questions = await self._generate(analysis, evidence, count, user_id, notes=user_notes)
         except Exception:
             self._refund(tenant_id, user_id)
             raise
@@ -196,7 +197,7 @@ class QuestionService:
         return evidence
 
     async def _generate(
-        self, analysis: dict[str, object], evidence: list[dict[str, object]], count: int, user_id: str
+        self, analysis: dict[str, object], evidence: list[dict[str, object]], count: int, user_id: str, *, notes: str = ""
     ) -> list[dict[str, object]]:
         model, key = self._model_key(user_id)
         contract = (
@@ -205,12 +206,13 @@ class QuestionService:
             "禁止每条问句都出现「推荐」二字，用「哪家好/怎么选/值得选/哪一家更靠谱/避坑/排行榜」等自然轮换；"
             "问句中的行业与产品词必须来自分析结果，不得虚构具体品牌名；"
             "按以下维度综合排序（越靠前越优）：" + DIMENSIONS + "。\n"
-            f"只返回 JSON 数组，正好 {count} 条，每条格式："
+            + ("用户补充要求必须严格遵循，优先级高于默认排序偏好。\n" if notes else "")
+            + f"只返回 JSON 数组，正好 {count} 条，每条格式："
             '{"question":"问句","intent":"信息型|调研型|对比型|交易型|导航型","stage":"初步了解|筛选对比|最终下单","score":0-100整数,"reason":"20字内排序理由"}'
         )
         messages = [
             {"role": "system", "content": contract},
-            {"role": "user", "content": json.dumps({"行业分析": analysis, "搜索线索": evidence, "需要数量": count}, ensure_ascii=False)},
+            {"role": "user", "content": json.dumps({"行业分析": analysis, "搜索线索": evidence, "需要数量": count, "用户补充要求": notes}, ensure_ascii=False)},
         ]
         raw = await self.model_complete(model, key, messages, client=self.client)
         data = _json_block(raw)

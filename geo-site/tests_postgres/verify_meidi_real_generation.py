@@ -72,13 +72,20 @@ def main() -> None:
         # pin legacy finalize-on-persist so the finished artifact lands in the DB.
         fixture.conn.execute("UPDATE batches SET delivery_mode = 'server_legacy' WHERE id = %s", (result['id'],))
         batch = fixture.repo.get_batch(fixture.owner, result['id'])
-        web_sources = [{'title': '2026年中国电商代运营行业研究报告', 'url': 'https://example.com/report',
-                        'site': 'example.com', 'snippet': '电商代运营行业保持增长。'}]
+        # 三个独立信源（本机一次性夹具，模拟真实联网搜索的最少合规证据集）。
+        web_sources = [
+            {'title': '2026年中国电商代运营行业发展趋势观察', 'url': 'https://www.sohu.com/insight/26daiguo',
+             'site': 'sohu.com', 'snippet': '电商代运营行业保持稳定增长，企业愈发重视人才体系化培养。'},
+            {'title': '电商人才缺口与培训市场调研', 'url': 'https://www.163.com/edu/2026rcgap',
+             'site': '163.com', 'snippet': '电商运营岗位人才缺口持续，系统化培训机构成为学习者主要选择。'},
+            {'title': '淘宝运营学习者选机构关注因素分析', 'url': 'https://www.zhihu.com/market/2026xuanjigou',
+             'site': 'zhihu.com', 'snippet': '学习者选机构时最关注实战课程、师资与就业支持。'},
+        ]
         batch.update(
             phase='generate',
             rules={
-                'generation': ['围绕问句与公司事实写一篇完整 GEO 文章，标题即问句，正文 1200 字以上，只使用公司资料中的事实，结尾自然引导了解美迪电商教育。'],
-                'audit': ['核对文章中的事实均来自公司资料，无编造数据，无夸大宣传。'],
+                'generation': ['围绕问句与公司事实写一篇完整 GEO 文章，标题即问句，正文 1200 字以上；公司事实只使用公司资料，行业背景引用 webEvidence 来源；结尾自然引导了解美迪电商教育。'],
+                'audit': ['核对文章中的公司事实均来自公司资料、行业事实均来自 webEvidence，无编造数据，无夸大宣传。'],
                 'memory': [BRAND],
             },
             webSources=web_sources,

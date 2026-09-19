@@ -12,7 +12,7 @@ from uuid import UUID
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from starlette.datastructures import Headers, MutableHeaders
 
 from .auth import AuthService
@@ -180,6 +180,7 @@ class QuestionDiscoverBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     docs: list[QuestionDocBody]
     count: int
+    notes: str = Field(default="", max_length=2000)
 
 
 class ImaCacheRefreshBody(BaseModel):
@@ -482,7 +483,8 @@ def create_app(
             tenant_id = str(context['tenantId']) if context else current.user_id
             service = QuestionService(repository, config.geo_master_key, model_complete=model_complete)
             return await service.discover(
-                [doc.model_dump() for doc in body.docs], body.count, current.user_id, tenant_id
+                [doc.model_dump() for doc in body.docs], body.count, current.user_id, tenant_id,
+                notes=body.notes,
             )
 
     @app.get("/credits")

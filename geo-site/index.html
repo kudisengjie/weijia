@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#eef6ff">
     <title>零雪 GEO｜批量文章工作台</title>
     <meta name="description" content="零雪 GEO 批量文章工作台。登录后连接自己的模型 API，使用共享 IMA 知识库生成与审核文章。">
-    <link rel="stylesheet" href="styles.css?v=20260919q">
+    <link rel="stylesheet" href="styles.css?v=20260919r">
     <link rel="preload" as="image" href="assets/lxue-geo-founder.png">
     <script>document.documentElement.classList.add('booting');setTimeout(function(){document.documentElement.classList.remove('booting');},4000);</script>
 </head>
@@ -91,6 +91,11 @@
                         <div class="is-stacked"><span>使用模型</span><strong data-question-model>跟随默认模型</strong></div>
                         <div><span>问句数量（5-50）</span><strong><input id="question-count" class="question-count-input" type="number" min="5" max="50" step="1" value="10" inputmode="numeric"></strong></div>
                         <div><span>消耗积分</span><strong>1 积分 / 次</strong></div>
+                    </div>
+                    <div class="question-notes-field">
+                        <label for="question-notes">问句查询备注（可选）</label>
+                        <textarea id="question-notes" rows="3" maxlength="2000" placeholder="告诉 AI 你对问句的额外要求，例如：围绕「电商运营培训」方向多出对比型问句；侧重零基础学员；避开地域词；多出适合小红书与抖音的口语化问句等。"></textarea>
+                        <small>备注会随文档一起交给模型，生成问句时严格遵循；最多 2000 字。</small>
                     </div>
                     <div class="geo-actions"><span>查询结果可保存到本机文件夹</span><div class="geo-run-area"><button class="geo-clear-button" id="question-clear" type="button" disabled>清除所选文件</button><button class="geo-run-button" id="question-run" type="button">开始查询问句</button></div></div>
                     <div class="question-progress" id="question-progress" hidden>
@@ -280,6 +285,6 @@
         </aside>
     </div>
     <div id="runtime-toast" class="runtime-toast" role="status" hidden></div>
-    <script src="assets/app.js?v=20260919q" defer></script>
+    <script src="assets/app.js?v=20260919r" defer></script>
 </body>
 </html>

@@ -87,13 +87,49 @@ def parse_tasks(rows: object, companies: object) -> tuple[list[dict[str, object]
     return tasks, docs
 
 
+def _extract_json_object(text: str) -> str | None:
+    """从模型回复中提取第一个结构完整的 {...}（容忍前后说明文字与代码围栏）。"""
+    start = text.find("{")
+    if start < 0:
+        return None
+    depth = 0
+    in_string = False
+    escape = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:index + 1]
+    return None
+
+
 def audit_result(raw: str) -> dict[str, object]:
     clean = re.sub(r"^```(?:json)?\s*", "", raw.strip(), flags=re.IGNORECASE)
     clean = re.sub(r"\s*```$", "", clean)
     try:
         value = json.loads(clean)
     except (TypeError, ValueError):
-        raise ApiError(422, "审核结果不是有效 JSON，已停止，未把草稿标为完成。")
+        # 真实模型可能在 JSON 前后带说明文字；提取平衡的 {...} 再试一次。
+        candidate = _extract_json_object(clean if isinstance(clean, str) else str(raw))
+        try:
+            value = json.loads(candidate) if candidate else None
+        except (TypeError, ValueError):
+            value = None
+        if not isinstance(value, dict):
+            raise ApiError(422, "审核结果不是有效 JSON，已停止，未把草稿标为完成。")
     issues = value.get("issues") if isinstance(value, dict) else None
     passed = value.get("passed") if isinstance(value, dict) else None
     if not isinstance(passed, bool) or not isinstance(issues, list) or any(not isinstance(item, str) or not item.strip() for item in issues) or passed != (len(issues) == 0):

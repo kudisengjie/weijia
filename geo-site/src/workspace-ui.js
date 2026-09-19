@@ -176,6 +176,6 @@ export function initializeWorkspaces({api,getSettings,getDraftUploads,restoreDra
   return {load,start,reset,modelOptions,updateBatch,flush,create,open:id=>operate(()=>select(id)),forBatch:id=>[...records.values()].find(w=>w.batchId===id),
     leave:fn=>operate(async()=>{if(uploadsAreReading())throw new Error('文件仍在读取，请稍候再切换。');await flush();display(null);await fn();}),
     get selected(){return selected;},get model(){return selected?.batch?.model||(selected?.status==='draft'?models.find(m=>modelValue(m)===model.selectedOptions[0]?.dataset.modelValue):null);},
-    get summaries(){return [...records.values()].filter(w=>w.status!=='archived').map(w=>({...w.batch,id:w.id,workspaceId:w.id,title:label(w),model:w.batch?.model||w.draft?.model||w.model,status:w.batch?.status||'draft',completed:w.batch?.completed||0,total:w.batch?.total||0}));},
+    get summaries(){return [...records.values()].filter(w=>w.status!=='archived').map(w=>({...w.batch,id:w.id,workspaceId:w.id,title:label(w),model:w.batch?.model||w.draft?.model||w.model,status:w.batch?.status||(w.status==='draft'?'draft':'ready'),completed:w.batch?.completed||0,total:w.batch?.total||0}));},
   };
 }

@@ -378,9 +378,10 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     if(!docs.length)throw new Error('请先上传并成功读取至少 1 份公司文档。');
     const count=Math.floor(Number($('question-count').value));
     if(!Number.isFinite(count)||count<5||count>50)throw new Error('问句数量需在 5-50 之间。');
+    const notes=String($('question-notes')?.value||'').trim().slice(0,2000);
     startQuestionProgress();
     try{
-      const result=await api('questions/discover',{docs,count});
+      const result=await api('questions/discover',notes?{docs,count,notes}:{docs,count});
       renderQuestions(result);
       const hint=`已产出 ${result.questions.length} 条问句，预扣 1 积分。`;
       try{await saveQuestionMarkdown(result);message('question-message',`${hint}问句报告已保存到本机文件夹。`);}
@@ -451,11 +452,21 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     activeBatch=b;const panel=$('batch-progress');if(!consoleView)panel.hidden=false;panel.replaceChildren();const workspace=workspaces.forBatch(b.id);consoleView?.setBatch({...b,title:workspace?.draft?.title||workspace?.title||b.title});
     consoleView?.setWorkspaceEmpty(false);
     panel.append(node('span',b.model.label,'login-eyebrow'),node('h2',`${batchStatusLabel(b)} · ${b.completed}/${b.total} 篇`));
-    const progress=document.createElement('progress');progress.max=b.total;progress.value=b.completed;progress.setAttribute('aria-label','已完成文章进度');panel.append(progress);
+    // 进度条（文章完成数）+ 阶段明细：执行到哪一步、正在做什么，必须一眼可见。
+    const progress=document.createElement('progress');progress.max=b.total||1;progress.value=b.completed;progress.setAttribute('aria-label','已完成文章进度');panel.append(progress);
+    const detail=[b.phaseDetail,`第 ${b.seq+1} 步`,`API 请求 ${b.requests} 次`].filter(Boolean).join(' · ');
+    panel.append(node('p',detail,'runtime-step-detail'));
     const terminal=['completed','cancelled'].includes(b.status);
     panel.append(node('p',b.error|| (terminal?'已保存的文章可在下方下载。':b.status==='paused'?'已暂停，积分预扣和模型配置保留。继续运行不会重复预扣。':b.pauseRequested?'暂停请求已提交，等待当前步骤保存结果。':driving?'正在执行。可以暂停，当前步骤结束后停止。':'进度已保存，点击继续运行。'),b.error?'runtime-error':'runtime-hint'));
     if(b.billing)panel.append(node('p',`任务积分：完成 ${b.billing.complete} · 已返还 ${b.billing.refunded+b.billing.released} · 预扣中 ${b.billing.reserved}`,'runtime-hint'));
-    for(const failed of b.failedTasks||[])panel.append(node('p',`第 ${failed.taskId} 条任务未完成：${failed.error}`,'runtime-error'));
+    for(const failed of b.failedTasks||[]){
+      const wrap=node('details',undefined,'runtime-failure');
+      const brief=failed.error.length>200?`${failed.error.slice(0,200)}…`:failed.error;
+      wrap.append(node('summary',`第 ${failed.taskId} 条任务未完成：${brief}`));
+      if(failed.draftPreview)wrap.append(node('pre',failed.draftPreview,'runtime-draft-preview'),node('p','（为节省空间只保留失败草稿前 600 字，完整内容以服务端保存为准。）','runtime-hint'));
+      if(failed.error.length>200)wrap.append(node('p',failed.error,'runtime-error'));
+      panel.append(wrap);
+    }
     const controls=node('div',undefined,'runtime-buttons');
     if(!terminal){
           const proceed=node('button',driving?'当前步骤执行中':b.status==='failed'?'手动重试失败步骤':'继续运行','runtime-primary');proceed.disabled=driving;
