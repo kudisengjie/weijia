@@ -8,8 +8,8 @@
     <meta name="theme-color" content="#eef6ff">
     <title>零雪 GEO｜批量文章工作台</title>
     <meta name="description" content="零雪 GEO 批量文章工作台。登录后连接自己的模型 API，使用共享 IMA 知识库生成与审核文章。">
-    <link rel="stylesheet" href="styles.css?v=20260919l">
-    <link rel="preload" as="image" href="assets/lxue-geo-founder.png">
+    <link rel="stylesheet" href="styles.css?v=20260919m">
+    <link rel="preload" as="image" href="assets/lxue-mascot-cheer.png">
     <script>document.documentElement.classList.add('booting');setTimeout(function(){document.documentElement.classList.remove('booting');},4000);</script>
 </head>
 <body>
@@ -17,7 +17,7 @@
     <section class="login-page" id="login-page" aria-labelledby="login-title">
         <a class="login-home" href="https://www.lxue.xin/">← 返回零雪官网</a>
         <div class="login-layout">
-            <div class="login-art"><span class="login-eyebrow">LXUE · AI CREATION</span><img src="assets/lxue-login-mascot.png" alt="挥手欢迎你的零雪雪花精灵" width="1024" height="1024" fetchpriority="high"><div class="login-art__copy"><h2>让好内容，被 AI 看见。</h2><p>你的灵感，零雪陪你一起实现。</p></div></div>
+            <div class="login-art"><span class="login-eyebrow">LXUE · AI CREATION</span><img src="assets/lxue-mascot-wave.png" alt="挥手欢迎你的零雪雪花精灵" width="768" height="768" fetchpriority="high"><div class="login-art__copy"><h2>让好内容，被 AI 看见。</h2><p>你的灵感，零雪陪你一起实现。</p></div></div>
             <div class="login-card"><span class="login-brand">❄ 零雪 GEO</span><h1 id="login-title">欢迎回到创作空间</h1><p>登录工作台，开始你的 GEO 创作。</p>
                 <form id="login-form"><label class="runtime-field">账号<input name="account" autocomplete="username" inputmode="tel" placeholder="请输入账号" maxlength="80" required></label><label class="runtime-field">密码<span class="password-field"><input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="请输入密码" maxlength="128" required><button type="button" id="toggle-password" aria-label="显示密码" aria-pressed="false">显示</button></span></label><p id="login-message" role="status" aria-live="polite">正在检查登录状态…</p><button class="runtime-primary login-submit" type="submit">登录工作台 <span aria-hidden="true">→</span></button></form>
                 <div class="login-note"><span aria-hidden="true">◇</span><p>使用你自己的模型 API<br><small>共享知识库由零雪维护 · 密钥加密存储</small></p></div>
@@ -70,11 +70,11 @@
                 <div class="geo-heading"><div><span class="geo-heading__eyebrow">CONTENT WORKSPACE</span><h1>任务总览</h1><p>查看任务进度，进入工作区处理资料与文章。</p></div></div>
                 <div class="console-summary"><div><span>任务批次</span><strong id="overview-total">0</strong></div><div><span>进行中</span><strong id="overview-active">0</strong></div><div><span>已保存文章</span><strong id="overview-articles">0</strong></div></div>
                 <section class="runtime-panel console-overview-panel"><div class="console-panel-heading"><h2><svg class="console-h2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h8"/></svg>我的工作区</h2><div class="console-panel-heading__actions"><button id="refresh-overview" type="button">刷新进度</button></div></div><div id="overview-list" class="console-table-wrap"><p class="console-empty">正在读取任务…</p></div></section>
-                <div class="console-brand-note"><img src="assets/lxue-geo-founder.png" alt="" width="64" height="64"><div><strong>零雪陪你，把内容做好</strong><p>知识库统一维护 · 模型由你选择 · 文章按任务归档</p></div></div>
+                <div class="console-brand-note"><img src="assets/lxue-mascot-thumbsup.png" alt="零雪双手点赞" width="64" height="64"><div><strong>零雪陪你，把内容做好</strong><p>知识库统一维护 · 模型由你选择 · 文章按任务归档</p></div></div>
             </section>
             <section class="geo-view" data-view-panel="admin" hidden><div class="geo-heading"><div><span class="geo-heading__eyebrow">OWNER CONSOLE</span><h1>管理中心</h1><p>仅总账号可管理子账号、积分、有效期与共享知识库。</p></div></div></section>
             <section class="geo-view" data-view-panel="questions" hidden>
-                <div class="geo-heading"><div><span class="geo-heading__eyebrow">QUESTION MINING</span><h1>问句查询</h1><p>上传公司文档，模型判断所属行业后联网挖掘消费者常搜问句，按九大维度排序输出；每次查询预扣 1 积分，未产出结果自动返还。</p></div></div>
+                <div class="geo-heading"><div><span class="geo-heading__eyebrow">QUESTION MINING</span><h1>问句查询</h1><p>上传公司文档，模型判断所属行业后联网挖掘消费者常搜问句，按九大维度排序输出；每次查询预扣 1 积分，未产出结果自动返还。</p></div><img class="heading-mascot" src="assets/lxue-mascot-peace.png" alt="零雪比耶，查询顺利" width="768" height="768"></div>
                 <section class="geo-upload-card" aria-labelledby="question-upload-title">
                     <div class="geo-card-heading"><span class="geo-card-heading__index">STEP 01</span><div><h2 id="question-upload-title">上传公司文档</h2><p>模型会读取文档核心业务与产品，判断所属领域/行业，再开启联网搜索了解行业问句。</p></div><span class="geo-card-heading__state" id="question-state">0 个文档</span></div>
                     <label class="geo-document-picker" for="question-files">
@@ -265,7 +265,7 @@
                         <p id="subscription-reminder" role="status"></p>
                         <div class="runtime-buttons"><span data-credit-balance>积分：—</span><span data-subscription-expiry>有效期：—</span><button type="button" id="refresh-own-ledger">查看我的积分流水</button></div>
                         <div id="own-ledger" class="runtime-ledger"></div>
-                        <div class="service-contact"><div><h3>联系零雪续期或补充积分</h3><p>微信扫码联系管理员，由管理员为你的账号调整积分及有效期。本网站不收取在线付款。</p><p class="runtime-hint">每条有效 Excel 任务预扣 1 积分；该任务要求的文章未完整保存，自动返还 1 积分。已完成文件可随时下载。</p></div><img class="wechat-contact" src="assets/wechat-contact.png" alt="添加零雪管理员微信的二维码" width="260" height="260" loading="lazy"></div>
+                        <div class="service-contact"><div><h3>联系零雪续期或补充积分</h3><p>微信扫码联系管理员，由管理员为你的账号调整积分及有效期。本网站不收取在线付款。</p><p class="runtime-hint">每条有效 Excel 任务预扣 1 积分；该任务要求的文章未完整保存，自动返还 1 积分。已完成文件可随时下载。</p><div class="service-contact__qr"><img class="wechat-qr" src="assets/wechat-qr.jpg" alt="零雪管理员企业微信二维码，微信扫码添加" width="360" height="360"><img class="contact-mascot" src="assets/lxue-mascot-thanks.png" alt="零雪合掌感谢你的支持" width="768" height="768" loading="lazy"></div></div></div>
                     </section>
                 </div>
             </section>
@@ -273,13 +273,13 @@
 
         <aside class="geo-cabin" aria-label="零雪状态舱">
             <div class="geo-cabin__heading"><span>零雪状态舱</span><strong id="cabin-state">准备开始创作</strong></div>
-            <figure class="geo-character"><img src="assets/lxue-geo-founder.png" alt="零雪蓝发雪花精灵形象 IP" width="1024" height="1024"></figure>
+            <figure class="geo-character"><img src="assets/lxue-mascot-cheer.png" alt="零雪握拳加油，准备开始创作" width="768" height="768"></figure>
             <dl class="geo-status-list"><div><dt>当前任务</dt><dd id="status-task">暂无</dd></div><div><dt>已选文档</dt><dd id="status-docs">0</dd></div><div><dt>本地读取</dt><dd id="status-read">0 / 0</dd></div><div class="is-stacked"><dt>当前模型</dt><dd data-selected-model-label aria-live="polite">DeepSeek V4.1 Flash</dd></div><div><dt>API 请求</dt><dd>0 次</dd></div></dl>
             <div class="geo-saas-status"><span data-credit-balance>积分：—</span><span data-subscription-expiry>有效期：—</span></div>
             <div class="geo-service-chips" aria-label="服务连接状态"><span>IMA · 未连接</span><span data-selected-model-service aria-live="polite">DeepSeek · 未连接</span></div>
         </aside>
     </div>
     <div id="runtime-toast" class="runtime-toast" role="status" hidden></div>
-    <script src="assets/app.js?v=20260919l" defer></script>
+    <script src="assets/app.js?v=20260919m" defer></script>
 </body>
 </html>

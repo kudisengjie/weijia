@@ -56,7 +56,8 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     const statusLine=node('p',undefined,'runtime-hint');statusLine.id='saving-status';statusLine.setAttribute('role','status');
     const messageLine=node('p',undefined,'runtime-hint');messageLine.id='saving-message';
     pane.append(statusLine,messageLine);
-    localOutput.state().then(state=>{
+    // 先从浏览器 IndexedDB 恢复本账号上次选择的文件夹句柄，再取状态渲染
+    localOutput.restore().catch(()=>null).then(()=>localOutput.state()).then(state=>{
       if(!auth.isCurrent(operation))return;
       if(!state.supported){
         statusLine.textContent='当前浏览器不支持自动保存到本地目录。可继续查看历史和手动下载文件；正式使用请用最新版桌面 Edge 或 Chrome。';
@@ -76,7 +77,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
       if(!state.directoryName){statusLine.textContent='尚未选择本机保存文件夹。新文章生成前需要先完成目录授权。';return;}
       const authorized=state.permission==='granted';
       statusLine.textContent=`保存文件夹：${state.directoryName} · ${authorized?'已授权':'需要重新授权'}`;
-      messageLine.before(node('p',`保存路径：${state.directoryName}（文章按问句命名，直接保存在此文件夹中）`,'runtime-hint'));
+      messageLine.before(node('p',`保存路径：本机「${state.directoryName}」文件夹。浏览器安全限制不显示完整磁盘路径，文章按问句命名，直接保存在该文件夹中，可在文件管理器里找到它。`,'runtime-hint'));
       if(!authorized){
         const authorize=node('button','重新授权','geo-run-button');authorize.type='button';authorize.id='saving-authorize';
         authorize.addEventListener('click',async()=>{
@@ -203,7 +204,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     renderModelLock();
   }
   function renderModelLock() {const locked=modelIsLocked(settings,activeBatch);document.querySelectorAll('input[name="model-option"], #model-key, #custom-model-id, #model-form button').forEach(input=>{input.disabled=locked;});}
-  async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();}
+  async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();if(!ownLedgerLoaded){ownLedgerLoaded=true;loadOwnLedger().catch(()=>{});}}
   async function enter() {return bootstrapAuthenticatedWorkspace({
     showWorkspace(){ document.documentElement.classList.remove('booting');$('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
     refreshSettings,
@@ -372,17 +373,20 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     if(keepId)select.value=keepId;renderManagedMember();await memberLedger();
   }
   function renderLedger(id,data){const region=$(id);region.replaceChildren();
+    if(data.balance!=null&&data.balance!==undefined)region.append(node('p',`当前余额：${data.balance} 积分`,'ledger-summary'));
     if(!data.ledger?.length){region.append(node('p','暂无积分流水。','runtime-hint'));return;}
     const table=node('table'),head=node('thead'),header=node('tr'),body=node('tbody');
     for(const title of ['时间','类型','积分变动','任务']){const th=node('th',title);th.scope='col';header.append(th);}head.append(header);
     const names={grant:'管理员发放',revoke:'管理员收回',reserve:'任务预扣',refund:'未完成返还',release:'释放预扣',consume:'任务完成'};
-    for(const entry of data.ledger){const row=node('tr');for(const value of [new Date(entry.createdAt).toLocaleString('zh-CN'),names[entry.kind]||entry.kind,`${entry.amount>0?'+':''}${entry.amount}`,entry.taskId?`第 ${entry.taskId} 条`:'—'])row.append(node('td',String(value)));body.append(row);}
+    for(const entry of data.ledger){const row=node('tr');const amount=Number(entry.amount)||0;const amountTd=node('td',`${amount>0?'+':''}${amount}`);amountTd.className=amount>0?'ledger-in':'ledger-out';for(const value of [new Date(entry.createdAt).toLocaleString('zh-CN'),names[entry.kind]||entry.kind])row.append(node('td',String(value)));row.append(amountTd);row.append(node('td',entry.taskId?`第 ${entry.taskId} 条`:'—'));body.append(row);}
     table.append(head,body);region.append(table,node('p','显示最近 100 条流水。','runtime-hint'));
   }
+  async function loadOwnLedger(){renderLedger('own-ledger',await api('credits'));}
+  let ownLedgerLoaded=false;
   async function memberLedger(){const userId=$('managed-user').value;if(!userId)return;const data=await api(`tenant/members/${userId}/credits`);if($('managed-user').value===userId)renderLedger('member-ledger',data);}
   $('managed-user').addEventListener('change',()=>{renderManagedMember();memberLedger().catch(e=>toast(e.message));});
   $('refresh-member-ledger').addEventListener('click',event=>action(event.currentTarget,'credit-message',async()=>{await memberLedger();message('credit-message','已读取最新流水。');}));
-  $('refresh-own-ledger').addEventListener('click',event=>action(event.currentTarget,'subscription-reminder',async()=>{renderLedger('own-ledger',await api('credits'));await refreshSettings();}));
+  $('refresh-own-ledger').addEventListener('click',event=>action(event.currentTarget,'subscription-reminder',async()=>{await loadOwnLedger();await refreshSettings();}));
   $('extend-subscription').addEventListener('click',()=>{const input=$('subscription-form').elements.expiresAt;input.value=localDateTime(Math.max(Date.now(),Date.parse(input.value)||0)+30*86400000);message('subscription-message','已增加 30 天，请点击“保存有效期”生效。');});
   $('subscription-form').addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget;action(event.submitter,'subscription-message',async()=>{
     const target=managedMember(),values=Object.fromEntries(new FormData(form));

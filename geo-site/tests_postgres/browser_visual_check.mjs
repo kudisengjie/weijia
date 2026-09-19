@@ -95,6 +95,17 @@ try {
   // ④ 进度条占位（隐藏待用）
   const progress = page.locator('#question-progress');
   if (!(await progress.isHidden())) failures.push('进度条初始应为隐藏');
+  // ⑤ 零雪新形象 / 企微二维码 / 积分流水自动加载
+  const cabinSrc = await page.locator('.geo-character img').getAttribute('src');
+  if (!String(cabinSrc).includes('lxue-mascot-cheer')) failures.push(`状态舱形象未更新：${cabinSrc}`);
+  const headingMascotSrc = await page.locator('.heading-mascot').getAttribute('src');
+  if (!String(headingMascotSrc).includes('lxue-mascot-peace')) failures.push(`问句页形象缺失：${headingMascotSrc}`);
+  const qrSrc = await page.locator('.wechat-qr').getAttribute('src');
+  if (!String(qrSrc).includes('wechat-qr')) failures.push(`企微二维码缺失：${qrSrc}`);
+  const qrWidth = await page.locator('.wechat-qr').evaluate(el => el.getBoundingClientRect().width).catch(() => 0);
+  if (qrWidth > 0 && qrWidth < 160) failures.push(`二维码展示过小：${qrWidth}px`);
+  await page.waitForFunction(() => (document.querySelector('#own-ledger')?.textContent || '').trim().length > 0, undefined, { timeout: 15000 })
+    .catch(() => failures.push('积分流水未自动加载'));
   await page.screenshot({ path: path.join(output, 'question-page.png') });
 } catch (error) {
   failures.push('异常: ' + error.message);
