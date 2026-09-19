@@ -33,8 +33,9 @@ try {
   await qr.waitFor({ state: 'visible' });
   const w = await qr.evaluate(el => el.getBoundingClientRect().width);
   if (w < 160) failures.push(`二维码过小：${w}px`);
-  const mascotVisible = await page.locator('.contact-mascot').isVisible();
-  if (!mascotVisible) failures.push('合掌感谢形象不可见');
+  if (await page.locator('.contact-mascot').count()) failures.push('合掌感谢形象应已移除');
+  const imaStatus = await page.locator('#ima-cache-status').textContent();
+  console.log('ima cache status:', imaStatus);
   await page.screenshot({ path: path.join(output, 'settings-contact.png') });
   // 文章保存页：验证恢复文案接线（未选过文件夹时应显示"尚未选择"而非报错）
   await tab.filter({ hasText: '文章保存' }).click();

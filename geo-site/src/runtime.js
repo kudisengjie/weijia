@@ -204,7 +204,7 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
     renderModelLock();
   }
   function renderModelLock() {const locked=modelIsLocked(settings,activeBatch);document.querySelectorAll('input[name="model-option"], #model-key, #custom-model-id, #model-form button').forEach(input=>{input.disabled=locked;});}
-  async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();if(!ownLedgerLoaded){ownLedgerLoaded=true;loadOwnLedger().catch(()=>{});}}
+  async function refreshSettings() {settings=await api('settings');renderSelectedModel(settings.model.id,settings.model.slot);$('custom-model-id').value=settings.model.modelId===getModelPresentation(settings.model.id,settings.model.slot).modelId?'':settings.model.modelId;renderCredentials();workspaces.modelOptions();renderConnections();if(!ownLedgerLoaded){ownLedgerLoaded=true;loadOwnLedger().catch(()=>{});loadImaCacheStatus().catch(()=>{});}}
   async function enter() {return bootstrapAuthenticatedWorkspace({
     showWorkspace(){ document.documentElement.classList.remove('booting');$('login-page').hidden=true;shell.hidden=false;$('login-password').value=''; },
     refreshSettings,
@@ -257,23 +257,43 @@ export function initializeRuntime({renderSelectedModel,changeView,getUploads,cle
   });});
   $('clear-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
     if(!confirm('确认清除全站共享缓存？新批次会重新获取所需资料，正在运行的批次保留其资料版本。')){message('ima-cache-message','已取消。');return;}
-    const result=await api('ima/cache/clear',{});message('ima-cache-message',`新批次将使用第 ${result.generation} 版缓存；运行中批次不受影响。`);
+    const result=await api('ima/cache/clear',{});message('ima-cache-message',`新批次将使用第 ${result.generation} 版缓存；运行中批次不受影响。`);loadImaCacheStatus().catch(()=>{});
   }));
   $('refresh-ima-cache').addEventListener('click',event=>action(event.currentTarget,'ima-cache-message',async()=>{
     // 分批续跑：start 开新代并刷新目录清单，循环拉取文件正文（每次限量），
     // 避免单请求全量抓取撞网关执行时限。中断后再次点击可继续，不重复下载。
     if(!confirm('将分批重新拉取 copilot 知识库全部内容与 GEO优化知识库列表写入共享缓存。期间请保持页面打开直至完成；运行中的批次不受影响。')){message('ima-cache-message','已取消。');return;}
+    const progress=$('ima-cache-progress'),fill=$('ima-cache-progress-fill'),progressText=$('ima-cache-progress-text');
+    const showProgress=(done,total,phase)=>{
+      progress.hidden=false;
+      const pct=total>0?Math.min(100,Math.round(done/total*100)):100;
+      fill.style.width=(phase==='geo'?100:pct)+'%';
+      progressText.textContent=phase==='geo'?'copilot 已全部完成，正在刷新 GEO优化知识库列表…':`正在获取 copilot 知识库：已处理 ${done} / ${total} 个文件（${pct}%）`;
+    };
     let result=await api('ima/cache/refresh',{start:true});
+    showProgress(result.copilotTotal||0,result.copilotFiles||0,'copilot');
     let rounds=0;
     while(!result.done&&rounds<100){
       rounds++;
-      message('ima-cache-message',`正在更新共享缓存：copilot 共 ${result.copilotFiles} 个文件，已处理 ${result.copilotTotal} 个（本次下载 ${result.fetchedThisCall} 个）…`);
+      message('ima-cache-message',`正在更新共享缓存（第 ${rounds} 批）…请保持页面打开。`);
       result=await api('ima/cache/refresh',{});
+      showProgress(result.copilotTotal||0,result.copilotFiles||0,(result.copilotTotal||0)>=(result.copilotFiles||0)?'geo':'copilot');
     }
     for(const warning of result.warnings||[])toast(warning);
     if(!result.done){message('ima-cache-message','更新尚未完成，请再次点击“更新获取 IMA 缓存”继续。',true);return;}
+    fill.style.width='100%';progressText.textContent='全部完成。';
+    setTimeout(()=>{progress.hidden=true;},6000);
     message('ima-cache-message',`缓存更新完成：copilot 已更新 ${result.copilotFiles} 个文件，GEO优化知识库列表 ${result.geoListed} 项。后续任务直接使用新缓存。`);
+    loadImaCacheStatus().catch(()=>{});
   }));
+  async function loadImaCacheStatus(){
+    try{
+      const s=await api('ima/cache');
+      const nodeStatus=$('ima-cache-status');
+      if(!s.updatedAt){nodeStatus.textContent=`当前缓存状态：共享缓存为空（第 ${s.generation??1} 版），新任务会现场获取所需资料。`;return;}
+      nodeStatus.textContent=`当前缓存状态：第 ${s.generation} 版 · 最近更新 ${new Date(s.updatedAt).toLocaleString('zh-CN')}${s.stale?' · 已超过 15 天，建议重新获取':' · 有效'}。任务运行直接复用缓存，不重复抓取。`;
+    }catch(error){const nodeStatus=$('ima-cache-status');if(nodeStatus)nodeStatus.textContent='当前缓存状态：仅管理员可查看。';}
+  }
   // 问句板块：上传公司文档 → 模型判断行业 → 联网挖掘问句 → 九大维度排序；预扣 1 积分，失败返还。
   let lastQuestionResult=null;
   async function saveQuestionMarkdown(result){
